@@ -79,6 +79,14 @@ const categoryEmoji = (category = '') => {
   return '✨'
 }
 
+const productMainImage = (product) => {
+  const images = [...(product?.product_images || [])]
+    .filter((image) => image?.public_url)
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+
+  return images[0]?.public_url || null
+}
+
 function waLink(product) {
   const message = product
     ? `Hello Sancity Mall KE, I would like the current price and availability for ${product}.`
@@ -107,7 +115,7 @@ export default function App() {
     async function loadPublishedProducts() {
       const { data, error } = await supabase
         .from('products')
-        .select('id,name,category,badge,description,price,stock_quantity,created_at')
+        .select('id,name,slug,category,badge,description,price,stock_quantity,created_at,product_images(public_url,sort_order)')
         .eq('status', 'published')
         .order('created_at', { ascending: false })
 
@@ -609,8 +617,18 @@ export default function App() {
           <div className="emoji-product-grid">
             {visibleProducts.map((product) => (
               <article className="emoji-product-card" key={product.id}>
-                <div className={`emoji-product-art art-${(product.category || 'other').toLowerCase().replace(/[^a-z]+/g, '-')}`}>
-                  <span className="product-emoji">{categoryEmoji(product.category)}</span>
+                <div className={`emoji-product-art ${productMainImage(product) ? 'has-photo' : ''} art-${(product.category || 'other').toLowerCase().replace(/[^a-z]+/g, '-')}`}>
+                  {productMainImage(product) ? (
+                    <img
+                      className="product-photo"
+                      src={productMainImage(product)}
+                      alt={product.name}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <span className="product-emoji">{categoryEmoji(product.category)}</span>
+                  )}
                   {product.badge && <span className="product-badge">{product.badge}</span>}
                   <button
                     className={`save-button ${saved.includes(product.id) ? 'active' : ''}`}
