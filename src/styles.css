@@ -1948,3 +1948,151 @@ select:focus-visible{
   .cart-line{grid-template-columns:50px 1fr auto}
   .cart-line-emoji{width:50px;height:50px;font-size:27px}
 }
+
+
+/* === Bedroom lifestyle hero image === */
+.hero-photo-stage{
+  position:relative;
+  isolation:isolate;
+  background:#f6efe8;
+}
+.hero-bedroom-photo{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center center;
+}
+.hero-photo-scrim{
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  background:
+    linear-gradient(90deg,rgba(255,250,246,.90) 0%,rgba(255,250,246,.58) 20%,rgba(255,250,246,.08) 43%,rgba(42,11,54,.05) 100%),
+    linear-gradient(180deg,rgba(45,13,58,.02) 55%,rgba(45,13,58,.16) 100%);
+}
+.hero-photo-stage .tribal{z-index:2}
+.hero-photo-stage .tribal-left{
+  opacity:.20;
+  mix-blend-mode:multiply;
+}
+.hero-photo-stage .tribal-right{
+  opacity:.20;
+  mix-blend-mode:multiply;
+}
+.hero-photo-copy{
+  z-index:3;
+  left:5.8%;
+  top:13%;
+  color:#6e20a2;
+  text-shadow:0 2px 14px rgba(255,255,255,.72);
+}
+.hero-photo-copy strong{
+  font-size:34px;
+}
+.hero-photo-copy span{
+  color:#5b3467;
+}
+.hero-photo-promos{
+  z-index:4;
+  right:2.7%;
+  top:auto;
+  bottom:4%;
+  width:auto;
+  left:30%;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-rows:1fr;
+  gap:8px;
+}
+.hero-photo-promos .stage-card{
+  min-height:92px;
+  padding:11px 54px 11px 12px;
+  border-color:rgba(255,255,255,.75);
+  background:rgba(255,250,247,.90);
+  backdrop-filter:blur(10px);
+  box-shadow:0 12px 28px rgba(39,13,49,.12);
+}
+.hero-photo-promos .stage-bedroom{
+  background:linear-gradient(135deg,rgba(92,28,134,.93),rgba(119,52,165,.93));
+}
+.hero-photo-promos .stage-card small{
+  font-size:6.5px;
+}
+.hero-photo-promos .stage-card strong{
+  font-size:13px;
+}
+.hero-photo-promos .stage-emoji{
+  width:42px;
+  height:42px;
+  right:7px;
+  bottom:8px;
+  font-size:27px;
+}
+.hero-photo-promos .stage-card b{
+  left:auto;
+  right:8px;
+  bottom:auto;
+  top:7px;
+  width:19px;
+  height:19px;
+  font-size:9px;
+}
+
+@media(max-width:1250px){
+  .hero-photo-promos{left:25%}
+}
+@media(max-width:980px){
+  .hero-photo-stage{min-height:410px}
+  .hero-bedroom-photo{object-position:center center}
+  .hero-photo-promos{
+    left:18%;
+    right:2%;
+    bottom:3%;
+  }
+}
+@media(max-width:700px){
+  .hero-photo-stage{
+    min-height:315px;
+  }
+  .hero-bedroom-photo{
+    object-position:58% center;
+  }
+  .hero-photo-scrim{
+    background:
+      linear-gradient(90deg,rgba(255,250,246,.78) 0%,rgba(255,250,246,.34) 30%,rgba(255,250,246,.03) 58%),
+      linear-gradient(180deg,rgba(45,13,58,0) 46%,rgba(45,13,58,.20) 100%);
+  }
+  .hero-photo-copy{
+    left:4%;
+    top:7%;
+  }
+  .hero-photo-copy strong{font-size:24px}
+  .hero-photo-copy span{font-size:13px}
+  .hero-photo-promos{
+    left:7px;
+    right:7px;
+    bottom:7px;
+    grid-template-columns:repeat(3,1fr);
+    gap:5px;
+  }
+  .hero-photo-promos .stage-card{
+    min-height:68px;
+    border-radius:9px;
+    padding:7px 31px 7px 7px;
+  }
+  .hero-photo-promos .stage-card small{font-size:4.8px}
+  .hero-photo-promos .stage-card strong{font-size:9px}
+  .hero-photo-promos .stage-emoji{
+    width:28px;
+    height:28px;
+    border-radius:8px;
+    right:4px;
+    bottom:5px;
+    font-size:18px;
+  }
+  .hero-photo-promos .stage-card b{display:none}
+}
