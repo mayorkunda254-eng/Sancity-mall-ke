@@ -25,7 +25,7 @@ The purple/cream/tribal design direction is now frozen. The homepage is prerende
 | Supabase connection | **Done** | Storefront and admin are connected to the Sancity Supabase project. |
 | Product/admin schema + RLS + image bucket | **Done** | `products`, `product_images`, `admin_users`, RLS policies and public `product-images` bucket exist. |
 | Real catalogue import | **Not started** | Supabase currently has 0 products and 0 product images. |
-| Public storefront renders uploaded product photos | **Needs work** | Admin uploads `product_images`, but storefront currently selects only product text/price/stock and therefore cannot display uploaded photos. |
+| Public storefront renders uploaded product photos | **Done** | Phase-1 implementation now selects `product_images(public_url,sort_order)` and renders the first uploaded photo on catalogue cards, with emoji fallback only when no image exists. |
 | Product detail routes | **Not started** | No product route/router implementation found. |
 | Category routes | **Not started** | Categories currently filter the homepage grid only. |
 | Cart / WhatsApp checkout | **Done** | Local cart, quantities, subtotal and WhatsApp checkout are implemented. |
@@ -63,7 +63,7 @@ Security housekeeping:
 
 ## Immediate implementation sequence
 
-1. Make the public storefront consume `product_images` uploaded by `/admin`.
+1. **Done:** Make the public storefront consume `product_images` uploaded by `/admin`.
 2. Import the first verified real products and photos into Supabase.
 3. Remove or explicitly demote the five fallback/sample cards once real inventory exists.
 4. Add category + product routes and extend prerendering to them.
