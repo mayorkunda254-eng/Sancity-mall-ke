@@ -2096,3 +2096,27 @@ select:focus-visible{
   }
   .hero-photo-promos .stage-card b{display:none}
 }
+
+
+/* === Hero photo quality correction === */
+.hero-bedroom-photo{
+  object-position:center 54%;
+  filter:brightness(1.025) contrast(1.035) saturate(.98);
+  image-rendering:auto;
+  transform:translateZ(0);
+}
+.hero-photo-scrim{
+  background:
+    linear-gradient(90deg,rgba(255,250,246,.72) 0%,rgba(255,250,246,.34) 17%,rgba(255,250,246,.035) 39%,rgba(42,11,54,.02) 100%),
+    linear-gradient(180deg,rgba(45,13,58,0) 58%,rgba(45,13,58,.11) 100%);
+}
+.hero-photo-stage .tribal-left,
+.hero-photo-stage .tribal-right{opacity:.13}
+@media(max-width:700px){
+  .hero-bedroom-photo{object-position:56% center}
+  .hero-photo-scrim{
+    background:
+      linear-gradient(90deg,rgba(255,250,246,.60) 0%,rgba(255,250,246,.22) 28%,rgba(255,250,246,.02) 55%),
+      linear-gradient(180deg,rgba(45,13,58,0) 55%,rgba(45,13,58,.12) 100%);
+  }
+}
