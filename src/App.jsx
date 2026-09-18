@@ -1,8 +1,9 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowRight, BedDouble, Boxes, Heart, Home, MapPin, Menu, MessageCircle,
   Search, ShieldCheck, Sparkles, Store, UtensilsCrossed, X, Truck, PackageCheck
 } from 'lucide-react'
+import { isSupabaseConfigured, supabase } from './lib/supabase.js'
 
 const categories = [
   { name: 'Kitchen & Dining', image: '/products/dish-rack.webp', icon: UtensilsCrossed, className: 'cat-kitchen' },
@@ -11,7 +12,7 @@ const categories = [
   { name: 'Everyday Home Utility', image: '/products/foldable-laptop-table.webp', icon: Home, className: 'cat-utility' },
 ]
 
-const products = [
+const fallbackProducts = [
   {
     id: 1,
     name: '2-Tier Dish Rack',
@@ -19,6 +20,8 @@ const products = [
     badge: 'Fresh arrival',
     image: '/products/dish-rack.webp',
     description: 'A practical countertop rack for keeping plates, cups and cutlery organised.',
+    price: null,
+    stock_quantity: null,
   },
   {
     id: 2,
@@ -27,6 +30,8 @@ const products = [
     badge: 'Kitchen pick',
     image: '/products/rotating-spice-rack.webp',
     description: 'Compact rotating spice storage designed to keep everyday seasonings within reach.',
+    price: null,
+    stock_quantity: null,
   },
   {
     id: 3,
@@ -35,6 +40,8 @@ const products = [
     badge: 'Storage pick',
     image: '/products/portable-fabric-wardrobe.webp',
     description: 'Freestanding covered storage for clothes, shoes and everyday bedroom organisation.',
+    price: null,
+    stock_quantity: null,
   },
   {
     id: 4,
@@ -43,6 +50,8 @@ const products = [
     badge: 'Useful find',
     image: '/products/foldable-laptop-table.webp',
     description: 'A compact folding table for laptop work, studying, meals or bedside use.',
+    price: null,
+    stock_quantity: null,
   },
   {
     id: 5,
@@ -51,6 +60,8 @@ const products = [
     badge: 'Comfort pick',
     image: '/products/queen-air-mattress.webp',
     description: 'Portable inflatable sleeping solution for guests, travel and flexible home use.',
+    price: null,
+    stock_quantity: null,
   },
 ]
 
@@ -66,7 +77,42 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [saved, setSaved] = useState([])
+  const [products, setProducts] = useState(fallbackProducts)
   const searchRef = useRef(null)
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return
+
+    let active = true
+
+    async function loadPublishedProducts() {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id,name,category,badge,description,price,stock_quantity,created_at,product_images(public_url,sort_order)')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+
+      if (!active || error || !data) return
+
+      const dynamicProducts = data.map((product) => {
+        const images = [...(product.product_images || [])].sort((a, b) => a.sort_order - b.sort_order)
+        return {
+          ...product,
+          image: images[0]?.public_url || '/products/dish-rack.webp',
+        }
+      })
+
+      const dynamicNames = new Set(dynamicProducts.map((product) => product.name.toLowerCase()))
+      const staticProducts = fallbackProducts.filter((product) => !dynamicNames.has(product.name.toLowerCase()))
+      setProducts([...dynamicProducts, ...staticProducts])
+    }
+
+    loadPublishedProducts()
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   const visibleProducts = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -74,7 +120,7 @@ export default function App() {
     return products.filter((item) =>
       (item.name + ' ' + item.category + ' ' + item.description).toLowerCase().includes(q)
     )
-  }, [query])
+  }, [products, query])
 
   const toggleSaved = (id) => {
     setSaved((items) => items.includes(id) ? items.filter((item) => item !== id) : [...items, id])
@@ -273,8 +319,8 @@ export default function App() {
                   <h3>{product.name}</h3>
                   <p className="product-description">{product.description}</p>
                   <div className="price-line">
-                    <strong>Price on request</strong>
-                    <span>Confirm current stock & price</span>
+                    <strong>{product.price !== null && product.price !== undefined ? `KSh ${Number(product.price).toLocaleString('en-KE')}` : 'Price on request'}</strong>
+                    <span>{product.stock_quantity === null || product.stock_quantity === undefined ? 'Confirm current stock & price' : product.stock_quantity > 0 ? `${product.stock_quantity} in stock` : 'Out of stock / enquire'}</span>
                   </div>
                   <a
                     href={waLink(product.name)}
