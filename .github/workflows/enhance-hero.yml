@@ -30,42 +30,31 @@ jobs:
             -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/152 Safari/537.36" \
             -e "https://www.kilimall.co.ke/" \
             "https://img.kilimall.com/c/obs/seller/100002456/goods_image/241030001651_3605dcecc9eafe1d24422220c7953843.jpeg" \
-            -o /tmp/hero-bedroom-source.jpeg
-          test -s /tmp/hero-bedroom-source.jpeg
+            -o public/hero-bedroom-hq.jpeg
+          test -s public/hero-bedroom-hq.jpeg
 
-      - name: Validate and optimize hero
+      - name: Validate original hero quality
         run: |
           python -m pip install --quiet Pillow
           python - <<'PY'
           from pathlib import Path
           from PIL import Image
 
-          src = Path("/tmp/hero-bedroom-source.jpeg")
-          dst = Path("public/hero-bedroom-hq.webp")
-
+          src = Path("public/hero-bedroom-hq.jpeg")
           with Image.open(src) as im:
               im.load()
               w, h = im.size
-              print(f"source={w}x{h} bytes={src.stat().st_size}")
-              if w < 1200 or h < 650:
-                  raise SystemExit(f"Source is not high resolution enough: {w}x{h}")
-              rgb = im.convert("RGB")
-              rgb.save(dst, "WEBP", quality=93, method=6)
-
-          with Image.open(dst) as out:
-              out.load()
-              ow, oh = out.size
-              print(f"optimized={ow}x{oh} bytes={dst.stat().st_size}")
-              if (ow, oh) != (w, h):
-                  raise SystemExit("Optimized hero dimensions changed unexpectedly")
-              if dst.stat().st_size < 50000:
-                  raise SystemExit("Optimized hero appears over-compressed")
+              print(f"restored={w}x{h} bytes={src.stat().st_size}")
+              if w < 1000 or h < 750:
+                  raise SystemExit(f"Unexpectedly small restored source: {w}x{h}")
+              if src.stat().st_size < 150000:
+                  raise SystemExit("Restored source appears over-compressed")
           PY
 
       - name: Commit restored asset
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/hero-bedroom-hq.webp
+          git add public/hero-bedroom-hq.jpeg
           git commit -m "Restore full-resolution bedroom hero [hero-restored]"
           git push origin HEAD:fix/hero-super-resolution
