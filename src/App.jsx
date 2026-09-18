@@ -61,7 +61,7 @@ function waLink(product) {
   return `https://wa.me/254710900548?text=${encodeURIComponent(message)}`
 }
 
-// deployment-trigger: git-native-assets
+// deployment-trigger: git-native-assets-confirmed
 export default function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [query, setQuery] = useState('')
