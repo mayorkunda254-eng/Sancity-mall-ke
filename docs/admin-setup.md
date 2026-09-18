@@ -1,31 +1,36 @@
 # Sancity Mall KE admin setup
 
-The storefront includes a secure `/admin` catalogue manager backed by Supabase.
+The storefront includes a secure `/admin` catalogue manager backed by the dedicated Sancity Supabase Free project.
 
-## Required Vercel environment variables
+## Supabase project
 
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_PUBLISHABLE_KEY`
+- Project ref: `aetxzqugccixmxygzmtn`
+- Region: `eu-west-1`
+- Storage bucket: `product-images`
+- Public client configuration is present as a safe frontend fallback in `src/lib/supabase.js`.
+- Vercel environment variables can override those values later:
+  - `VITE_SUPABASE_URL`
+  - `VITE_SUPABASE_PUBLISHABLE_KEY`
 
-Use the Supabase project URL and its public/publishable client key. Never put a service-role key in Vercel frontend variables.
+Never use a service-role key in browser code.
 
 ## Database and storage
 
-Apply `supabase/migrations/20260918_sancity_catalogue.sql`.
+The production database has the hardened catalogue schema and RLS policies applied.
 
-It creates:
+It includes:
 
 - `admin_users`
 - `products`
 - `product_images`
 - public `product-images` Storage bucket
-- RLS policies so anonymous visitors can only read published products
-- RLS policies so only approved admin users can add, update or delete products and images
+- public read access to published catalogue data only
+- authenticated admin-only create, update and delete permissions
+- a private-schema admin-check function so it is not exposed as a public RPC
 
 ## First admin account
 
-1. In Supabase Authentication, create or invite the staff account.
-2. After that user exists, run:
+Create the staff account in Supabase Authentication, then promote it with:
 
 ```sql
 insert into public.admin_users (user_id)
@@ -35,7 +40,7 @@ where lower(email) = lower('YOUR-ADMIN-EMAIL')
 on conflict (user_id) do nothing;
 ```
 
-Do not enable open public signup for the admin workflow.
+Do not put passwords in source code or ChatGPT. Do not enable unrestricted admin signup.
 
 ## Product upload behaviour
 
@@ -48,4 +53,4 @@ Do not enable open public signup for the admin workflow.
 
 ## Storefront fallback
 
-Until Supabase is configured, the existing five hard-coded products remain visible. Once dynamic products are available, they are merged ahead of those items and duplicate names are removed.
+The existing five hard-coded products remain visible until dynamic catalogue products are added. Published database products appear first and duplicate fallback names are removed.
