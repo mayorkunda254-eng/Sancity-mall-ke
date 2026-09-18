@@ -2417,3 +2417,10 @@ select:focus-visible{
     padding:7px;
   }
 }
+
+
+/* === Remove hero edge arrow-dash decorations === */
+.hero-left::before,
+.hero-photo-stage .tribal-right{
+  display:none !important;
+}
