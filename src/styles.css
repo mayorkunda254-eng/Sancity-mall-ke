@@ -1155,3 +1155,433 @@ img{max-width:100%}
   }
   .mobile-bottom-bar span{font-size:17px}
 }
+
+
+/* === Reference polish pass: spacing, tribal balance, emoji consistency === */
+
+/* establish one consistent emoji treatment across the storefront */
+.brand-bag,
+.header-action-icon,
+.department-links button span,
+.hero-benefits span,
+.stage-emoji,
+.category-emoji,
+.product-emoji,
+.contact-grid>*>span,
+.mobile-bottom-bar span,
+.mobile-drawer>button span{
+  font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+  font-style:normal;
+  font-variant-emoji:emoji;
+}
+
+.brand-bag{
+  border:1px solid rgba(107,30,168,.10);
+  background:
+    radial-gradient(circle at 34% 28%,#fff 0 22%,transparent 23%),
+    linear-gradient(145deg,#f7edff,#fff9f4);
+}
+
+.department-links button span{
+  width:24px;
+  height:24px;
+  border-radius:7px;
+  background:#f6edfb;
+  display:grid;
+  place-items:center;
+  font-size:14px;
+  line-height:1;
+}
+
+.hero-benefits>div{
+  min-height:48px;
+  padding:6px 10px 6px 7px;
+  border:1px solid rgba(103,30,147,.08);
+  border-radius:12px;
+  background:rgba(255,255,255,.62);
+}
+.hero-benefits span{
+  width:33px;
+  height:33px;
+  border-radius:10px;
+  display:grid;
+  place-items:center;
+  background:#f3e7fa;
+  font-size:18px;
+}
+
+.stage-emoji{
+  width:66px;
+  height:66px;
+  border-radius:18px;
+  display:grid;
+  place-items:center;
+  background:rgba(255,255,255,.66);
+  border:1px solid rgba(255,255,255,.54);
+  font-size:42px;
+  line-height:1;
+  backdrop-filter:blur(8px);
+}
+
+.category-emoji{
+  width:68px;
+  height:68px;
+  min-height:68px;
+  border-radius:20px;
+  background:rgba(255,255,255,.62);
+  border:1px solid rgba(88,27,116,.06);
+  font-size:38px;
+  line-height:1;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.65);
+}
+
+.product-emoji{
+  width:94px;
+  height:94px;
+  border-radius:28px;
+  display:grid;
+  place-items:center;
+  background:rgba(255,255,255,.62);
+  border:1px solid rgba(95,29,126,.06);
+  font-size:58px;
+  line-height:1;
+}
+
+/* refine header density */
+.header-main{
+  min-height:90px;
+  padding-top:11px;
+  padding-bottom:10px;
+}
+.department-nav{min-height:47px}
+.global-search{min-height:49px}
+.header-actions{gap:16px}
+.header-action{min-width:54px}
+
+/* stronger but cleaner tribal placement */
+.hero-left::after{
+  content:"";
+  position:absolute;
+  right:3%;
+  bottom:3%;
+  width:155px;
+  height:112px;
+  pointer-events:none;
+  opacity:.11;
+  background:
+    linear-gradient(45deg,transparent 35%,#6a1e9c 35% 42%,transparent 42% 58%,#c89c53 58% 65%,transparent 65%),
+    linear-gradient(-45deg,transparent 35%,#c89c53 35% 42%,transparent 42% 58%,#6a1e9c 58% 65%,transparent 65%);
+  background-size:56px 56px;
+  transform:rotate(-7deg);
+}
+
+.hero-stage .tribal-left{
+  left:2%;
+  bottom:-32px;
+  width:285px;
+  height:205px;
+  opacity:.34;
+}
+
+.hero-stage .tribal-right{
+  right:-30px;
+  top:-18px;
+  width:180px;
+  height:238px;
+  opacity:.36;
+}
+
+.category-showcase::before{opacity:.12}
+.category-showcase::after{
+  opacity:.12;
+  right:-54px;
+  top:6px;
+}
+
+.catalogue-section{
+  position:relative;
+  overflow:hidden;
+}
+.catalogue-section::before{
+  content:"";
+  position:absolute;
+  right:-58px;
+  bottom:-62px;
+  width:230px;
+  height:230px;
+  opacity:.07;
+  pointer-events:none;
+  background:
+    repeating-conic-gradient(from 45deg,#6b1ea8 0 8deg,transparent 8deg 16deg);
+  -webkit-mask:radial-gradient(circle,transparent 0 35%,#000 36% 62%,transparent 63%);
+  mask:radial-gradient(circle,transparent 0 35%,#000 36% 62%,transparent 63%);
+}
+
+/* bring the hero and lower content into a more premium vertical rhythm */
+.reference-hero{
+  min-height:460px;
+}
+.hero-left{
+  padding-top:32px;
+  padding-bottom:24px;
+}
+.hero-left h1{
+  margin-top:13px;
+  margin-bottom:12px;
+}
+.hero-left>p{line-height:1.58}
+.hero-cta-row{margin-top:20px}
+.hero-benefits{margin-top:20px}
+
+.hero-stage{min-height:460px}
+.stage-promos{
+  top:9%;
+  bottom:9%;
+  width:270px;
+  gap:9px;
+}
+.stage-card{
+  padding-top:12px;
+  padding-bottom:12px;
+}
+.stage-card strong{font-size:17px}
+
+/* category strip polish */
+.category-showcase{
+  padding-top:25px;
+  padding-bottom:29px;
+}
+.category-heading{margin-bottom:15px}
+.category-card{
+  min-height:112px;
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+.category-card:hover{
+  transform:translateY(-3px);
+  border-color:rgba(110,30,165,.20);
+  box-shadow:0 12px 26px rgba(58,18,79,.08);
+}
+.category-card strong{
+  font-size:9px;
+  letter-spacing:-.01em;
+}
+
+/* catalogue cards: cleaner, equal heights, better lower-section finish */
+.catalogue-section{
+  padding-top:56px;
+  padding-bottom:64px;
+}
+.catalogue-heading{margin-bottom:18px}
+.emoji-product-grid{align-items:stretch}
+.emoji-product-card{
+  min-height:100%;
+  border-color:#e5dbe7;
+  box-shadow:0 4px 13px rgba(48,15,66,.03);
+}
+.emoji-product-art{
+  aspect-ratio:1.30;
+  background:
+    radial-gradient(circle at 50% 48%,rgba(255,255,255,.80) 0 34%,transparent 35%),
+    linear-gradient(145deg,#f4e9fa,#fff8f0);
+}
+.emoji-product-art::before{
+  width:122px;
+  height:122px;
+  background:rgba(255,255,255,.34);
+}
+.emoji-product-copy{padding-top:9px}
+.emoji-product-copy h3{margin-bottom:5px}
+.emoji-product-copy p{margin-bottom:7px}
+.emoji-product-copy>a{
+  transition:background .18s ease,transform .18s ease;
+}
+.emoji-product-copy>a:hover{
+  background:#def3e7;
+  transform:translateY(-1px);
+}
+
+/* supporting sections tightened and aligned */
+.wholesale-section{
+  margin-top:48px;
+  margin-bottom:48px;
+}
+.contact-section{
+  padding-top:48px;
+  padding-bottom:55px;
+}
+.contact-grid>*{
+  min-height:108px;
+  transition:transform .18s ease,box-shadow .18s ease;
+}
+.contact-grid>*:hover{
+  transform:translateY(-2px);
+  box-shadow:0 10px 24px rgba(49,15,67,.06);
+}
+.contact-grid>*>span{
+  width:38px;
+  height:38px;
+  border-radius:11px;
+  display:grid;
+  place-items:center;
+  background:#f4e9fa;
+  font-size:20px;
+}
+
+/* accessibility and interaction consistency */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible{
+  outline:3px solid rgba(126,43,195,.20);
+  outline-offset:2px;
+}
+.primary-cta,
+.secondary-cta,
+.all-departments,
+.search-button{
+  transition:transform .18s ease,box-shadow .18s ease,filter .18s ease;
+}
+.primary-cta:hover,
+.all-departments:hover,
+.search-button:hover{
+  transform:translateY(-1px);
+  filter:brightness(1.03);
+}
+.secondary-cta:hover{
+  background:#fbf3ff;
+  transform:translateY(-1px);
+}
+
+/* tablet tuning */
+@media(max-width:980px){
+  .reference-hero{min-height:0}
+  .hero-stage{min-height:410px}
+  .stage-promos{width:230px}
+  .hero-left::after{opacity:.08}
+}
+
+/* mobile polish: reduce dead space while keeping tap targets generous */
+@media(max-width:700px){
+  .header-main{
+    padding-top:8px;
+    padding-bottom:8px;
+  }
+  .global-search{min-height:42px}
+  .department-nav{padding-top:5px;padding-bottom:5px}
+  .reference-hero{display:block}
+  .hero-left{
+    padding:24px 14px 21px;
+  }
+  .hero-left h1{
+    margin-top:12px;
+    margin-bottom:10px;
+    font-size:41px;
+    line-height:.99;
+  }
+  .hero-pill{
+    padding:6px 9px;
+    font-size:7.5px;
+  }
+  .hero-cta-row{
+    margin-top:17px;
+    gap:8px;
+  }
+  .primary-cta,.secondary-cta{
+    min-height:42px;
+    padding:0 9px;
+  }
+  .hero-benefits{
+    margin-top:16px;
+    gap:7px;
+  }
+  .hero-benefits>div{
+    flex:1 1 30%;
+    min-width:0;
+    padding:5px 6px;
+    gap:6px;
+  }
+  .hero-benefits span{
+    width:29px;height:29px;border-radius:9px;font-size:16px;flex:0 0 auto;
+  }
+  .hero-benefits strong{
+    font-size:6.6px;
+    line-height:1.35;
+  }
+  .hero-left::after{display:none}
+  .hero-stage{min-height:330px}
+  .stage-copy{left:4%;top:8%}
+  .stage-copy strong{font-size:25px}
+  .stage-copy span{font-size:14px;margin-top:8px}
+  .stage-copy i{width:70px;margin-top:8px}
+  .stage-room{left:0;right:39%;height:69%}
+  .room-sofa{font-size:96px}
+  .room-plant{font-size:48px}
+  .room-table{font-size:45px}
+  .room-vase{font-size:27px}
+  .stage-promos{
+    width:148px;
+    right:8px;
+    top:15px;
+    bottom:15px;
+    gap:6px;
+  }
+  .stage-card{
+    padding:7px 37px 7px 9px;
+  }
+  .stage-card strong{font-size:11px}
+  .stage-emoji{
+    width:38px;
+    height:38px;
+    border-radius:11px;
+    font-size:25px;
+    right:5px;
+    bottom:7px;
+  }
+  .tribal-left{
+    width:180px!important;
+    height:130px!important;
+    left:-18px!important;
+    bottom:-29px!important;
+  }
+  .tribal-right{
+    width:125px!important;
+    height:175px!important;
+    right:-38px!important;
+    top:-9px!important;
+  }
+  .category-showcase{
+    padding-top:19px;
+    padding-bottom:22px;
+  }
+  .category-heading{margin-bottom:12px}
+  .category-card{min-height:101px}
+  .category-emoji{
+    width:58px;
+    height:58px;
+    min-height:58px;
+    border-radius:17px;
+    font-size:33px;
+  }
+  .catalogue-section{
+    padding-top:38px;
+    padding-bottom:48px;
+  }
+  .catalogue-heading{gap:14px;margin-bottom:14px}
+  .catalogue-heading h2{font-size:30px}
+  .emoji-product-art{aspect-ratio:1.18}
+  .product-emoji{
+    width:74px;height:74px;border-radius:22px;font-size:45px;
+  }
+  .wholesale-section{
+    margin-top:32px;
+    margin-bottom:32px;
+  }
+  .contact-section{
+    padding-top:36px;
+    padding-bottom:42px;
+  }
+  .contact-grid>*{min-height:82px}
+  .contact-grid>*>span{
+    width:34px;height:34px;border-radius:10px;font-size:18px;
+  }
+}
