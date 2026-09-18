@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowRight, Heart, Menu, MessageCircle, Search, X } from 'lucide-react'
+import { ArrowRight, Heart, LogIn, Menu, MessageCircle, Minus, Plus, Search, ShoppingCart, UserRound, X } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './lib/supabase.js'
 
 const departments = [
@@ -90,7 +90,25 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
-  const [saved, setSaved] = useState([])
+  const [saved, setSaved] = useState(() => {
+    if (typeof window === 'undefined') return []
+    try {
+      return JSON.parse(window.localStorage.getItem('sancity-wishlist') || '[]')
+    } catch {
+      return []
+    }
+  })
+  const [wishlistOnly, setWishlistOnly] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(false)
+  const [cartOpen, setCartOpen] = useState(false)
+  const [cart, setCart] = useState(() => {
+    if (typeof window === 'undefined') return []
+    try {
+      return JSON.parse(window.localStorage.getItem('sancity-cart') || '[]')
+    } catch {
+      return []
+    }
+  })
   const [products, setProducts] = useState(fallbackProducts)
   const searchRef = useRef(null)
 
@@ -120,21 +138,86 @@ export default function App() {
     }
   }, [])
 
+  useEffect(() => {
+    window.localStorage.setItem('sancity-wishlist', JSON.stringify(saved))
+  }, [saved])
+
+  useEffect(() => {
+    window.localStorage.setItem('sancity-cart', JSON.stringify(cart))
+  }, [cart])
+
   const visibleProducts = useMemo(() => {
     const q = query.trim().toLowerCase()
 
     return products.filter((item) => {
       const categoryMatch = activeCategory === 'All' || item.category === activeCategory
+      const wishlistMatch = !wishlistOnly || saved.includes(item.id)
       const haystack = `${item.name || ''} ${item.category || ''} ${item.description || ''}`.toLowerCase()
-      return categoryMatch && (!q || haystack.includes(q))
+      return categoryMatch && wishlistMatch && (!q || haystack.includes(q))
     })
-  }, [products, query, activeCategory])
+  }, [products, query, activeCategory, wishlistOnly, saved])
+
+  const cartItems = useMemo(() => cart
+    .map((entry) => {
+      const product = products.find((item) => item.id === entry.id)
+      return product ? { ...product, qty: entry.qty } : null
+    })
+    .filter(Boolean), [cart, products])
+
+  const cartCount = cart.reduce((total, item) => total + item.qty, 0)
+  const knownCartTotal = cartItems.reduce((total, item) => {
+    if (item.price === null || item.price === undefined) return total
+    return total + Number(item.price) * item.qty
+  }, 0)
+  const hasUnpricedCartItems = cartItems.some((item) => item.price === null || item.price === undefined)
 
   const toggleSaved = (id) => {
     setSaved((items) => (items.includes(id) ? items.filter((item) => item !== id) : [...items, id]))
   }
 
+  const openWishlist = () => {
+    setWishlistOnly(true)
+    setActiveCategory('All')
+    setQuery('')
+    window.setTimeout(() => {
+      document.querySelector('#products')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 20)
+  }
+
+  const addToCart = (product) => {
+    setCart((items) => {
+      const existing = items.find((item) => item.id === product.id)
+      if (existing) {
+        return items.map((item) => item.id === product.id ? { ...item, qty: item.qty + 1 } : item)
+      }
+      return [...items, { id: product.id, qty: 1 }]
+    })
+  }
+
+  const changeCartQty = (id, amount) => {
+    setCart((items) => items
+      .map((item) => item.id === id ? { ...item, qty: Math.max(0, item.qty + amount) } : item)
+      .filter((item) => item.qty > 0))
+  }
+
+  const removeFromCart = (id) => {
+    setCart((items) => items.filter((item) => item.id !== id))
+  }
+
+  const cartWhatsappLink = () => {
+    const lines = cartItems.map((item) => `• ${item.name} × ${item.qty}`)
+    const message = [
+      'Hello Sancity Mall KE, I would like to place this order:',
+      '',
+      ...lines,
+      '',
+      'Please confirm availability, final price and delivery options.'
+    ].join('\n')
+    return `https://wa.me/254710900548?text=${encodeURIComponent(message)}`
+  }
+
   const jumpToProducts = (category = 'All') => {
+    setWishlistOnly(false)
     setActiveCategory(category)
     window.setTimeout(() => {
       document.querySelector('#products')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -223,17 +306,56 @@ export default function App() {
           <div className="header-actions">
             <button
               className="header-action"
-              onClick={() => document.querySelector('#products')?.scrollIntoView({ behavior: 'smooth' })}
-              aria-label="Saved products"
+              onClick={() => {
+                setAccountOpen((open) => !open)
+                setCartOpen(false)
+              }}
+              aria-label="Account"
+              aria-expanded={accountOpen}
             >
-              <span className="header-action-icon">♡</span>
+              <span className="header-action-icon"><UserRound size={22} strokeWidth={1.8} /></span>
+              <span>Account</span>
+            </button>
+
+            <button
+              className={`header-action ${wishlistOnly ? 'active' : ''}`}
+              onClick={openWishlist}
+              aria-label="Wishlist"
+            >
+              <span className="header-action-icon"><Heart size={23} strokeWidth={1.8} /></span>
               <span>Wishlist</span>
               {saved.length > 0 && <b>{saved.length}</b>}
             </button>
-            <a className="header-action" href={whatsapp} target="_blank" rel="noreferrer">
-              <span className="header-action-icon">💬</span>
-              <span>WhatsApp</span>
-            </a>
+
+            <button
+              className="header-action cart-header-action"
+              onClick={() => {
+                setCartOpen(true)
+                setAccountOpen(false)
+              }}
+              aria-label={`Cart with ${cartCount} item${cartCount === 1 ? '' : 's'}`}
+            >
+              <span className="header-action-icon"><ShoppingCart size={23} strokeWidth={1.8} /></span>
+              <span>Cart</span>
+              <b className="cart-count">{cartCount}</b>
+            </button>
+
+            {accountOpen && (
+              <div className="account-popover">
+                <div className="account-popover-icon"><UserRound size={20} /></div>
+                <div>
+                  <strong>Your Sancity account</strong>
+                  <p>Need help with an order? Our team can assist you directly.</p>
+                </div>
+                <a href={whatsapp} target="_blank" rel="noreferrer">
+                  <MessageCircle size={15} /> Customer support
+                </a>
+                <a href="/admin" className="admin-login-link">
+                  <LogIn size={15} /> Store admin login
+                </a>
+              </div>
+            )}
+
             <button className="menu-toggle" onClick={() => setMenuOpen(true)} aria-label="Open menu">
               <Menu size={24} />
             </button>
@@ -260,6 +382,66 @@ export default function App() {
           </div>
         </nav>
       </header>
+
+      {cartOpen && (
+        <div className="cart-overlay" onClick={() => setCartOpen(false)}>
+          <aside className="cart-drawer" onClick={(event) => event.stopPropagation()}>
+            <div className="cart-drawer-head">
+              <div>
+                <span>Your cart</span>
+                <strong>{cartCount} item{cartCount === 1 ? '' : 's'}</strong>
+              </div>
+              <button onClick={() => setCartOpen(false)} aria-label="Close cart"><X size={20} /></button>
+            </div>
+
+            <div className="cart-drawer-body">
+              {cartItems.length === 0 ? (
+                <div className="cart-empty">
+                  <span>🛒</span>
+                  <strong>Your cart is empty</strong>
+                  <p>Add a few Sancity finds and send the whole order on WhatsApp.</p>
+                  <button onClick={() => {
+                    setCartOpen(false)
+                    jumpToProducts('All')
+                  }}>Start shopping</button>
+                </div>
+              ) : (
+                cartItems.map((item) => (
+                  <article className="cart-line" key={item.id}>
+                    <span className="cart-line-emoji">{categoryEmoji(item.category)}</span>
+                    <div className="cart-line-copy">
+                      <small>{item.category}</small>
+                      <strong>{item.name}</strong>
+                      <span>{item.price !== null && item.price !== undefined ? `KSh ${Number(item.price).toLocaleString('en-KE')}` : 'Price on request'}</span>
+                    </div>
+                    <div className="cart-line-controls">
+                      <button onClick={() => changeCartQty(item.id, -1)} aria-label={`Reduce ${item.name}`}><Minus size={13} /></button>
+                      <b>{item.qty}</b>
+                      <button onClick={() => changeCartQty(item.id, 1)} aria-label={`Add another ${item.name}`}><Plus size={13} /></button>
+                    </div>
+                    <button className="remove-cart-line" onClick={() => removeFromCart(item.id)} aria-label={`Remove ${item.name}`}>
+                      <X size={14} />
+                    </button>
+                  </article>
+                ))
+              )}
+            </div>
+
+            {cartItems.length > 0 && (
+              <div className="cart-drawer-foot">
+                <div className="cart-total-row">
+                  <span>{hasUnpricedCartItems ? 'Known subtotal' : 'Subtotal'}</span>
+                  <strong>KSh {knownCartTotal.toLocaleString('en-KE')}</strong>
+                </div>
+                {hasUnpricedCartItems && <small>Some items are price-on-request. We’ll confirm the final total on WhatsApp.</small>}
+                <a href={cartWhatsappLink()} target="_blank" rel="noreferrer">
+                  Checkout on WhatsApp <MessageCircle size={17} />
+                </a>
+              </div>
+            )}
+          </aside>
+        </div>
+      )}
 
       {menuOpen && (
         <div className="mobile-drawer-overlay" onClick={() => setMenuOpen(false)}>
@@ -393,16 +575,17 @@ export default function App() {
           <div className="catalogue-heading">
             <div>
               <span>Shop Sancity</span>
-              <h2>{activeCategory === 'All' ? 'Popular home finds' : activeCategory}</h2>
+              <h2>{wishlistOnly ? 'Your wishlist' : activeCategory === 'All' ? 'Popular home finds' : activeCategory}</h2>
               <p>{visibleProducts.length} product{visibleProducts.length === 1 ? '' : 's'} in this view.</p>
             </div>
             <div className="catalogue-filter">
-              <button className={activeCategory === 'All' ? 'active' : ''} onClick={() => setActiveCategory('All')}>All</button>
+              <button className={!wishlistOnly && activeCategory === 'All' ? 'active' : ''} onClick={() => { setWishlistOnly(false); setActiveCategory('All') }}>All</button>
+              <button className={wishlistOnly ? 'active' : ''} onClick={openWishlist}>Wishlist</button>
               {productCategories.map((category) => (
                 <button
                   key={category}
-                  className={activeCategory === category ? 'active' : ''}
-                  onClick={() => setActiveCategory(category)}
+                  className={!wishlistOnly && activeCategory === category ? 'active' : ''}
+                  onClick={() => { setWishlistOnly(false); setActiveCategory(category) }}
                 >
                   {category.replace(' & Dining', '').replace(' & Sleep', '').replace(' & Organisation', '')}
                 </button>
@@ -452,9 +635,14 @@ export default function App() {
                     </span>
                   </div>
 
-                  <a href={waLink(product.name)} target="_blank" rel="noreferrer">
-                    Ask on WhatsApp <MessageCircle size={14} />
-                  </a>
+                  <div className="product-card-actions">
+                    <button onClick={() => addToCart(product)}>
+                      <ShoppingCart size={14} /> Add to cart
+                    </button>
+                    <a href={waLink(product.name)} target="_blank" rel="noreferrer" aria-label={`Ask about ${product.name} on WhatsApp`}>
+                      <MessageCircle size={15} />
+                    </a>
+                  </div>
                 </div>
               </article>
             ))}
@@ -464,7 +652,7 @@ export default function App() {
             <div className="empty-products">
               <span>✨</span>
               <strong>No products match this view yet.</strong>
-              <button onClick={() => { setQuery(''); setActiveCategory('All') }}>Show all products</button>
+              <button onClick={() => { setQuery(''); setWishlistOnly(false); setActiveCategory('All') }}>Show all products</button>
             </div>
           )}
         </section>
@@ -516,8 +704,8 @@ export default function App() {
         <a href="#home"><span>🏠</span>Home</a>
         <a href="#categories"><span>🧺</span>Categories</a>
         <button onClick={focusSearch}><span>🔎</span>Search</button>
-        <button onClick={() => document.querySelector('#products')?.scrollIntoView({ behavior: 'smooth' })}><span>♡</span>Saved</button>
-        <a href={whatsapp} target="_blank" rel="noreferrer"><span>💬</span>WhatsApp</a>
+        <button onClick={openWishlist}><span>♡</span>Wishlist</button>
+        <button onClick={() => setCartOpen(true)}><span>🛒</span>Cart{cartCount > 0 ? ` (${cartCount})` : ''}</button>
       </nav>
     </div>
   )
