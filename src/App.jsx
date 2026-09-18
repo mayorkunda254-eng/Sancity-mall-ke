@@ -497,24 +497,23 @@ export default function App() {
             </div>
           </div>
 
-          <div className="hero-stage" aria-label="Sancity home categories">
+          <div className="hero-stage hero-photo-stage" aria-label="Chocolate brown bedroom collection">
+            <img
+              className="hero-bedroom-photo"
+              src="/hero-bedroom.webp"
+              alt="Chocolate brown plush bedding styled in a bright modern bedroom"
+            />
+            <div className="hero-photo-scrim" aria-hidden="true" />
             <div className="tribal tribal-left" aria-hidden="true" />
             <div className="tribal tribal-right" aria-hidden="true" />
 
-            <div className="stage-copy">
+            <div className="stage-copy hero-photo-copy">
               <strong>Beautiful<br />Spaces</strong>
               <span>Happier<br />Days</span>
               <i />
             </div>
 
-            <div className="stage-room" aria-hidden="true">
-              <span className="room-plant">🪴</span>
-              <span className="room-sofa">🛋️</span>
-              <span className="room-table">🪵</span>
-              <span className="room-vase">🏺</span>
-            </div>
-
-            <div className="stage-promos">
+            <div className="stage-promos hero-photo-promos">
               <button className="stage-card stage-bedroom" onClick={() => jumpToProducts('Bedroom & Sleep')}>
                 <div>
                   <small>Bedroom Comfort</small>
