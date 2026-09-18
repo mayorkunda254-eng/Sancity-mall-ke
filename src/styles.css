@@ -273,6 +273,7 @@ footer>small{grid-column:1/-1;padding-top:18px;border-top:1px solid #2e2e2e;colo
 
 
 /* V3 real product photography */
+.desktop-flex{display:flex}
 .header-whatsapp{
   min-height:40px;padding:0 14px;border-radius:10px;background:var(--whatsapp);color:#08361e;
   align-items:center;justify-content:center;gap:7px;font-size:11px;font-weight:800
