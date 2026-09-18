@@ -228,11 +228,11 @@ export default function App() {
       <main>
         <section className="hero hero-v4">
           <div className="hero-copy">
-            <span className="eyebrow"><Sparkles size={14} /> Everyday home finds, made easier</span>
-            <h1>Make home feel better without overthinking the shopping.</h1>
+            <span className="eyebrow"><Sparkles size={14} /> Everyday home essentials</span>
+            <h1>Make home feel better, for you.</h1>
             <p>
-              Discover useful household products for the kitchen, bedroom, storage and everyday living.
-              Browse real Sancity stock, then confirm today’s price and availability directly on WhatsApp.
+              Quality home and lifestyle products for everyday living. Browse real Sancity stock,
+              discover useful finds by department, then confirm today’s price and availability on WhatsApp.
             </p>
             <div className="hero-actions">
               <button className="btn btn-primary" onClick={() => jumpToProducts('All')}>Shop new arrivals <ArrowRight size={18} /></button>
@@ -262,8 +262,8 @@ export default function App() {
         </section>
 
         <section className="service-strip">
-          <div><ShieldCheck /><span><strong>Real product photos</strong><small>From the current Sancity image batch</small></span></div>
-          <div><MessageCircle /><span><strong>Direct stock enquiries</strong><small>Ask for current price on WhatsApp</small></span></div>
+          <div><ShieldCheck /><span><strong>Quality products</strong><small>Real Sancity catalogue photography</small></span></div>
+          <div><MessageCircle /><span><strong>Friendly support</strong><small>Ask for current price on WhatsApp</small></span></div>
           <div><Boxes /><span><strong>Retail & wholesale</strong><small>Separate bulk-order enquiries</small></span></div>
         </section>
 
