@@ -500,12 +500,11 @@ export default function App() {
           <div className="hero-stage hero-photo-stage" aria-label="Chocolate brown bedroom collection">
             <img
               className="hero-bedroom-photo"
-              src="https://img.kilimall.com/c/obs/seller/100002456/goods_image/241030001651_3605dcecc9eafe1d24422220c7953843.jpeg"
+              src="/hero-bedroom-hq.jpeg"
               alt="Chocolate brown plush bedding styled in a bright modern bedroom"
               loading="eager"
               fetchPriority="high"
               decoding="async"
-              referrerPolicy="no-referrer"
               onError={(event) => {
                 event.currentTarget.onerror = null
                 event.currentTarget.src = '/hero-bedroom.webp'
