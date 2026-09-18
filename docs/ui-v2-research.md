@@ -51,3 +51,21 @@ Confirm:
 6. Product photography
 7. Delivery and returns terms
 8. Wholesale minimum quantities
+
+
+## Colour system applied
+
+The V2 branch now uses an accessible warm-neutral + terracotta + teal system:
+
+- Charcoal `#181818` — primary text and structural contrast
+- White `#FFFFFF` — product/card surfaces
+- Ivory `#F8F6F1` — warm section background
+- Terracotta `#C96F45` — brand accent and decorative use
+- Deep terracotta `#A95734` — primary action colour with white text
+- Deep teal `#1F5A5A` — trust, utility, wholesale and secondary UI accents
+- Teal soft `#E8F0EE` — secondary CTA/background use
+- Sage `#DCE3D8` — category and home/storage surfaces
+- Sand `#ECE2D6` — category and bedding/kitchen surfaces
+- WhatsApp green `#25D366` — reserved for WhatsApp conversion only
+
+The lighter terracotta is intentionally not used as a normal-text button background with white text. Primary buttons use the deeper terracotta for stronger contrast.
