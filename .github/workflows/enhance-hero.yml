@@ -1,0 +1,102 @@
+name: Enhance hero image once
+
+on:
+  push:
+    branches:
+      - fix/hero-super-resolution
+
+permissions:
+  contents: write
+
+jobs:
+  enhance-hero:
+    if: ${{ !contains(github.event.head_commit.message, '[hero-enhanced]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/hero-super-resolution
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install image tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install opencv-contrib-python-headless==4.10.0.84
+          curl -L --fail --retry 3 \
+            https://github.com/Saafke/EDSR_Tensorflow/raw/master/models/EDSR_x2.pb \
+            -o /tmp/EDSR_x2.pb
+
+      - name: Super-resolve approved hero photo
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import cv2
+
+          src = Path("public/hero-bedroom.webp")
+          dst = Path("public/hero-bedroom-hq.webp")
+          app = Path("src/App.jsx")
+
+          img = cv2.imread(str(src), cv2.IMREAD_COLOR)
+          if img is None:
+              raise SystemExit("Could not decode public/hero-bedroom.webp")
+
+          h, w = img.shape[:2]
+          print(f"source={w}x{h} bytes={src.stat().st_size}")
+
+          clean = cv2.bilateralFilter(img, d=5, sigmaColor=18, sigmaSpace=18)
+
+          sr = cv2.dnn_superres.DnnSuperResImpl_create()
+          sr.readModel("/tmp/EDSR_x2.pb")
+          sr.setModel("edsr", 2)
+          enhanced = sr.upsample(clean)
+
+          blur = cv2.GaussianBlur(enhanced, (0, 0), 0.8)
+          enhanced = cv2.addWeighted(enhanced, 1.10, blur, -0.10, 0)
+
+          ok = cv2.imwrite(
+              str(dst),
+              enhanced,
+              [int(cv2.IMWRITE_WEBP_QUALITY), 93],
+          )
+          if not ok:
+              raise SystemExit("Could not encode enhanced WebP")
+
+          out = cv2.imread(str(dst), cv2.IMREAD_COLOR)
+          if out is None:
+              raise SystemExit("Enhanced WebP failed decode validation")
+          oh, ow = out.shape[:2]
+
+          if ow < w * 2 - 2 or oh < h * 2 - 2:
+              raise SystemExit(f"Unexpected enhanced dimensions: {ow}x{oh}")
+          if dst.stat().st_size <= src.stat().st_size * 2:
+              raise SystemExit(
+                  f"Enhanced file still too small: {dst.stat().st_size} bytes"
+              )
+
+          text = app.read_text(encoding="utf-8")
+          old = 'src="/hero-bedroom.webp"'
+          new = 'src="/hero-bedroom-hq.webp"'
+          if old not in text and new not in text:
+              raise SystemExit("Hero image reference not found in src/App.jsx")
+          if old in text:
+              app.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+          print(f"enhanced={ow}x{oh} bytes={dst.stat().st_size}")
+          PY
+
+      - name: Remove one-time workflow
+        run: rm -f .github/workflows/enhance-hero.yml
+
+      - name: Commit enhanced asset
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/hero-bedroom-hq.webp src/App.jsx .github/workflows/enhance-hero.yml
+          git commit -m "Enhance bedroom hero resolution [hero-enhanced]"
+          git push origin HEAD:fix/hero-super-resolution
