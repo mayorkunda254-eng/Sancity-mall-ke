@@ -6,10 +6,14 @@ import {
 import { isSupabaseConfigured, supabase } from './lib/supabase.js'
 
 const categories = [
-  { name: 'Kitchen & Dining', image: '/products/dish-rack.webp', icon: UtensilsCrossed, className: 'cat-kitchen' },
-  { name: 'Bedroom & Sleep', image: '/products/queen-air-mattress.webp', icon: BedDouble, className: 'cat-bedding' },
-  { name: 'Storage & Organisation', image: '/products/portable-fabric-wardrobe.webp', icon: Boxes, className: 'cat-storage' },
-  { name: 'Everyday Home Utility', image: '/products/foldable-laptop-table.webp', icon: Home, className: 'cat-utility' },
+  { name: 'Kitchen & Dining', short: 'Kitchen', image: '/products/dish-rack.webp', icon: UtensilsCrossed, className: 'cat-kitchen' },
+  { name: 'Bedroom & Sleep', short: 'Bedroom', image: '/products/queen-air-mattress.webp', icon: BedDouble, className: 'cat-bedding' },
+  { name: 'Storage & Organisation', short: 'Storage', image: '/products/portable-fabric-wardrobe.webp', icon: Boxes, className: 'cat-storage' },
+  { name: 'Everyday Home Utility', short: 'Home utility', image: '/products/foldable-laptop-table.webp', icon: Home, className: 'cat-utility' },
+  { name: 'Kids & Baby', short: 'Kids & baby', image: '/products/queen-air-mattress.webp', icon: Heart, className: 'cat-kids' },
+  { name: 'Mosquito Nets', short: 'Mosquito nets', image: '/products/portable-fabric-wardrobe.webp', icon: ShieldCheck, className: 'cat-nets' },
+  { name: 'Home Fitness', short: 'Fitness', image: '/products/foldable-laptop-table.webp', icon: Sparkles, className: 'cat-fitness' },
+  { name: 'Home Essentials', short: 'Essentials', image: '/products/rotating-spice-rack.webp', icon: Store, className: 'cat-essentials' },
 ]
 
 const fallbackProducts = [
@@ -76,6 +80,7 @@ function waLink(product) {
 export default function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const [activeCategory, setActiveCategory] = useState('All')
   const [saved, setSaved] = useState([])
   const [products, setProducts] = useState(fallbackProducts)
   const searchRef = useRef(null)
@@ -116,14 +121,20 @@ export default function App() {
 
   const visibleProducts = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return products
-    return products.filter((item) =>
-      (item.name + ' ' + item.category + ' ' + item.description).toLowerCase().includes(q)
-    )
-  }, [products, query])
+    return products.filter((item) => {
+      const categoryMatch = activeCategory === 'All' || item.category === activeCategory
+      const searchMatch = !q || (item.name + ' ' + item.category + ' ' + item.description).toLowerCase().includes(q)
+      return categoryMatch && searchMatch
+    })
+  }, [products, query, activeCategory])
 
   const toggleSaved = (id) => {
     setSaved((items) => items.includes(id) ? items.filter((item) => item !== id) : [...items, id])
+  }
+
+  const jumpToProducts = (category = 'All') => {
+    setActiveCategory(category)
+    window.setTimeout(() => document.querySelector('#products')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 20)
   }
 
   const focusSearch = () => {
@@ -187,11 +198,10 @@ export default function App() {
         </div>
 
         <nav className="category-nav desktop-flex" aria-label="Product categories">
-          <a href="#categories">All categories</a>
-          <a href="#products">Kitchen & dining</a>
-          <a href="#products">Bedroom</a>
-          <a href="#products">Storage</a>
-          <a href="#products">Home utility</a>
+          <button className="nav-all" onClick={() => jumpToProducts('All')}><Boxes size={15} /> All departments</button>
+          {categories.slice(0, 6).map((category) => (
+            <button key={category.name} onClick={() => jumpToProducts(category.name)}>{category.short}</button>
+          ))}
           <a href="#wholesale">Wholesale</a>
         </nav>
       </header>
@@ -216,40 +226,38 @@ export default function App() {
       )}
 
       <main>
-        <section className="hero">
+        <section className="hero hero-v4">
           <div className="hero-copy">
-            <span className="eyebrow"><Sparkles size={14} /> Real Sancity stock • Nairobi</span>
-            <h1>Useful home finds, ready to enquire.</h1>
+            <span className="eyebrow"><Sparkles size={14} /> Everyday home finds, made easier</span>
+            <h1>Make home feel better without overthinking the shopping.</h1>
             <p>
-              Browse real products from Sancity Mall KE across kitchen, storage, bedroom and everyday home utility.
-              Ask for today’s price and availability directly on WhatsApp.
+              Discover useful household products for the kitchen, bedroom, storage and everyday living.
+              Browse real Sancity stock, then confirm today’s price and availability directly on WhatsApp.
             </p>
             <div className="hero-actions">
-              <a href="#products" className="btn btn-primary">Shop fresh arrivals <ArrowRight size={18} /></a>
-              <a href={whatsapp} target="_blank" rel="noreferrer" className="btn btn-whatsapp">
-                <MessageCircle size={18} /> Ask on WhatsApp
-              </a>
+              <button className="btn btn-primary" onClick={() => jumpToProducts('All')}>Shop new arrivals <ArrowRight size={18} /></button>
+              <a href="#categories" className="btn btn-secondary">Browse departments</a>
             </div>
             <div className="hero-trust">
-              <span><Store size={16} /> Nairobi CBD shop</span>
+              <span><ShieldCheck size={16} /> Real product photos</span>
               <span><PackageCheck size={16} /> Retail & wholesale</span>
-              <span><Truck size={16} /> Delivery enquiries</span>
+              <span><MapPin size={16} /> Nairobi CBD shop</span>
             </div>
           </div>
 
-          <div className="hero-gallery" aria-label="Sancity products">
-            <a className="hero-photo hero-photo-main" href="#products">
+          <div className="hero-gallery hero-retail-grid" aria-label="Featured Sancity collections">
+            <button className="hero-photo hero-photo-main hero-merch hero-merch-kitchen" onClick={() => jumpToProducts('Kitchen & Dining')}>
+              <div className="hero-merch-copy"><small>Kitchen refresh</small><strong>Organise the everyday.</strong><span>Shop kitchen <ArrowRight size={14} /></span></div>
               <img src="/products/dish-rack.webp" alt="Sancity two-tier dish rack" />
-              <span><small>Kitchen find</small><strong>2-Tier Dish Rack</strong></span>
-            </a>
-            <a className="hero-photo" href="#products">
+            </button>
+            <button className="hero-photo hero-merch hero-merch-storage" onClick={() => jumpToProducts('Storage & Organisation')}>
+              <div className="hero-merch-copy"><small>Storage</small><strong>More room, less clutter.</strong><span>Explore <ArrowRight size={13} /></span></div>
               <img src="/products/portable-fabric-wardrobe.webp" alt="Sancity portable fabric wardrobe" />
-              <span><small>Storage</small><strong>Portable Wardrobe</strong></span>
-            </a>
-            <a className="hero-photo" href="#products">
-              <img src="/products/rotating-spice-rack.webp" alt="Sancity rotating spice rack" />
-              <span><small>Kitchen</small><strong>Spice Rack</strong></span>
-            </a>
+            </button>
+            <button className="hero-photo hero-merch hero-merch-utility" onClick={() => jumpToProducts('Everyday Home Utility')}>
+              <div className="hero-merch-copy"><small>Small-space living</small><strong>Useful pieces that flex.</strong><span>Explore <ArrowRight size={13} /></span></div>
+              <img src="/products/foldable-laptop-table.webp" alt="Sancity foldable laptop table" />
+            </button>
           </div>
         </section>
 
@@ -261,35 +269,46 @@ export default function App() {
 
         <section className="section" id="categories">
           <div className="section-title">
-            <div><span className="section-kicker">Shop faster</span><h2>Browse the first product batch</h2></div>
-            <a href="#products">See all arrivals <ArrowRight size={17} /></a>
+            <div><span className="section-kicker">Shop by department</span><h2>Start with what your home needs.</h2></div>
+            <button className="section-link" onClick={() => jumpToProducts('All')}>See all products <ArrowRight size={17} /></button>
           </div>
 
           <div className="category-grid real-category-grid">
             {categories.map(({ name, image, icon: Icon, className }) => (
-              <a key={name} href="#products" className={'category-tile ' + className}>
+              <button key={name} onClick={() => jumpToProducts(name)} className={'category-tile ' + className}>
                 <div className="category-visual category-photo">
                   <img src={image} alt="" loading="lazy" />
                   <span className="category-icon"><Icon /></span>
                 </div>
                 <div className="category-label">
                   <strong>{name}</strong>
-                  <span>Browse products <ArrowRight size={14} /></span>
+                  <span>Shop now <ArrowRight size={14} /></span>
                 </div>
-              </a>
+              </button>
             ))}
           </div>
+        </section>
+
+        <section className="section editorial-grid" aria-label="Featured shopping ideas">
+          <article className="editorial-card editorial-bedroom">
+            <div><span>Bedroom comfort</span><h3>Make space for better rest.</h3><p>Flexible sleep and storage finds for everyday homes and guest spaces.</p><button onClick={() => jumpToProducts('Bedroom & Sleep')}>Shop bedroom <ArrowRight size={15} /></button></div>
+            <img src="/products/queen-air-mattress.webp" alt="Queen air mattress" loading="lazy" />
+          </article>
+          <article className="editorial-card editorial-kitchen">
+            <div><span>Kitchen essentials</span><h3>Small upgrades, calmer counters.</h3><button onClick={() => jumpToProducts('Kitchen & Dining')}>Shop kitchen <ArrowRight size={15} /></button></div>
+            <img src="/products/rotating-spice-rack.webp" alt="Rotating spice rack" loading="lazy" />
+          </article>
+          <article className="editorial-card editorial-bulk">
+            <div><span>For resellers & institutions</span><h3>Buying more than one?</h3><p>Send the item and quantity. We’ll confirm current bulk pricing and availability.</p><a href={waLink('a wholesale / bulk order')} target="_blank" rel="noreferrer">Wholesale pricing <ArrowRight size={15} /></a></div>
+          </article>
         </section>
 
         <section className="section products-section" id="products">
           <div className="section-title product-title">
             <div>
-              <span className="section-kicker">Real products</span>
-              <h2>Fresh arrivals at Sancity</h2>
-              <p>
-                These cards now use real Sancity product photography from the first WhatsApp batch.
-                Prices remain enquiry-based until the catalogue prices are confirmed.
-              </p>
+              <span className="section-kicker">Shop Sancity</span>
+              <h2>{activeCategory === 'All' ? 'Fresh home finds' : activeCategory}</h2>
+              <p>{visibleProducts.length} product{visibleProducts.length === 1 ? '' : 's'} matching your current view. Use the department filters to shop faster.</p>
             </div>
             <div className="batch-chip">Batch 01 • 5 featured items</div>
           </div>
@@ -299,6 +318,15 @@ export default function App() {
               Search: <strong>{query}</strong> <button onClick={() => setQuery('')}>Clear</button>
             </div>
           )}
+
+          <div className="filter-scroll" aria-label="Filter products by department">
+            <button className={activeCategory === 'All' ? 'active' : ''} onClick={() => setActiveCategory('All')}>All</button>
+            {categories.map((category) => (
+              <button key={category.name} className={activeCategory === category.name ? 'active' : ''} onClick={() => setActiveCategory(category.name)}>
+                {category.short}
+              </button>
+            ))}
+          </div>
 
           <div className="product-grid">
             {visibleProducts.map((product) => (
@@ -336,7 +364,7 @@ export default function App() {
           </div>
 
           {visibleProducts.length === 0 && (
-            <div className="no-results">No products in this first batch match “{query}”.</div>
+            <div className="no-results">No products match this view yet. <button onClick={() => { setQuery(''); setActiveCategory('All') }}>Show all products</button></div>
           )}
         </section>
 
