@@ -3,21 +3,21 @@
   <desc id="desc">Sancity Mall KE shopping and home lifestyle logo</desc>
   <g fill="none" fill-rule="evenodd">
     <g transform="translate(22 18)">
-      <path d="M48 62h132c14 0 25 10 27 24l16 103H28L45 86c2-14 12-24 27-24Z" fill="#171918"/>
-      <path d="M70 70c0-31 25-56 56-56s56 25 56 56" stroke="#C96F45" stroke-width="18" stroke-linecap="round"/>
-      <path d="M59 99c24-26 58-33 91-19 15 6 29 14 43 20-21 2-39 11-55 26-21 19-31 43-35 63-17-11-33-24-43-42-10-17-11-33-1-48Z" fill="#C96F45"/>
+      <path d="M48 62h132c14 0 25 10 27 24l16 103H28L45 86c2-14 12-24 27-24Z" fill="#18324A"/>
+      <path d="M70 70c0-31 25-56 56-56s56 25 56 56" stroke="#E45C3A" stroke-width="18" stroke-linecap="round"/>
+      <path d="M59 99c24-26 58-33 91-19 15 6 29 14 43 20-21 2-39 11-55 26-21 19-31 43-35 63-17-11-33-24-43-42-10-17-11-33-1-48Z" fill="#E45C3A"/>
       <path d="M60 91c25-8 52-5 76 8 17 9 31 21 43 35-18 2-35 8-49 19-15 11-25 25-30 42-23-14-42-33-53-56-8-17-4-35 13-48Z" fill="#F5EFE7"/>
-      <path d="M104 153l24-22 24 22v33h-48Z" fill="#171918"/>
-      <rect x="116" y="160" width="9" height="9" rx="1" fill="#C96F45"/>
-      <rect x="131" y="160" width="9" height="9" rx="1" fill="#C96F45"/>
-      <rect x="116" y="175" width="9" height="9" rx="1" fill="#C96F45"/>
-      <rect x="131" y="175" width="9" height="9" rx="1" fill="#C96F45"/>
+      <path d="M104 153l24-22 24 22v33h-48Z" fill="#18324A"/>
+      <rect x="116" y="160" width="9" height="9" rx="1" fill="#E45C3A"/>
+      <rect x="131" y="160" width="9" height="9" rx="1" fill="#E45C3A"/>
+      <rect x="116" y="175" width="9" height="9" rx="1" fill="#E45C3A"/>
+      <rect x="131" y="175" width="9" height="9" rx="1" fill="#E45C3A"/>
     </g>
     <g transform="translate(275 53)">
-      <text x="0" y="82" fill="#171918" font-family="Arial, Helvetica, sans-serif" font-size="78" font-weight="800" letter-spacing="-3">Sancity</text>
-      <line x1="4" x2="84" y1="132" y2="132" stroke="#C96F45" stroke-width="5" stroke-linecap="round"/>
-      <text x="101" y="146" fill="#C96F45" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700" letter-spacing="2">Mall KE</text>
-      <line x1="300" x2="382" y1="132" y2="132" stroke="#C96F45" stroke-width="5" stroke-linecap="round"/>
+      <text x="0" y="82" fill="#18324A" font-family="Arial, Helvetica, sans-serif" font-size="78" font-weight="800" letter-spacing="-3">Sancity</text>
+      <line x1="4" x2="84" y1="132" y2="132" stroke="#E45C3A" stroke-width="5" stroke-linecap="round"/>
+      <text x="101" y="146" fill="#E45C3A" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700" letter-spacing="2">Mall KE</text>
+      <line x1="300" x2="382" y1="132" y2="132" stroke="#E45C3A" stroke-width="5" stroke-linecap="round"/>
     </g>
   </g>
 </svg>
