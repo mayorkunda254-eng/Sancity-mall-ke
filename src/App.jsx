@@ -90,25 +90,12 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
-  const [saved, setSaved] = useState(() => {
-    if (typeof window === 'undefined') return []
-    try {
-      return JSON.parse(window.localStorage.getItem('sancity-wishlist') || '[]')
-    } catch {
-      return []
-    }
-  })
+  const [saved, setSaved] = useState([])
   const [wishlistOnly, setWishlistOnly] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
-  const [cart, setCart] = useState(() => {
-    if (typeof window === 'undefined') return []
-    try {
-      return JSON.parse(window.localStorage.getItem('sancity-cart') || '[]')
-    } catch {
-      return []
-    }
-  })
+  const [cart, setCart] = useState([])
+  const [storageReady, setStorageReady] = useState(false)
   const [products, setProducts] = useState(fallbackProducts)
   const searchRef = useRef(null)
 
@@ -139,12 +126,30 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    window.localStorage.setItem('sancity-wishlist', JSON.stringify(saved))
-  }, [saved])
+    try {
+      setSaved(JSON.parse(window.localStorage.getItem('sancity-wishlist') || '[]'))
+    } catch {
+      setSaved([])
+    }
+
+    try {
+      setCart(JSON.parse(window.localStorage.getItem('sancity-cart') || '[]'))
+    } catch {
+      setCart([])
+    }
+
+    setStorageReady(true)
+  }, [])
 
   useEffect(() => {
+    if (!storageReady) return
+    window.localStorage.setItem('sancity-wishlist', JSON.stringify(saved))
+  }, [saved, storageReady])
+
+  useEffect(() => {
+    if (!storageReady) return
     window.localStorage.setItem('sancity-cart', JSON.stringify(cart))
-  }, [cart])
+  }, [cart, storageReady])
 
   const visibleProducts = useMemo(() => {
     const q = query.trim().toLowerCase()
