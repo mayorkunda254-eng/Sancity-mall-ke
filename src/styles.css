@@ -611,3 +611,17 @@ footer{background:#0c1d32}
   .filter-scroll{margin:0 -14px 16px;padding:0 14px 3px}
   .product-grid{grid-template-columns:repeat(2,1fr)}
 }
+
+/* V4 cascade fix: old hero caption styles must not affect merchandising text */
+.hero-retail-grid .hero-merch-copy span{
+  position:static;
+  left:auto;
+  right:auto;
+  bottom:auto;
+  padding:0;
+  border-radius:0;
+  background:transparent;
+  color:var(--retail-navy);
+  backdrop-filter:none;
+  flex-direction:row;
+}
