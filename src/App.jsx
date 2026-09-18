@@ -1,49 +1,37 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
-  ArrowRight,
-  BadgePercent,
-  Baby,
-  BedDouble,
-  Boxes,
-  Dumbbell,
-  Heart,
-  Mail,
-  MapPin,
-  Menu,
-  MessageCircle,
-  PackageCheck,
-  Search,
-  ShieldCheck,
-  ShoppingBag,
-  Sparkles,
-  Store,
-  Truck,
-  UtensilsCrossed,
-  X,
+  ArrowRight, Baby, BedDouble, Boxes, Dumbbell, Heart, Home, MapPin,
+  Menu, MessageCircle, Search, ShoppingCart, SlidersHorizontal, Sparkles,
+  Store, UtensilsCrossed, X, ShieldCheck, Truck, PackageCheck
 } from 'lucide-react'
 
 const categories = [
-  { name: 'Kitchenware', caption: 'Cookware, serveware and daily essentials', icon: UtensilsCrossed, tone: 'sand' },
-  { name: 'Bedding', caption: 'Duvets, sheets and bedroom comfort', icon: BedDouble, tone: 'clay' },
-  { name: 'Kids', caption: 'Useful finds for growing families', icon: Baby, tone: 'cream' },
-  { name: 'Home Fitness', caption: 'Simple equipment for active homes', icon: Dumbbell, tone: 'charcoal' },
-  { name: 'Home Essentials', caption: 'Storage, organisers and practical buys', icon: Boxes, tone: 'sage' },
+  { name: 'Kitchenware', icon: UtensilsCrossed, className: 'cat-kitchen' },
+  { name: 'Bedding & Duvets', icon: BedDouble, className: 'cat-bedding' },
+  { name: 'Mosquito Nets', icon: ShieldCheck, className: 'cat-nets' },
+  { name: 'Kids & Baby', icon: Baby, className: 'cat-kids' },
+  { name: 'Home Fitness', icon: Dumbbell, className: 'cat-fitness' },
+  { name: 'Storage & Home', icon: Boxes, className: 'cat-storage' },
 ]
 
 const products = [
-  { id: 1, name: 'Premium Duvet Set', category: 'Bedding', badge: 'New', visual: 'duvet' },
-  { id: 2, name: 'Non-Stick Cookware Set', category: 'Kitchenware', badge: 'Popular', visual: 'cookware' },
-  { id: 3, name: 'Multi-Purpose Storage Rack', category: 'Home Essentials', badge: 'Value', visual: 'rack' },
-  { id: 4, name: 'Compact Home Fitness Set', category: 'Home Fitness', badge: 'Trending', visual: 'fitness' },
+  { id: 1, name: 'Duvet & Bedding Set', category: 'Bedding & Duvets', badge: 'Popular', media: 'media-duvet' },
+  { id: 2, name: 'Kitchenware Set', category: 'Kitchenware', badge: 'New', media: 'media-kitchen' },
+  { id: 3, name: 'Mosquito Net', category: 'Mosquito Nets', badge: 'Essential', media: 'media-net' },
+  { id: 4, name: 'Home Fitness Set', category: 'Home Fitness', badge: 'Trending', media: 'media-fitness' },
+  { id: 5, name: 'Kids Home Essential', category: 'Kids & Baby', badge: 'Family pick', media: 'media-kids' },
+  { id: 6, name: 'Storage Organiser', category: 'Storage & Home', badge: 'Useful', media: 'media-storage' },
+  { id: 7, name: 'Cook & Serve Set', category: 'Kitchenware', badge: 'Popular', media: 'media-serve' },
+  { id: 8, name: 'Bedroom Comfort Set', category: 'Bedding & Duvets', badge: 'New', media: 'media-comfort' },
 ]
 
-function ProductVisual({ type }) {
+function ProductArt({ kind }) {
   return (
-    <div className={'product-visual product-visual--' + type} aria-hidden="true">
-      <span className="visual-orbit" />
-      <span className="visual-shape visual-shape-a" />
-      <span className="visual-shape visual-shape-b" />
-      <span className="visual-shape visual-shape-c" />
+    <div className={'product-art ' + kind} aria-hidden="true">
+      <span className="art-back" />
+      <span className="art-main" />
+      <span className="art-small" />
+      <span className="art-line" />
     </div>
   )
 }
@@ -52,267 +40,262 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [saved, setSaved] = useState([])
+  const searchRef = useRef(null)
 
-  const filtered = useMemo(() => {
-    if (!query.trim()) return products
-    const q = query.toLowerCase()
-    return products.filter((product) =>
-      (product.name + ' ' + product.category).toLowerCase().includes(q),
-    )
+  const visibleProducts = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return products
+    return products.filter((item) => (item.name + ' ' + item.category).toLowerCase().includes(q))
   }, [query])
 
-  function toggleSaved(id) {
-    setSaved((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
-    )
+  const toggleSaved = (id) => {
+    setSaved((items) => items.includes(id) ? items.filter((item) => item !== id) : [...items, id])
   }
 
-  function closeMenu() {
-    setMenuOpen(false)
+  const focusSearch = () => {
+    searchRef.current?.focus()
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
+
+  const whatsapp = 'https://wa.me/254710900548'
 
   return (
-    <div className="site-shell">
-      <div className="announcement">
-        <span>Retail & wholesale household essentials</span>
-        <span className="announcement-dot" />
-        <span>Nairobi, Kenya</span>
+    <div className="app-shell" id="home">
+      <div className="topbar">
+        <span>Retail & wholesale household products</span>
+        <span className="topbar-sep">•</span>
+        <a href={whatsapp} target="_blank" rel="noreferrer">WhatsApp orders: 0710 900 548</a>
       </div>
 
-      <header className="site-header">
-        <a href="#top" className="brand" aria-label="Sancity Mall KE home">
-          <img src="/sancity-logo.svg" alt="Sancity Mall KE" />
-        </a>
-
-        <nav className="desktop-nav" aria-label="Primary navigation">
-          <a href="#shop">Shop</a>
-          <a href="#categories">Categories</a>
-          <a href="#wholesale">Wholesale</a>
-          <a href="#about">About</a>
-        </nav>
-
-        <div className="header-actions">
-          <button
-            className="icon-button desktop-only"
-            aria-label="Search products"
-            onClick={() => document.querySelector('#shop-search')?.focus()}
-          >
-            <Search size={19} />
-          </button>
-          <button className="icon-button desktop-only saved-button" aria-label={saved.length + ' saved products'}>
-            <Heart size={19} />
-            <span>{saved.length}</span>
-          </button>
-          <a href="#shop" className="shop-button desktop-only">
-            <ShoppingBag size={18} /> Shop now
+      <header className="header">
+        <div className="header-main">
+          <a href="#home" className="logo-wrap" aria-label="Sancity Mall KE home">
+            <img src="/sancity-logo.svg" alt="Sancity Mall KE" />
           </a>
-          <button className="icon-button mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Open navigation">
-            <Menu size={22} />
+
+          <button className="location-chip desktop-flex" type="button">
+            <MapPin size={17} />
+            <span><small>Shop location</small>Ronald Ngala St, Nairobi</span>
+          </button>
+
+          <div className="header-actions">
+            <button className="action-icon desktop-flex" aria-label="Saved items">
+              <Heart size={20} />
+              {saved.length > 0 && <b>{saved.length}</b>}
+            </button>
+            <button className="action-icon desktop-flex" aria-label="Shopping cart">
+              <ShoppingCart size={20} />
+            </button>
+            <button className="menu-btn mobile-only" onClick={() => setMenuOpen(true)} aria-label="Open menu">
+              <Menu size={23} />
+            </button>
+          </div>
+        </div>
+
+        <div className="search-row">
+          <label className="search-field">
+            <Search size={20} />
+            <input
+              ref={searchRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search duvets, kitchenware, mosquito nets, home gym..."
+              aria-label="Search Sancity products"
+            />
+            {query && <button onClick={() => setQuery('')} aria-label="Clear search"><X size={17} /></button>}
+          </label>
+          <button className="search-submit" onClick={() => document.querySelector('#products')?.scrollIntoView({behavior:'smooth'})}>
+            Search
           </button>
         </div>
+
+        <nav className="category-nav desktop-flex" aria-label="Product categories">
+          <a href="#categories">All categories</a>
+          <a href="#products">Kitchenware</a>
+          <a href="#products">Bedding</a>
+          <a href="#products">Mosquito nets</a>
+          <a href="#products">Kids</a>
+          <a href="#products">Home fitness</a>
+          <a href="#wholesale">Wholesale</a>
+        </nav>
       </header>
 
       {menuOpen && (
-        <div className="mobile-drawer" role="dialog" aria-modal="true" aria-label="Navigation">
-          <button className="drawer-close" onClick={closeMenu} aria-label="Close navigation">
-            <X />
-          </button>
-          <img src="/sancity-logo.svg" alt="Sancity Mall KE" className="drawer-logo" />
-          <a href="#shop" onClick={closeMenu}>Shop <ArrowRight size={18} /></a>
-          <a href="#categories" onClick={closeMenu}>Categories <ArrowRight size={18} /></a>
-          <a href="#wholesale" onClick={closeMenu}>Wholesale <ArrowRight size={18} /></a>
-          <a href="#about" onClick={closeMenu}>About <ArrowRight size={18} /></a>
+        <div className="drawer-overlay" onClick={() => setMenuOpen(false)}>
+          <aside className="drawer" onClick={(e) => e.stopPropagation()}>
+            <div className="drawer-top">
+              <img src="/sancity-logo.svg" alt="Sancity Mall KE" />
+              <button onClick={() => setMenuOpen(false)} aria-label="Close menu"><X /></button>
+            </div>
+            <a href="#categories" onClick={() => setMenuOpen(false)}>Shop categories <ArrowRight /></a>
+            <a href="#products" onClick={() => setMenuOpen(false)}>New & popular <ArrowRight /></a>
+            <a href="#wholesale" onClick={() => setMenuOpen(false)}>Wholesale <ArrowRight /></a>
+            <a href="#contact" onClick={() => setMenuOpen(false)}>Visit & contact <ArrowRight /></a>
+            <div className="drawer-card">
+              <MapPin size={20} />
+              <span>RNG Plaza, Ronald Ngala Street<br />Nairobi CBD</span>
+            </div>
+          </aside>
         </div>
       )}
 
-      <main id="top">
-        <section className="hero section-pad">
+      <main>
+        <section className="hero">
           <div className="hero-copy">
-            <div className="eyebrow"><Sparkles size={15} /> Home, made simpler</div>
-            <h1>Everyday home finds.<br /><span>One easy shop.</span></h1>
-            <p>
-              Discover practical, stylish household essentials for your kitchen, bedroom,
-              family and active lifestyle — with a quick path from browsing to ordering.
-            </p>
+            <span className="eyebrow"><Sparkles size={14} /> Nairobi home & lifestyle store</span>
+            <h1>Household essentials that are easy to find.</h1>
+            <p>Shop practical home products across bedding, kitchenware, mosquito nets, kids’ items and home fitness — retail or wholesale.</p>
             <div className="hero-actions">
-              <a className="primary-cta" href="#shop">Explore products <ArrowRight size={18} /></a>
-              <a className="secondary-cta" href="#contact"><MessageCircle size={18} /> Order on WhatsApp</a>
+              <a href="#categories" className="btn btn-primary">Shop categories <ArrowRight size={18} /></a>
+              <a href={whatsapp} target="_blank" rel="noreferrer" className="btn btn-secondary"><MessageCircle size={18} /> Order on WhatsApp</a>
             </div>
-            <div className="trust-row">
-              <span><Store size={17} /> Nairobi retail</span>
-              <span><BadgePercent size={17} /> Wholesale enquiries</span>
-              <span><PackageCheck size={17} /> Product support</span>
+            <div className="hero-trust">
+              <span><Store size={16} /> Nairobi CBD shop</span>
+              <span><PackageCheck size={16} /> Retail & wholesale</span>
+              <span><Truck size={16} /> Delivery enquiries</span>
             </div>
           </div>
 
-          <div className="hero-art" aria-label="Sancity home and lifestyle shopping visual">
-            <div className="hero-card hero-card-main">
-              <span className="hero-kicker">Sancity picks</span>
-              <strong>Useful products<br />for real homes.</strong>
-              <div className="hero-bag"><ShoppingBag size={42} /></div>
+          <div className="hero-merch" aria-label="Sancity shopping categories">
+            <div className="merch-big merch-card">
+              <span>Bedding</span>
+              <BedDouble size={58} />
+              <small>Duvets & bedroom essentials</small>
             </div>
-            <div className="hero-card hero-card-small top-card"><UtensilsCrossed /><span>Kitchen</span></div>
-            <div className="hero-card hero-card-small bottom-card"><BedDouble /><span>Comfort</span></div>
-            <div className="hero-stamp"><span>KE</span><small>SHOP LOCAL</small></div>
+            <div className="merch-small merch-card kitchen-card">
+              <UtensilsCrossed size={34} />
+              <span>Kitchenware</span>
+            </div>
+            <div className="merch-small merch-card fitness-card">
+              <Dumbbell size={34} />
+              <span>Home gym</span>
+            </div>
           </div>
         </section>
 
-        <section className="value-strip" aria-label="Shopping benefits">
-          <div><Truck /><span><strong>Convenient ordering</strong><small>Simple enquiry-to-delivery flow</small></span></div>
-          <div><ShieldCheck /><span><strong>Clear product details</strong><small>Know what you are buying</small></span></div>
-          <div><MessageCircle /><span><strong>WhatsApp support</strong><small>Fast help before you order</small></span></div>
+        <section className="service-strip">
+          <div><ShieldCheck /><span><strong>Buy with clarity</strong><small>Clear product information</small></span></div>
+          <div><MessageCircle /><span><strong>WhatsApp ordering</strong><small>Quick stock enquiries</small></span></div>
+          <div><Boxes /><span><strong>Wholesale available</strong><small>Bulk-order support</small></span></div>
         </section>
 
-        <section id="categories" className="section-pad category-section">
-          <div className="section-heading">
-            <div>
-              <span className="kicker">Browse faster</span>
-              <h2>Shop by category</h2>
-            </div>
-            <a href="#shop">See all products <ArrowRight size={17} /></a>
+        <section className="section" id="categories">
+          <div className="section-title">
+            <div><span className="section-kicker">Shop faster</span><h2>Popular categories</h2></div>
+            <a href="#products">View products <ArrowRight size={17} /></a>
           </div>
-
           <div className="category-grid">
-            {categories.map(({ name, caption, icon: Icon, tone }) => (
-              <a href="#shop" className={'category-card tone-' + tone} key={name}>
-                <span className="category-icon"><Icon /></span>
-                <div><h3>{name}</h3><p>{caption}</p></div>
-                <span className="category-arrow"><ArrowRight /></span>
+            {categories.map(({ name, icon: Icon, className }) => (
+              <a key={name} href="#products" className={'category-tile ' + className}>
+                <div className="category-visual"><Icon /></div>
+                <div className="category-label">
+                  <strong>{name}</strong>
+                  <span>Shop now <ArrowRight size={14} /></span>
+                </div>
               </a>
             ))}
           </div>
         </section>
 
-        <section id="shop" className="section-pad product-section">
-          <div className="section-heading shop-heading">
+        <section className="section products-section" id="products">
+          <div className="section-title product-title">
             <div>
-              <span className="kicker">Start shopping</span>
-              <h2>Featured products</h2>
-              <p>Real product photos, prices and stock will plug into this layout as the catalogue is added.</p>
+              <span className="section-kicker">Catalogue preview</span>
+              <h2>New & popular at Sancity</h2>
+              <p>Real product photos, stock and verified KSh prices will replace these preview cards as the catalogue is imported.</p>
             </div>
-            <label className="search-box" htmlFor="shop-search">
-              <Search size={18} />
-              <input
-                id="shop-search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search products"
-              />
-            </label>
+            <div className="listing-tools">
+              <button><SlidersHorizontal size={17} /> Filter</button>
+              <select aria-label="Sort products" defaultValue="popular">
+                <option value="popular">Popular</option>
+                <option value="new">Newest</option>
+              </select>
+            </div>
           </div>
 
+          {query && <div className="applied-filter">Search: <strong>{query}</strong> <button onClick={() => setQuery('')}>Clear</button></div>}
+
           <div className="product-grid">
-            {filtered.map((product) => (
+            {visibleProducts.map((product) => (
               <article className="product-card" key={product.id}>
-                <div className="product-image-wrap">
-                  <ProductVisual type={product.visual} />
-                  <span className="product-badge">{product.badge}</span>
+                <div className="product-media">
+                  <ProductArt kind={product.media} />
+                  <span className="badge">{product.badge}</span>
                   <button
-                    className={'save-product ' + (saved.includes(product.id) ? 'is-saved' : '')}
+                    className={'heart-btn ' + (saved.includes(product.id) ? 'active' : '')}
                     onClick={() => toggleSaved(product.id)}
                     aria-label={'Save ' + product.name}
                   >
                     <Heart size={18} fill={saved.includes(product.id) ? 'currentColor' : 'none'} />
                   </button>
                 </div>
-                <div className="product-info">
-                  <span className="product-category">{product.category}</span>
+                <div className="product-details">
+                  <small>{product.category}</small>
                   <h3>{product.name}</h3>
-                  <div className="product-bottom">
-                    <strong>Price on request</strong>
-                    <a href="#contact" aria-label={'Enquire about ' + product.name}><ArrowRight size={16} /></a>
+                  <div className="price-line">
+                    <strong>Price to be added</strong>
+                    <span>Catalogue pending</span>
                   </div>
+                  <a href={whatsapp} target="_blank" rel="noreferrer" className="product-cta">
+                    Ask on WhatsApp <MessageCircle size={15} />
+                  </a>
                 </div>
               </article>
             ))}
           </div>
 
-          {filtered.length === 0 && (
-            <div className="empty-state">No matching products yet. Try another search.</div>
-          )}
+          {visibleProducts.length === 0 && <div className="no-results">No preview products match “{query}”.</div>}
         </section>
 
-        <section id="wholesale" className="section-pad wholesale-section">
-          <div className="wholesale-panel">
-            <div className="wholesale-icon"><Boxes size={32} /></div>
-            <div className="wholesale-copy">
-              <span className="kicker">Buy in quantity</span>
-              <h2>Wholesale made straightforward.</h2>
-              <p>
-                Sancity can use this section for reseller, institution and bulk-order enquiries.
-                Minimum quantities and verified wholesale terms will be added once confirmed.
-              </p>
-            </div>
-            <a className="primary-cta light-cta" href="#contact">Request wholesale price <ArrowRight size={18} /></a>
+        <section className="section needs-section">
+          <div className="section-title">
+            <div><span className="section-kicker">Browse by need</span><h2>What are you shopping for?</h2></div>
+          </div>
+          <div className="need-grid">
+            <a href="#products" className="need-card need-home"><span>Refresh the bedroom</span><strong>Duvets, nets & comfort</strong><ArrowRight /></a>
+            <a href="#products" className="need-card need-kitchen"><span>Upgrade the kitchen</span><strong>Cook, serve & store</strong><ArrowRight /></a>
+            <a href="#products" className="need-card need-family"><span>Family essentials</span><strong>Useful kids & home finds</strong><ArrowRight /></a>
           </div>
         </section>
 
-        <section id="about" className="section-pad about-section">
-          <div className="about-card about-main">
-            <span className="kicker">Built around everyday value</span>
-            <h2>A cleaner way to discover Sancity.</h2>
-            <p>
-              This first version gives Sancity Mall KE a focused digital storefront: clear categories,
-              quick product discovery and direct customer contact without overwhelming mobile shoppers.
-            </p>
-          </div>
-          <div className="about-card mini-card">
-            <Store />
-            <strong>Retail + wholesale</strong>
-            <span>One storefront that can support individual shoppers and bulk buyers.</span>
-          </div>
-          <div className="about-card mini-card">
-            <MessageCircle />
-            <strong>Conversation-led sales</strong>
-            <span>WhatsApp will become the fastest route from product interest to an order.</span>
+        <section className="section" id="wholesale">
+          <div className="wholesale">
+            <div>
+              <span className="section-kicker">Wholesale buyers</span>
+              <h2>Buying for resale, business or an institution?</h2>
+              <p>Use a separate wholesale path for quantity enquiries instead of mixing bulk terms into every retail product card.</p>
+            </div>
+            <a href={whatsapp} target="_blank" rel="noreferrer" className="btn wholesale-btn">Request wholesale pricing <ArrowRight size={18} /></a>
           </div>
         </section>
 
-        <section id="contact" className="section-pad contact-section">
-          <div className="contact-copy">
-            <span className="kicker">Contact Sancity</span>
-            <h2>Ready to order or ask about stock?</h2>
-            <p>
-              The official WhatsApp number, confirmed store address and business hours will be added
-              here before launch. Email enquiries can already use the address below.
-            </p>
+        <section className="section contact-section" id="contact">
+          <div className="contact-intro">
+            <span className="section-kicker">Visit or contact</span>
+            <h2>Shop in Nairobi CBD or order directly.</h2>
+            <p>Public business listings place Sancity at RNG Plaza, 2nd Floor, Shop S27 on Ronald Ngala Street, opposite Naivas.</p>
           </div>
-
-          <div className="contact-grid">
-            <a href="mailto:Sancitymallke@gmail.com">
-              <Mail />
-              <span><small>Email</small>Sancitymallke@gmail.com</span>
-              <ArrowRight />
-            </a>
-            <div className="contact-placeholder">
-              <MessageCircle />
-              <span><small>WhatsApp</small>Number to be confirmed</span>
-            </div>
-            <div className="contact-placeholder">
-              <MapPin />
-              <span><small>Store location</small>Exact address to be confirmed</span>
-            </div>
+          <div className="contact-cards">
+            <a href={whatsapp} target="_blank" rel="noreferrer"><MessageCircle /><span><small>WhatsApp / Call</small><strong>0710 900 548</strong></span><ArrowRight /></a>
+            <a href="mailto:Sancitymallke@gmail.com"><Store /><span><small>Email</small><strong>Sancitymallke@gmail.com</strong></span><ArrowRight /></a>
+            <div><MapPin /><span><small>Store</small><strong>RNG Plaza, Ronald Ngala St</strong></span></div>
           </div>
         </section>
       </main>
 
       <footer>
-        <div className="footer-main">
-          <img src="/sancity-logo.svg" alt="Sancity Mall KE" />
-          <p>Household essentials, lifestyle products, retail and wholesale enquiries in Kenya.</p>
-        </div>
-        <div className="footer-links">
-          <a href="#shop">Shop</a>
-          <a href="#categories">Categories</a>
-          <a href="#wholesale">Wholesale</a>
-          <a href="mailto:Sancitymallke@gmail.com">Email</a>
-        </div>
-        <small>© 2026 Sancity Mall KE. All rights reserved.</small>
+        <div className="footer-brand"><img src="/sancity-logo.svg" alt="Sancity Mall KE" /><p>Household essentials for retail and wholesale shoppers in Nairobi.</p></div>
+        <div className="footer-nav"><a href="#categories">Categories</a><a href="#products">Products</a><a href="#wholesale">Wholesale</a><a href="#contact">Contact</a></div>
+        <small>© 2026 Sancity Mall KE</small>
       </footer>
 
-      <a className="floating-whatsapp" href="#contact" aria-label="Contact Sancity on WhatsApp">
-        <MessageCircle size={22} /><span>WhatsApp</span>
-      </a>
+      <nav className="mobile-bottom-nav mobile-only" aria-label="Mobile shopping navigation">
+        <a href="#home"><Home size={20} /><span>Home</span></a>
+        <a href="#categories"><Boxes size={20} /><span>Categories</span></a>
+        <button onClick={focusSearch}><Search size={21} /><span>Search</span></button>
+        <button><Heart size={20} /><span>Saved{saved.length ? ' ' + saved.length : ''}</span></button>
+        <button><ShoppingCart size={20} /><span>Cart</span></button>
+      </nav>
     </div>
   )
 }
