@@ -706,6 +706,16 @@ export default function App() {
         <small>© 2026 Sancity Mall KE</small>
       </footer>
 
+      <a
+        className="mobile-whatsapp-fab"
+        href={whatsapp}
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Chat with Sancity Mall on WhatsApp"
+      >
+        <MessageCircle size={18} /> WhatsApp
+      </a>
+
       <nav className="mobile-bottom-bar" aria-label="Mobile shopping navigation">
         <a href="#home"><span>🏠</span>Home</a>
         <a href="#categories"><span>🧺</span>Categories</a>

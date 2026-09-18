@@ -2120,3 +2120,64 @@ select:focus-visible{
       linear-gradient(180deg,rgba(45,13,58,0) 55%,rgba(45,13,58,.12) 100%);
   }
 }
+
+
+/* === Carry-forward UX fixes: WhatsApp consistency and mobile tap targets === */
+.wholesale-section>a{
+  background:var(--whatsapp);
+  color:#08391e;
+}
+.contact-grid>a:first-of-type{
+  border-color:#bfe6cc;
+  background:#eaf8ef;
+}
+.contact-grid>a:first-of-type strong{color:#0d6737}
+
+.mobile-whatsapp-fab{display:none}
+
+@media(max-width:700px){
+  .all-departments,
+  .department-links button{
+    min-height:44px;
+  }
+
+  .catalogue-filter button{
+    min-height:44px;
+    padding:0 14px;
+  }
+
+  .save-button{
+    width:44px;
+    height:44px;
+  }
+
+  .product-card-actions{
+    grid-template-columns:1fr 44px;
+    gap:6px;
+  }
+
+  .product-card-actions>button,
+  .product-card-actions>a{
+    min-height:44px;
+    font-size:8px;
+  }
+
+  .mobile-whatsapp-fab{
+    position:fixed;
+    right:12px;
+    bottom:74px;
+    z-index:82;
+    min-height:44px;
+    padding:0 15px;
+    border-radius:999px;
+    background:var(--whatsapp);
+    color:#08391e;
+    box-shadow:0 10px 26px rgba(11,90,43,.22);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    font-size:9px;
+    font-weight:900;
+  }
+}
