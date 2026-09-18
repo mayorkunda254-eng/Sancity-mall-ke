@@ -121,9 +121,7 @@ export default function App() {
 
       if (!active || error || !data) return
 
-      const dynamicNames = new Set(data.map((product) => product.name.toLowerCase()))
-      const staticProducts = fallbackProducts.filter((product) => !dynamicNames.has(product.name.toLowerCase()))
-      setProducts([...data, ...staticProducts])
+      setProducts(data.length > 0 ? data : fallbackProducts)
     }
 
     loadPublishedProducts()
@@ -655,7 +653,7 @@ export default function App() {
                         ? 'Confirm current stock'
                         : product.stock_quantity > 0
                           ? `${product.stock_quantity} in stock`
-                          : 'Enquire for restock'}
+                          : 'Confirm current stock'}
                     </span>
                   </div>
 
