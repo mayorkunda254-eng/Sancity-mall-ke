@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowRight, Heart, LogIn, Menu, MessageCircle, Minus, Plus, Search, ShoppingCart, UserRound, X } from 'lucide-react'
+import { Heart, LogIn, Menu, MessageCircle, Minus, Plus, Search, ShoppingCart, UserRound, X } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './lib/supabase.js'
 
 const departments = [
@@ -463,7 +463,6 @@ export default function App() {
               >
                 <span>{department.emoji}</span>
                 {department.short}
-                <ArrowRight size={17} />
               </button>
             ))}
             <a href={whatsapp} target="_blank" rel="noreferrer" className="drawer-whatsapp">
@@ -485,7 +484,7 @@ export default function App() {
 
             <div className="hero-cta-row">
               <button className="primary-cta" onClick={() => jumpToProducts('All')}>
-                Shop New Arrivals <ArrowRight size={17} />
+                Shop New Arrivals
               </button>
               <a href="#categories" className="secondary-cta">Browse Departments</a>
             </div>
@@ -527,7 +526,6 @@ export default function App() {
                   <strong>Sleep<br />Better</strong>
                 </div>
                 <span className="stage-emoji">🛏️</span>
-                <b>→</b>
               </button>
 
               <button className="stage-card stage-kitchen" onClick={() => jumpToProducts('Kitchen & Dining')}>
@@ -536,7 +534,6 @@ export default function App() {
                   <strong>Cook<br />Happier</strong>
                 </div>
                 <span className="stage-emoji">🍲</span>
-                <b>→</b>
               </button>
 
               <button className="stage-card stage-storage" onClick={() => jumpToProducts('Storage & Organisation')}>
@@ -545,7 +542,6 @@ export default function App() {
                   <strong>More<br />Space</strong>
                 </div>
                 <span className="stage-emoji">🧺</span>
-                <b>→</b>
               </button>
             </div>
           </div>
@@ -557,7 +553,7 @@ export default function App() {
               <span>Shop by category</span>
               <h2>Everything for a Better Home</h2>
             </div>
-            <button onClick={() => jumpToProducts('All')}>View all categories <ArrowRight size={16} /></button>
+            <button onClick={() => jumpToProducts('All')}>View all categories</button>
           </div>
 
           <div className="category-card-grid">
@@ -570,7 +566,6 @@ export default function App() {
                 <span className="category-emoji">{department.emoji}</span>
                 <div>
                   <strong>{department.short}</strong>
-                  <span>→</span>
                 </div>
               </button>
             ))}
@@ -670,7 +665,7 @@ export default function App() {
             <p>Send the product name and quantity you need. We’ll reply with current bulk availability and pricing.</p>
           </div>
           <a href={waLink('a wholesale / bulk order')} target="_blank" rel="noreferrer">
-            Request wholesale pricing <ArrowRight size={17} />
+            Request wholesale pricing
           </a>
         </section>
 
