@@ -720,10 +720,7 @@ export default function App() {
                   onClick={() => setQuickViewProduct(product)}
                   aria-label={`View details for ${product.name}`}
                   aria-haspopup="dialog"
-                >
-                  <Eye size={18} />
-                  <span>Quick view</span>
-                </button>
+                />
 
                 <div className={`emoji-product-art ${imageUrl ? 'has-photo' : ''} art-${(product.category || 'other').toLowerCase().replace(/[^a-z]+/g, '-')}`}>
                   {imageUrl ? (
@@ -737,6 +734,9 @@ export default function App() {
                   ) : (
                     <span className="product-emoji">{categoryEmoji(product.category)}</span>
                   )}
+                  <span className="product-quick-view-label" aria-hidden="true">
+                    <Eye size={17} /> Quick view
+                  </span>
                   {product.badge && <span className="product-badge">{product.badge}</span>}
                   <button
                     className={`save-button ${saved.includes(product.id) ? 'active' : ''}`}

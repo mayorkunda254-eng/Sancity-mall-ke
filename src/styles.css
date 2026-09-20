@@ -725,6 +725,13 @@ img{max-width:100%}
   grid-template-columns:repeat(5,minmax(0,1fr));
   gap:10px;
 }
+
+.catalogue-section,
+#categories,
+#wholesale,
+#contact{
+  scroll-margin-top:150px;
+}
 .emoji-product-card{
   background:#fff;
   border:1px solid #e3d9e6;
@@ -2451,46 +2458,42 @@ select:focus-visible{
   border:0;
   border-radius:inherit;
   background:transparent;
-  color:#fff;
-  display:flex;
-  align-items:flex-start;
-  justify-content:center;
-  gap:6px;
-  padding-top:calc((100% / 1.52) - 42px);
-  font-size:11px;
-  font-weight:800;
-  opacity:0;
-  transition:opacity .18s ease;
-}
-
-.product-card-click-target::before{
-  content:"";
-  position:absolute;
-  left:50%;
-  top:calc((100% / 1.52) - 51px);
-  transform:translateX(-50%);
-  width:126px;
-  height:34px;
-  border-radius:999px;
-  background:rgba(43,13,58,.82);
-  box-shadow:0 10px 24px rgba(32,8,43,.22);
-  backdrop-filter:blur(8px);
-}
-
-.product-card-click-target svg,
-.product-card-click-target span{
-  position:relative;
-  z-index:1;
-}
-
-.emoji-product-card:hover .product-card-click-target,
-.product-card-click-target:focus-visible{
-  opacity:1;
 }
 
 .product-card-click-target:focus-visible{
   outline:3px solid rgba(126,43,195,.34);
   outline-offset:3px;
+}
+
+.product-quick-view-label{
+  position:absolute;
+  left:50%;
+  bottom:12px;
+  z-index:3;
+  min-height:34px;
+  padding:0 14px;
+  border-radius:999px;
+  background:rgba(43,13,58,.84);
+  color:#fff;
+  box-shadow:0 10px 24px rgba(32,8,43,.22);
+  backdrop-filter:blur(8px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  font-size:10px;
+  font-weight:900;
+  white-space:nowrap;
+  pointer-events:none;
+  opacity:0;
+  transform:translate(-50%,6px);
+  transition:opacity .18s ease,transform .18s ease;
+}
+
+.emoji-product-card:hover .product-quick-view-label,
+.product-card-click-target:focus-visible + .emoji-product-art .product-quick-view-label{
+  opacity:1;
+  transform:translate(-50%,0);
 }
 
 .save-button,
@@ -2800,10 +2803,7 @@ select:focus-visible{
   .product-meta span{font-size:8.5px}
   .product-card-actions>button,
   .product-card-actions>a{font-size:9px}
-  .product-card-click-target{opacity:1;padding:0}
-  .product-card-click-target::before,
-  .product-card-click-target svg,
-  .product-card-click-target span{display:none}
+  .product-quick-view-label{display:none}
   .quick-view-overlay{padding:10px;align-items:end}
   .quick-view-modal{width:100%;max-height:91vh;border-radius:22px 22px 14px 14px}
   .quick-view-media{min-height:245px;max-height:36vh;padding:24px}
