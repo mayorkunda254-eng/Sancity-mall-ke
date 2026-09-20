@@ -2770,7 +2770,6 @@ select:focus-visible{
 .hero-left>*:nth-child(3){animation-delay:120ms}
 .hero-left>*:nth-child(4){animation-delay:170ms}
 .hero-left>*:nth-child(5){animation-delay:220ms}
-.hero-photo-stage{animation:hero-image-in .55s ease-out both}
 
 @keyframes product-card-enter{
   from{opacity:0;transform:translateY(10px)}
@@ -2783,7 +2782,6 @@ select:focus-visible{
 @keyframes toast-slide-in{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 @keyframes added-pulse{50%{transform:scale(.97)}}
 @keyframes hero-rise-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-@keyframes hero-image-in{from{opacity:.2;transform:scale(1.015)}to{opacity:1;transform:scale(1)}}
 
 @media(max-width:1250px){
   .emoji-product-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
