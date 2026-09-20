@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Heart, LogIn, Menu, MessageCircle, Minus, Plus, Search, ShoppingCart, UserRound, X } from 'lucide-react'
+import { Check, Eye, Heart, LogIn, Menu, MessageCircle, Minus, Plus, Search, ShoppingCart, UserRound, X } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './lib/supabase.js'
 
 const departments = [
@@ -105,7 +105,11 @@ export default function App() {
   const [cart, setCart] = useState([])
   const [storageReady, setStorageReady] = useState(false)
   const [products, setProducts] = useState(fallbackProducts)
+  const [quickViewProduct, setQuickViewProduct] = useState(null)
+  const [recentlyAddedId, setRecentlyAddedId] = useState(null)
+  const [toastProduct, setToastProduct] = useState(null)
   const searchRef = useRef(null)
+  const feedbackTimeoutRef = useRef(null)
 
   useEffect(() => {
     if (!isSupabaseConfigured) return
@@ -157,6 +161,29 @@ export default function App() {
     window.localStorage.setItem('sancity-cart', JSON.stringify(cart))
   }, [cart, storageReady])
 
+  useEffect(() => () => window.clearTimeout(feedbackTimeoutRef.current), [])
+
+  useEffect(() => {
+    const overlayOpen = cartOpen || menuOpen || Boolean(quickViewProduct)
+    if (!overlayOpen) return undefined
+
+    const previousOverflow = document.body.style.overflow
+    const closeOverlays = (event) => {
+      if (event.key !== 'Escape') return
+      setCartOpen(false)
+      setMenuOpen(false)
+      setQuickViewProduct(null)
+    }
+
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', closeOverlays)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', closeOverlays)
+    }
+  }, [cartOpen, menuOpen, quickViewProduct])
+
   const visibleProducts = useMemo(() => {
     const q = query.trim().toLowerCase()
 
@@ -203,6 +230,14 @@ export default function App() {
       }
       return [...items, { id: product.id, qty: 1 }]
     })
+
+    setRecentlyAddedId(product.id)
+    setToastProduct(product)
+    window.clearTimeout(feedbackTimeoutRef.current)
+    feedbackTimeoutRef.current = window.setTimeout(() => {
+      setRecentlyAddedId(null)
+      setToastProduct(null)
+    }, 2600)
   }
 
   const changeCartQty = (id, amount) => {
@@ -396,13 +431,13 @@ export default function App() {
 
       {cartOpen && (
         <div className="cart-overlay" onClick={() => setCartOpen(false)}>
-          <aside className="cart-drawer" onClick={(event) => event.stopPropagation()}>
+          <aside className="cart-drawer" role="dialog" aria-modal="true" aria-label="Shopping cart" onClick={(event) => event.stopPropagation()}>
             <div className="cart-drawer-head">
               <div>
                 <span>Your cart</span>
                 <strong>{cartCount} item{cartCount === 1 ? '' : 's'}</strong>
               </div>
-              <button onClick={() => setCartOpen(false)} aria-label="Close cart"><X size={20} /></button>
+              <button autoFocus onClick={() => setCartOpen(false)} aria-label="Close cart"><X size={20} /></button>
             </div>
 
             <div className="cart-drawer-body">
@@ -419,7 +454,11 @@ export default function App() {
               ) : (
                 cartItems.map((item) => (
                   <article className="cart-line" key={item.id}>
-                    <span className="cart-line-emoji">{categoryEmoji(item.category)}</span>
+                    <span className={`cart-line-emoji ${productMainImage(item) ? 'has-photo' : ''}`}>
+                      {productMainImage(item) ? (
+                        <img src={productMainImage(item)} alt="" loading="lazy" decoding="async" />
+                      ) : categoryEmoji(item.category)}
+                    </span>
                     <div className="cart-line-copy">
                       <small>{item.category}</small>
                       <strong>{item.name}</strong>
@@ -480,6 +519,63 @@ export default function App() {
               <MessageCircle size={18} /> Ask on WhatsApp
             </a>
           </aside>
+        </div>
+      )}
+
+      {quickViewProduct && (
+        <div className="quick-view-overlay" onClick={() => setQuickViewProduct(null)}>
+          <section
+            className="quick-view-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quick-view-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button autoFocus className="quick-view-close" onClick={() => setQuickViewProduct(null)} aria-label="Close product details">
+              <X size={20} />
+            </button>
+
+            <div className={`quick-view-media ${productMainImage(quickViewProduct) ? 'has-photo' : ''}`}>
+              {productMainImage(quickViewProduct) ? (
+                <img src={productMainImage(quickViewProduct)} alt={quickViewProduct.name} />
+              ) : (
+                <span>{categoryEmoji(quickViewProduct.category)}</span>
+              )}
+              {quickViewProduct.badge && <small>{quickViewProduct.badge}</small>}
+            </div>
+
+            <div className="quick-view-copy">
+              <span>{quickViewProduct.category}</span>
+              <h2 id="quick-view-title">{quickViewProduct.name}</h2>
+              <p>{quickViewProduct.description}</p>
+
+              <div className="quick-view-meta">
+                <strong>
+                  {quickViewProduct.price !== null && quickViewProduct.price !== undefined
+                    ? `KSh ${Number(quickViewProduct.price).toLocaleString('en-KE')}`
+                    : 'Price on request'}
+                </strong>
+                <span>
+                  {quickViewProduct.stock_quantity > 0
+                    ? `${quickViewProduct.stock_quantity} in stock`
+                    : 'Confirm current stock'}
+                </span>
+              </div>
+
+              <div className="quick-view-actions">
+                <button
+                  className={recentlyAddedId === quickViewProduct.id ? 'added' : ''}
+                  onClick={() => addToCart(quickViewProduct)}
+                >
+                  {recentlyAddedId === quickViewProduct.id ? <Check size={17} /> : <ShoppingCart size={17} />}
+                  {recentlyAddedId === quickViewProduct.id ? 'Added to cart' : 'Add to cart'}
+                </button>
+                <a href={waLink(quickViewProduct.name)} target="_blank" rel="noreferrer">
+                  <MessageCircle size={17} /> Order on WhatsApp
+                </a>
+              </div>
+            </div>
+          </section>
         </div>
       )}
 
@@ -613,13 +709,27 @@ export default function App() {
           )}
 
           <div className="emoji-product-grid">
-            {visibleProducts.map((product) => (
-              <article className="emoji-product-card" key={product.id}>
-                <div className={`emoji-product-art ${productMainImage(product) ? 'has-photo' : ''} art-${(product.category || 'other').toLowerCase().replace(/[^a-z]+/g, '-')}`}>
-                  {productMainImage(product) ? (
+            {visibleProducts.map((product, index) => {
+              const imageUrl = productMainImage(product)
+              const isRecentlyAdded = recentlyAddedId === product.id
+
+              return (
+              <article className="emoji-product-card" key={product.id} style={{ '--card-delay': `${Math.min(index, 10) * 28}ms` }}>
+                <button
+                  className="product-card-click-target"
+                  onClick={() => setQuickViewProduct(product)}
+                  aria-label={`View details for ${product.name}`}
+                  aria-haspopup="dialog"
+                >
+                  <Eye size={18} />
+                  <span>Quick view</span>
+                </button>
+
+                <div className={`emoji-product-art ${imageUrl ? 'has-photo' : ''} art-${(product.category || 'other').toLowerCase().replace(/[^a-z]+/g, '-')}`}>
+                  {imageUrl ? (
                     <img
                       className="product-photo"
-                      src={productMainImage(product)}
+                      src={imageUrl}
                       alt={product.name}
                       loading="lazy"
                       decoding="async"
@@ -630,7 +740,10 @@ export default function App() {
                   {product.badge && <span className="product-badge">{product.badge}</span>}
                   <button
                     className={`save-button ${saved.includes(product.id) ? 'active' : ''}`}
-                    onClick={() => toggleSaved(product.id)}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      toggleSaved(product.id)
+                    }}
                     aria-label={`Save ${product.name}`}
                   >
                     <Heart size={17} fill={saved.includes(product.id) ? 'currentColor' : 'none'} />
@@ -658,8 +771,9 @@ export default function App() {
                   </div>
 
                   <div className="product-card-actions">
-                    <button onClick={() => addToCart(product)}>
-                      <ShoppingCart size={14} /> Add to cart
+                    <button className={isRecentlyAdded ? 'added' : ''} onClick={() => addToCart(product)}>
+                      {isRecentlyAdded ? <Check size={14} /> : <ShoppingCart size={14} />}
+                      {isRecentlyAdded ? 'Added' : 'Add to cart'}
                     </button>
                     <a href={waLink(product.name)} target="_blank" rel="noreferrer" aria-label={`Ask about ${product.name} on WhatsApp`}>
                       <MessageCircle size={15} />
@@ -667,7 +781,8 @@ export default function App() {
                   </div>
                 </div>
               </article>
-            ))}
+              )
+            })}
           </div>
 
           {visibleProducts.length === 0 && (
@@ -739,6 +854,21 @@ export default function App() {
         <button onClick={openWishlist}><span>♡</span>Wishlist</button>
         <button onClick={() => setCartOpen(true)}><span>🛒</span>Cart{cartCount > 0 ? ` (${cartCount})` : ''}</button>
       </nav>
+
+      {toastProduct && (
+        <div className="cart-toast" role="status" aria-live="polite">
+          <span><Check size={17} /></span>
+          <div>
+            <strong>Added to cart</strong>
+            <small>{toastProduct.name}</small>
+          </div>
+          <button onClick={() => {
+            setQuickViewProduct(null)
+            setToastProduct(null)
+            setCartOpen(true)
+          }}>View cart</button>
+        </div>
+      )}
     </div>
   )
 }
