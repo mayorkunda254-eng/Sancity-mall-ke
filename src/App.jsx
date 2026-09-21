@@ -129,6 +129,17 @@ function waLink(product) {
   return `https://wa.me/254710900548?text=${encodeURIComponent(message)}`
 }
 
+function conciergeLink(product, request) {
+  const productName = product?.name || product || 'this product'
+  const message = `Hello Sancity Mall KE, I am interested in ${productName}. ${request}`
+  return `https://wa.me/254710900548?text=${encodeURIComponent(message)}`
+}
+
+const featureLines = (value = '') => value
+  .split(/\n|•|;/)
+  .map((item) => item.trim())
+  .filter(Boolean)
+
 export default function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -162,7 +173,7 @@ export default function App() {
     async function loadPublishedProducts() {
       const { data, error } = await supabase
         .from('products')
-        .select('id,name,slug,category,badge,description,price,stock_quantity,created_at,product_images(public_url,sort_order)')
+        .select('id,name,slug,category,badge,description,dimensions,material,colour,key_features,care_instructions,delivery_note,price,compare_at_price,stock_quantity,created_at,product_images(public_url,sort_order)')
         .eq('status', 'published')
         .order('created_at', { ascending: false })
 
@@ -337,6 +348,27 @@ export default function App() {
 
   const detailImages = useMemo(() => detailProduct ? productImages(detailProduct) : [], [detailProduct])
   const activeDetailImage = detailImages[galleryIndex]?.public_url || productMainImage(detailProduct)
+
+  const detailSpecs = detailProduct ? [
+    { label: 'Category', value: detailProduct.category },
+    {
+      label: 'Availability',
+      value: detailProduct.stock_quantity > 0
+        ? `${detailProduct.stock_quantity} in stock`
+        : 'Confirm current stock',
+    },
+    {
+      label: 'Pricing',
+      value: detailProduct.price !== null && detailProduct.price !== undefined
+        ? `KSh ${Number(detailProduct.price).toLocaleString('en-KE')}`
+        : 'Price on request',
+    },
+    { label: 'Dimensions', value: detailProduct.dimensions },
+    { label: 'Material', value: detailProduct.material },
+    { label: 'Colour', value: detailProduct.colour },
+  ].filter((item) => item.value) : []
+
+  const detailFeatureLines = detailProduct ? featureLines(detailProduct.key_features || '') : []
 
   const relatedProducts = useMemo(() => {
     if (!detailProduct) return []
@@ -934,11 +966,19 @@ export default function App() {
                     <p className="product-detail-description">{detailProduct.description}</p>
 
                     <div className="product-detail-price-row">
-                      <strong>
-                        {detailProduct.price !== null && detailProduct.price !== undefined
-                          ? `KSh ${Number(detailProduct.price).toLocaleString('en-KE')}`
-                          : 'Price on request'}
-                      </strong>
+                      <div className="product-detail-pricing">
+                        <strong>
+                          {detailProduct.price !== null && detailProduct.price !== undefined
+                            ? `KSh ${Number(detailProduct.price).toLocaleString('en-KE')}`
+                            : 'Price on request'}
+                        </strong>
+                        {detailProduct.compare_at_price !== null
+                          && detailProduct.compare_at_price !== undefined
+                          && detailProduct.price !== null
+                          && Number(detailProduct.compare_at_price) > Number(detailProduct.price) && (
+                            <del>KSh {Number(detailProduct.compare_at_price).toLocaleString('en-KE')}</del>
+                          )}
+                      </div>
                       <span className={detailProduct.stock_quantity > 0 ? 'in-stock' : ''}>
                         {detailProduct.stock_quantity > 0
                           ? `${detailProduct.stock_quantity} in stock`
@@ -968,24 +1008,113 @@ export default function App() {
 
                     <div className="product-confidence-grid">
                       <div>
-                        <Truck size={20} />
-                        <span><strong>Delivery across Kenya</strong><small>Exact fee and arrival timing confirmed before dispatch.</small></span>
-                      </div>
-                      <div>
                         <ShieldCheck size={20} />
-                        <span><strong>Buy with confidence</strong><small>Confirm availability and product details before payment.</small></span>
+                        <span><strong>Stock checked before dispatch</strong><small>We can confirm current availability before you commit to the order.</small></span>
                       </div>
                       <div>
-                        <PackageCheck size={20} />
-                        <span><strong>Nairobi CBD pickup</strong><small>RNG Plaza, Ronald Ngala Street.</small></span>
+                        <Eye size={20} />
+                        <span><strong>Verify the exact item</strong><small>Ask for colour, size or additional photo confirmation where needed.</small></span>
+                      </div>
+                      <div>
+                        <MessageCircle size={20} />
+                        <span><strong>Direct shopping support</strong><small>Speak to Sancity on WhatsApp before or after adding to cart.</small></span>
                       </div>
                     </div>
 
-                    <div className="product-detail-info">
-                      <span>Product details</span>
-                      <p>{detailProduct.description}</p>
-                      <small>Need dimensions, colour confirmation or more photos? Ask us on WhatsApp and we’ll verify the exact item before you order.</small>
-                    </div>
+                    <section className="product-specification-panel" aria-label="Product specifications">
+                      <div className="product-specification-heading">
+                        <span>Product information</span>
+                        <h2>Details at a glance</h2>
+                      </div>
+
+                      <div className="product-specification-grid">
+                        {detailSpecs.map((spec) => (
+                          <div key={spec.label}>
+                            <small>{spec.label}</small>
+                            <strong>{spec.value}</strong>
+                          </div>
+                        ))}
+                      </div>
+
+                      {detailFeatureLines.length > 0 && (
+                        <div className="product-feature-list">
+                          <span>Key features</span>
+                          <ul>
+                            {detailFeatureLines.map((feature) => <li key={feature}>{feature}</li>)}
+                          </ul>
+                        </div>
+                      )}
+
+                      {detailProduct.care_instructions && (
+                        <div className="product-care-note">
+                          <span>Care</span>
+                          <p>{detailProduct.care_instructions}</p>
+                        </div>
+                      )}
+                    </section>
+
+                    <section className="product-delivery-panel" aria-label="Delivery and collection">
+                      <div className="product-delivery-heading">
+                        <span>Delivery & collection</span>
+                        <h2>Know what happens next</h2>
+                      </div>
+
+                      <div className="product-delivery-options">
+                        <div>
+                          <Truck size={20} />
+                          <span>
+                            <strong>Delivery across Kenya</strong>
+                            <small>Delivery fee and expected arrival timing are confirmed for your location before dispatch.</small>
+                          </span>
+                        </div>
+                        <div>
+                          <PackageCheck size={20} />
+                          <span>
+                            <strong>Nairobi CBD pickup</strong>
+                            <small>Collection is available from RNG Plaza, Ronald Ngala Street, after stock confirmation.</small>
+                          </span>
+                        </div>
+                      </div>
+
+                      {detailProduct.delivery_note && (
+                        <div className="product-special-delivery">
+                          <strong>Item-specific note</strong>
+                          <span>{detailProduct.delivery_note}</span>
+                        </div>
+                      )}
+                    </section>
+
+                    <section className="product-concierge">
+                      <div>
+                        <span>Sancity shopping concierge</span>
+                        <h2>Want us to verify something first?</h2>
+                        <p>Use one of these shortcuts and WhatsApp will open with the product already included.</p>
+                      </div>
+
+                      <div className="product-concierge-actions">
+                        <a
+                          href={conciergeLink(detailProduct, 'Please confirm the dimensions, colour and any available variants for me.')}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <Boxes size={17} /> Confirm size & colour
+                        </a>
+                        <a
+                          href={conciergeLink(detailProduct, 'Could you send me more real photos or close-up photos of this exact item?')}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <Eye size={17} /> Request more photos
+                        </a>
+                        <a
+                          href={conciergeLink(detailProduct, 'Please check the delivery options, fee and expected timing to my area.')}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <Truck size={17} /> Check delivery
+                        </a>
+                      </div>
+                    </section>
                   </div>
                 </div>
 
