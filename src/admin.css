@@ -57,3 +57,50 @@
   font-size:10px;
   line-height:1.45;
 }
+
+
+.admin-checkbox-field{
+  min-height:45px;
+  padding:0 12px;
+  border:1px solid var(--admin-line);
+  border-radius:10px;
+  background:#fff;
+  flex-direction:row;
+  align-items:center;
+  gap:9px;
+}
+.admin-checkbox-field input{
+  width:16px;
+  height:16px;
+  margin:0;
+  accent-color:#e16a4d;
+}
+.admin-checkbox-field>span{
+  font-size:10px;
+  font-weight:800;
+  color:var(--admin-ink);
+}
+.admin-add-images{
+  min-height:34px;
+  padding:0 10px;
+  border:1px solid #dfd1c2;
+  border-radius:9px;
+  background:#fffaf3;
+  color:#6b4b1b;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  cursor:pointer;
+  font-size:9px;
+  font-weight:800;
+}
+.admin-add-images:hover{
+  border-color:#caa966;
+  background:#fff6e7;
+}
+.admin-add-images.disabled{
+  opacity:.52;
+  cursor:not-allowed;
+}
+.admin-add-images input{display:none}
