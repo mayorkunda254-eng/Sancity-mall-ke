@@ -210,6 +210,9 @@ export default function App({ initialProducts = null, initialPath = null }) {
   const [checkoutSubmitting, setCheckoutSubmitting] = useState(false)
   const [checkoutError, setCheckoutError] = useState('')
   const [checkoutResult, setCheckoutResult] = useState(null)
+  const [promoCodeInput, setPromoCodeInput] = useState('')
+  const [promoPreview, setPromoPreview] = useState(null)
+  const [promoApplying, setPromoApplying] = useState(false)
   const [deliveryZones, setDeliveryZones] = useState([])
   const [storageReady, setStorageReady] = useState(false)
   const [products, setProducts] = useState(
@@ -571,11 +574,15 @@ export default function App({ initialProducts = null, initialPath = null }) {
   const selectedDeliveryFee = selectedDeliveryZone?.fee === null || selectedDeliveryZone?.fee === undefined
     ? null
     : Number(selectedDeliveryZone.fee)
+  const appliedDiscount = promoPreview?.valid
+    ? Number(promoPreview.discount_amount || 0)
+    : 0
+  const discountedCartTotal = Math.max(knownCartTotal - appliedDiscount, 0)
   const checkoutHasKnownTotal = checkoutForm.delivery_method === 'pickup'
     || (checkoutForm.delivery_method === 'delivery' && selectedDeliveryFee !== null)
   const checkoutEstimatedTotal = checkoutForm.delivery_method === 'pickup'
-    ? knownCartTotal
-    : selectedDeliveryFee === null ? null : knownCartTotal + selectedDeliveryFee
+    ? discountedCartTotal
+    : selectedDeliveryFee === null ? null : discountedCartTotal + selectedDeliveryFee
 
   const toggleSaved = (id) => {
     setSaved((items) => (items.includes(id) ? items.filter((item) => item !== id) : [...items, id]))
@@ -696,6 +703,8 @@ export default function App({ initialProducts = null, initialPath = null }) {
     if (cartItems.length === 0 || hasUnpricedCartItems) return
     setCheckoutError('')
     setCheckoutResult(null)
+    setPromoCodeInput('')
+    setPromoPreview(null)
     setCheckoutOpen(true)
     setCartOpen(false)
   }
@@ -705,6 +714,49 @@ export default function App({ initialProducts = null, initialPath = null }) {
     setCheckoutOpen(false)
     setCheckoutError('')
     setCheckoutResult(null)
+    setPromoCodeInput('')
+    setPromoPreview(null)
+  }
+
+  const applyPromoCode = async () => {
+    const code = promoCodeInput.trim().toUpperCase()
+    if (!code || promoApplying) return
+
+    setPromoApplying(true)
+    setPromoPreview(null)
+
+    try {
+      const { data, error } = await supabase.rpc('preview_promotion', {
+        p_code: code,
+        p_subtotal: knownCartTotal,
+      })
+
+      if (error) throw error
+
+      const result = Array.isArray(data) ? data[0] : data
+      setPromoPreview(result || {
+        valid: false,
+        promo_code: code,
+        message: 'Could not validate this promo code.',
+        discount_amount: 0,
+      })
+
+      if (result?.valid) setPromoCodeInput(result.promo_code || code)
+    } catch (error) {
+      setPromoPreview({
+        valid: false,
+        promo_code: code,
+        message: error.message || 'Could not validate this promo code.',
+        discount_amount: 0,
+      })
+    } finally {
+      setPromoApplying(false)
+    }
+  }
+
+  const clearPromoCode = () => {
+    setPromoCodeInput('')
+    setPromoPreview(null)
   }
 
   const checkoutWhatsappLink = (result = checkoutResult) => {
@@ -745,7 +797,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
         quantity: entry.qty,
       }))
 
-      const { data, error } = await supabase.rpc('create_store_order', {
+      const { data, error } = await supabase.rpc('create_store_order_v2', {
         p_customer_name: checkoutForm.customer_name.trim(),
         p_customer_phone: checkoutForm.customer_phone.trim(),
         p_delivery_method: checkoutForm.delivery_method,
@@ -758,6 +810,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
         p_delivery_zone_id: checkoutForm.delivery_method === 'delivery'
           ? checkoutForm.delivery_zone_id || null
           : null,
+        p_promo_code: promoPreview?.valid ? promoPreview.promo_code : null,
       })
 
       if (error) throw error
@@ -1173,6 +1226,12 @@ export default function App({ initialProducts = null, initialPath = null }) {
                   <>
                     <h3>Payment submitted for verification</h3>
                     <p>Your M-Pesa code has been attached to the order. Sancity will verify the transaction before fulfilment.</p>
+                    {Number(checkoutResult.discount_amount || 0) > 0 && (
+                      <div className="checkout-promo-success">
+                        <Tag size={15} />
+                        <span>{checkoutResult.promotion_code} saved KSh {Number(checkoutResult.discount_amount).toLocaleString('en-KE')}</span>
+                      </div>
+                    )}
                     <div className="checkout-summary-line">
                       <span>Amount submitted</span>
                       <b>KSh {Number(checkoutResult.total_amount || 0).toLocaleString('en-KE')}</b>
@@ -1182,9 +1241,15 @@ export default function App({ initialProducts = null, initialPath = null }) {
                   <>
                     <h3>Delivery total will be confirmed first</h3>
                     <p>Your products are reserved in the order. Sancity will confirm the delivery fee and final amount before asking you to pay.</p>
+                    {Number(checkoutResult.discount_amount || 0) > 0 && (
+                      <div className="checkout-promo-success">
+                        <Tag size={15} />
+                        <span>{checkoutResult.promotion_code} saved KSh {Number(checkoutResult.discount_amount).toLocaleString('en-KE')}</span>
+                      </div>
+                    )}
                     <div className="checkout-summary-line">
-                      <span>Product subtotal</span>
-                      <b>KSh {Number(checkoutResult.subtotal || 0).toLocaleString('en-KE')}</b>
+                      <span>Product subtotal after discount</span>
+                      <b>KSh {Math.max(Number(checkoutResult.subtotal || 0) - Number(checkoutResult.discount_amount || 0), 0).toLocaleString('en-KE')}</b>
                     </div>
                   </>
                 )}
@@ -1199,6 +1264,45 @@ export default function App({ initialProducts = null, initialPath = null }) {
                 <div className="checkout-order-total">
                   <span>Product subtotal</span>
                   <strong>KSh {knownCartTotal.toLocaleString('en-KE')}</strong>
+                </div>
+
+                <div className="checkout-promo">
+                  <div className="checkout-promo-heading">
+                    <Tag size={17} />
+                    <span>
+                      <strong>Promo code</strong>
+                      <small>Discount applies to products, not delivery.</small>
+                    </span>
+                  </div>
+                  <div className="checkout-promo-entry">
+                    <input
+                      value={promoCodeInput}
+                      onChange={(event) => {
+                        setPromoCodeInput(event.target.value.toUpperCase().replace(/\s+/g, ''))
+                        setPromoPreview(null)
+                      }}
+                      placeholder="e.g. SANCITY10"
+                      maxLength="24"
+                      disabled={promoApplying}
+                    />
+                    {promoPreview?.valid ? (
+                      <button type="button" className="remove" onClick={clearPromoCode}>Remove</button>
+                    ) : (
+                      <button type="button" onClick={applyPromoCode} disabled={promoApplying || !promoCodeInput.trim()}>
+                        {promoApplying ? 'Checking…' : 'Apply'}
+                      </button>
+                    )}
+                  </div>
+                  {promoPreview && (
+                    <div className={`checkout-promo-message ${promoPreview.valid ? 'valid' : 'invalid'}`}>
+                      {promoPreview.valid ? <Check size={15} /> : <CircleHelp size={15} />}
+                      <span>
+                        {promoPreview.valid
+                          ? `${promoPreview.message} — save KSh ${Number(promoPreview.discount_amount || 0).toLocaleString('en-KE')}`
+                          : promoPreview.message}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="checkout-fields-grid">
@@ -1299,6 +1403,9 @@ export default function App({ initialProducts = null, initialPath = null }) {
                     ) : (
                       <div className="checkout-final-total">
                         <span><small>Products</small><b>KSh {knownCartTotal.toLocaleString('en-KE')}</b></span>
+                        {appliedDiscount > 0 && (
+                          <span className="discount"><small>Promo {promoPreview?.promo_code}</small><b>− KSh {appliedDiscount.toLocaleString('en-KE')}</b></span>
+                        )}
                         <span><small>Delivery</small><b>KSh {selectedDeliveryFee.toLocaleString('en-KE')}</b></span>
                         <strong><small>Final total</small><b>KSh {checkoutEstimatedTotal.toLocaleString('en-KE')}</b></strong>
                       </div>
