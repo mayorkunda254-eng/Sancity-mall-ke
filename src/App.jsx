@@ -695,15 +695,28 @@ export default function App({ initialProducts = null, initialPath = null }) {
     if (typeof document === 'undefined') return
 
     const siteUrl = 'https://sancity-mall-ke-v3.vercel.app'
+    const isMissingProduct = Boolean(detailSlug && !detailProduct)
     const title = detailProduct
       ? `${detailProduct.name} | Sancity Mall KE`
-      : 'Sancity Mall KE | Household Products, Retail & Wholesale'
+      : legalPage
+        ? `${legalPage.title} | Sancity Mall KE`
+        : isNotFoundRoute || isMissingProduct
+          ? 'Page not found | Sancity Mall KE'
+          : 'Sancity Mall KE | Home Essentials in Nairobi'
     const description = detailProduct?.description
       ? detailProduct.description.slice(0, 160)
-      : 'Sancity Mall KE — shop household, kitchen, bedroom and storage essentials in Nairobi with delivery across Kenya.'
+      : legalPage?.description
+        || (isNotFoundRoute || isMissingProduct
+          ? 'The page you requested could not be found on Sancity Mall KE.'
+          : 'Shop home essentials in Nairobi from Sancity Mall KE, with pickup in Nairobi and delivery options across Kenya.')
     const canonical = detailProduct
       ? `${siteUrl}/products/${productSlug(detailProduct)}`
-      : `${siteUrl}/`
+      : legalPage
+        ? `${siteUrl}${normalizedRoute}`
+        : `${siteUrl}/`
+    const image = detailProduct
+      ? productMainImage(detailProduct)
+      : `${siteUrl}/hero-bedroom-hq.jpeg`
 
     document.title = title
 
@@ -718,12 +731,16 @@ export default function App({ initialProducts = null, initialPath = null }) {
     }
 
     upsertMeta('meta[name="description"]', 'name', 'description', description)
+    upsertMeta('meta[name="robots"]', 'name', 'robots', isNotFoundRoute || isMissingProduct ? 'noindex,nofollow' : 'index,follow,max-image-preview:large')
     upsertMeta('meta[property="og:title"]', 'property', 'og:title', title)
     upsertMeta('meta[property="og:description"]', 'property', 'og:description', description)
+    upsertMeta('meta[property="og:type"]', 'property', 'og:type', detailProduct ? 'product' : 'website')
     upsertMeta('meta[property="og:url"]', 'property', 'og:url', canonical)
-
-    const image = detailProduct ? productMainImage(detailProduct) : null
-    if (image) upsertMeta('meta[property="og:image"]', 'property', 'og:image', image)
+    upsertMeta('meta[property="og:image"]', 'property', 'og:image', image)
+    upsertMeta('meta[name="twitter:card"]', 'name', 'twitter:card', 'summary_large_image')
+    upsertMeta('meta[name="twitter:title"]', 'name', 'twitter:title', title)
+    upsertMeta('meta[name="twitter:description"]', 'name', 'twitter:description', description)
+    upsertMeta('meta[name="twitter:image"]', 'name', 'twitter:image', image)
 
     let canonicalLink = document.head.querySelector('link[rel="canonical"]')
     if (!canonicalLink) {
@@ -732,7 +749,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
       document.head.appendChild(canonicalLink)
     }
     canonicalLink.setAttribute('href', canonical)
-  }, [detailProduct?.id])
+  }, [detailProduct?.id, detailSlug, legalPage, normalizedRoute, isNotFoundRoute])
 
   const relatedProducts = useMemo(() => {
     if (!detailProduct) return []
