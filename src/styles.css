@@ -681,10 +681,11 @@ img{max-width:100%}
 .catalogue-heading p{margin:7px 0 0;color:var(--muted);font-size:10px}
 .catalogue-filter{
   max-width:62%;
+  margin-left:auto;
   display:flex;
-  justify-content:flex-end;
+  justify-content:flex-start;
   gap:6px;
-  overflow:auto;
+  overflow-x:auto;
   scrollbar-width:none;
 }
 .catalogue-filter::-webkit-scrollbar{display:none}
