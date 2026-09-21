@@ -30,6 +30,7 @@ const emptyForm = {
   delivery_note: '',
   price: '',
   compare_at_price: '',
+  price_from: false,
   stock_quantity: '0',
   badge: '',
   status: 'published',
@@ -63,6 +64,7 @@ export default function AdminPage() {
   const [submitting, setSubmitting] = useState(false)
   const [listLoading, setListLoading] = useState(false)
   const [notice, setNotice] = useState(null)
+  const [uploadingProductId, setUploadingProductId] = useState(null)
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -120,7 +122,7 @@ export default function AdminPage() {
     setListLoading(true)
     const { data, error } = await supabase
       .from('products')
-      .select('id,name,category,description,dimensions,material,colour,key_features,care_instructions,delivery_note,price,compare_at_price,stock_quantity,badge,status,created_at,product_images(id,public_url,storage_path,sort_order)')
+      .select('id,name,category,description,dimensions,material,colour,key_features,care_instructions,delivery_note,price,compare_at_price,price_from,stock_quantity,badge,status,created_at,product_images(id,public_url,storage_path,sort_order)')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -139,6 +141,71 @@ export default function AdminPage() {
       return
     }
     setFiles(picked)
+  }
+
+  async function addImagesToProduct(product, event) {
+    const picked = Array.from(event.target.files || [])
+      .filter((file) => file.type.startsWith('image/'))
+
+    event.target.value = ''
+    if (picked.length === 0) return
+
+    const existingImages = [...(product.product_images || [])]
+      .sort((a, b) => a.sort_order - b.sort_order)
+    const remainingSlots = Math.max(0, 10 - existingImages.length)
+
+    if (remainingSlots === 0) {
+      setNotice({ type: 'error', text: 'This product already has 10 images. Remove an older image before adding more.' })
+      return
+    }
+
+    const filesToUpload = picked.slice(0, remainingSlots)
+    setUploadingProductId(product.id)
+    setNotice(null)
+
+    try {
+      const startOrder = existingImages.length
+      const imageRows = []
+
+      for (let index = 0; index < filesToUpload.length; index += 1) {
+        const file = filesToUpload[index]
+        const path = `${product.id}/${Date.now()}-extra-${startOrder + index}-${safeFileName(file.name)}`
+
+        const { error: uploadError } = await supabase.storage
+          .from(PRODUCT_IMAGE_BUCKET)
+          .upload(path, file, {
+            cacheControl: '31536000',
+            contentType: file.type,
+            upsert: false,
+          })
+
+        if (uploadError) throw uploadError
+
+        const { data: publicData } = supabase.storage
+          .from(PRODUCT_IMAGE_BUCKET)
+          .getPublicUrl(path)
+
+        imageRows.push({
+          product_id: product.id,
+          storage_path: path,
+          public_url: publicData.publicUrl,
+          sort_order: startOrder + index,
+        })
+      }
+
+      const { error: imageError } = await supabase.from('product_images').insert(imageRows)
+      if (imageError) throw imageError
+
+      setNotice({
+        type: 'success',
+        text: `Added ${imageRows.length} photo${imageRows.length === 1 ? '' : 's'} to ${product.name}.`,
+      })
+      await loadProducts()
+    } catch (error) {
+      setNotice({ type: 'error', text: error.message || 'Could not add product photos.' })
+    } finally {
+      setUploadingProductId(null)
+    }
   }
 
   async function createProduct(event) {
@@ -172,6 +239,7 @@ export default function AdminPage() {
         delivery_note: form.delivery_note.trim() || null,
         price: form.price === '' ? null : Number(form.price),
         compare_at_price: form.compare_at_price === '' ? null : Number(form.compare_at_price),
+        price_from: Boolean(form.price_from),
         stock_quantity: Number(form.stock_quantity || 0),
         badge: form.badge.trim() || null,
         status: form.status,
@@ -377,6 +445,15 @@ export default function AdminPage() {
                 <input type="number" min="0" step="1" value={form.compare_at_price} onChange={(e) => setForm({ ...form, compare_at_price: e.target.value })} placeholder="Optional" />
               </label>
 
+              <label className="admin-field admin-checkbox-field">
+                <input
+                  type="checkbox"
+                  checked={form.price_from}
+                  onChange={(e) => setForm({ ...form, price_from: e.target.checked })}
+                />
+                <span>Show price as “From KSh …”</span>
+              </label>
+
               <label className="admin-field">
                 <span>Stock quantity</span>
                 <input type="number" min="0" step="1" value={form.stock_quantity} onChange={(e) => setForm({ ...form, stock_quantity: e.target.value })} />
@@ -483,9 +560,20 @@ export default function AdminPage() {
                     <div className="admin-product-copy">
                       <span>{product.category}</span>
                       <strong>{product.name}</strong>
-                      <small>{money(product.price)} • Stock: {product.stock_quantity}</small>
+                      <small>{product.price_from && product.price !== null ? 'From ' : ''}{money(product.price)} • Stock: {product.stock_quantity} • {images.length} photo{images.length === 1 ? '' : 's'}</small>
                     </div>
                     <div className="admin-product-actions">
+                      <label className={`admin-add-images ${images.length >= 10 ? 'disabled' : ''}`}>
+                        {uploadingProductId === product.id ? <Loader2 className="spin" size={15} /> : <ImagePlus size={15} />}
+                        <span>{images.length >= 10 ? '10 photos' : 'Add photos'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          disabled={images.length >= 10 || uploadingProductId === product.id}
+                          onChange={(event) => addImagesToProduct(product, event)}
+                        />
+                      </label>
                       <button className={`status-pill ${product.status}`} onClick={() => toggleStatus(product)}>
                         {product.status === 'published' ? 'Published' : 'Draft'}
                       </button>
