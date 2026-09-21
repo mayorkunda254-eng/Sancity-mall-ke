@@ -2062,13 +2062,18 @@ export default function App({ initialProducts = null, initialPath = null }) {
 
                 <div className={`emoji-product-art ${imageUrl ? 'has-photo' : ''} art-${(product.category || 'other').toLowerCase().replace(/[^a-z]+/g, '-')}`}>
                   {imageUrl ? (
-                    <img
-                      className="product-photo"
-                      src={imageUrl}
-                      alt={product.name}
-                      loading="lazy"
-                      decoding="async"
-                    />
+                    <>
+                      <span className="product-photo-fallback" aria-hidden="true">{categoryEmoji(product.category)}</span>
+                      <img
+                        className="product-photo"
+                        src={imageUrl}
+                        alt={product.name}
+                        loading={index < 6 ? 'eager' : 'lazy'}
+                        fetchPriority={index < 4 ? 'high' : 'auto'}
+                        decoding="async"
+                        onError={(event) => { event.currentTarget.style.display = 'none' }}
+                      />
+                    </>
                   ) : (
                     <span className="product-emoji">{categoryEmoji(product.category)}</span>
                   )}
