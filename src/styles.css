@@ -5651,3 +5651,14 @@ select:focus-visible{
     display:grid;
   }
 }
+
+
+.checkout-privacy a{
+  color:#7a2330;
+  font-weight:800;
+  text-decoration:underline;
+  text-underline-offset:2px;
+}
+.checkout-privacy a:hover{
+  color:#5f1925;
+}
