@@ -2590,7 +2590,9 @@ select:focus-visible{
   transform:translate(-50%,0);
 }
 
-.save-button,
+.save-button{
+  z-index:4;
+}
 .product-card-actions{
   position:relative;
   z-index:4;
@@ -5040,5 +5042,77 @@ select:focus-visible{
   }
   .stock-alert-form button{
     width:100%;
+  }
+}
+
+
+/* === Mobile catalogue scroll stability === */
+@media(max-width:700px){
+  .storefront{
+    overflow-x:hidden;
+  }
+
+  .store-header{
+    background:#fffbf7;
+    -webkit-backdrop-filter:none;
+    backdrop-filter:none;
+  }
+
+  .emoji-product-card{
+    animation:none;
+    transform:none !important;
+    contain:layout paint;
+    isolation:isolate;
+  }
+
+  .emoji-product-card:hover{
+    transform:none !important;
+  }
+
+  .emoji-product-card:hover .product-photo{
+    transform:none;
+  }
+
+  .emoji-product-art{
+    overflow:hidden;
+    background:#f8f4ee;
+  }
+
+  .emoji-product-art.has-photo{
+    background:#f8f4ee;
+  }
+
+  .save-button{
+    position:absolute;
+    top:9px;
+    right:9px;
+    width:38px;
+    height:38px;
+    margin:0;
+  }
+
+  .mobile-whatsapp-fab{
+    right:12px;
+    bottom:76px;
+    width:50px;
+    height:50px;
+    min-height:50px;
+    padding:0;
+    border-radius:50%;
+    font-size:0;
+    box-shadow:0 8px 20px rgba(11,90,43,.20);
+  }
+
+  .mobile-whatsapp-fab svg{
+    width:21px;
+    height:21px;
+  }
+}
+
+@media(hover:none) and (pointer:coarse){
+  .emoji-product-card:hover,
+  .emoji-product-card:hover .product-photo,
+  .catalogue-filter button:hover{
+    transform:none !important;
   }
 }
