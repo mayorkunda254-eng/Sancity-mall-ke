@@ -211,14 +211,16 @@ img{max-width:100%}
 }
 
 .department-nav{
-  min-height:50px;
+  min-height:54px;
   padding:0 clamp(18px,5vw,100px);
-  border-top:1px solid rgba(74,25,100,.08);
+  border-top:1px solid rgba(72,57,43,.08);
+  border-bottom:1px solid rgba(185,145,69,.12);
   display:grid;
   grid-template-columns:auto 1fr auto;
   align-items:center;
   gap:18px;
-  background:#fffdfa;
+  background:rgba(255,252,247,.98);
+  box-shadow:0 5px 18px rgba(35,28,22,.035);
 }
 .all-departments{
   min-height:40px;
@@ -233,7 +235,7 @@ img{max-width:100%}
   font-size:11px;
   font-weight:800;
 }
-.all-departments span{font-size:18px}
+.all-departments svg{flex:0 0 auto}
 .department-links{
   min-width:0;
   display:flex;
@@ -245,22 +247,45 @@ img{max-width:100%}
 .department-links::-webkit-scrollbar{display:none}
 .department-links button,.nav-help button,.nav-help a{
   flex:0 0 auto;
-  min-height:36px;
+  min-height:38px;
   border:0;
-  border-radius:8px;
+  border-radius:10px;
   padding:0 9px;
   background:transparent;
-  color:#34263b;
+  color:#302a26;
   display:flex;
   align-items:center;
-  gap:6px;
+  gap:7px;
   font-size:9px;
   font-weight:700;
   white-space:nowrap;
 }
-.department-links button:hover,.nav-help button:hover,.nav-help a:hover{background:#f1eadf;color:#7a2330}
-.department-links button span{font-size:15px}
+.department-links button:hover,.nav-help button:hover,.nav-help a:hover{
+  background:#f1eadf;
+  color:#7a2330;
+}
+.department-icon{
+  width:27px;
+  height:27px;
+  flex:0 0 27px;
+  border-radius:9px;
+  display:grid;
+  place-items:center;
+  background:#f5efe6;
+  border:1px solid rgba(185,145,69,.10);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.75);
+}
+.department-icon svg{width:15px;height:15px}
+.department-links .dept-kitchen .department-icon{color:#7a2330}
+.department-links .dept-bedroom .department-icon{color:#1f4a39}
+.department-links .dept-storage .department-icon{color:#514b45}
+.department-links .dept-utility .department-icon{color:#8b2e3b}
+.department-links .dept-kids .department-icon{color:#a3535c}
+.department-links .dept-nets .department-icon{color:#24384c}
+.department-links .dept-fitness .department-icon{color:#191918}
+.department-links .dept-wholesale .department-icon{color:#8a6423}
 .nav-help{display:flex;align-items:center;gap:4px}
+.nav-help svg{flex:0 0 auto}
 
 /* HERO */
 .reference-hero{
@@ -1032,19 +1057,37 @@ img{max-width:100%}
 .brand-lockup.compact .brand-bag{width:42px;height:42px;font-size:26px}
 .brand-lockup.compact .brand-copy strong{font-size:17px}
 .mobile-drawer>button{
-  min-height:48px;
+  min-height:52px;
   border:0;
-  border-bottom:1px solid #eee5f0;
+  border-bottom:1px solid #e8dfd3;
   background:transparent;
   display:grid;
-  grid-template-columns:28px 1fr auto;
+  grid-template-columns:34px 1fr auto;
+  gap:8px;
   align-items:center;
   text-align:left;
-  color:#493450;
+  color:#302a26;
   font-size:10px;
   font-weight:800;
 }
-.mobile-drawer>button span{font-size:18px}
+.drawer-department-icon{
+  width:30px;
+  height:30px;
+  border-radius:9px;
+  display:grid;
+  place-items:center;
+  background:#f5efe6;
+  border:1px solid rgba(185,145,69,.12);
+}
+.drawer-department-icon svg{width:16px;height:16px}
+.mobile-drawer .dept-kitchen .drawer-department-icon{color:#7a2330}
+.mobile-drawer .dept-bedroom .drawer-department-icon{color:#1f4a39}
+.mobile-drawer .dept-storage .drawer-department-icon{color:#514b45}
+.mobile-drawer .dept-utility .drawer-department-icon{color:#8b2e3b}
+.mobile-drawer .dept-kids .drawer-department-icon{color:#a3535c}
+.mobile-drawer .dept-nets .drawer-department-icon{color:#24384c}
+.mobile-drawer .dept-fitness .drawer-department-icon{color:#191918}
+.mobile-drawer .dept-wholesale .drawer-department-icon{color:#8a6423}
 .drawer-whatsapp{
   margin-top:auto;
   min-height:46px;
@@ -1227,14 +1270,13 @@ img{max-width:100%}
     linear-gradient(145deg,#f7edff,#fff9f4);
 }
 
-.department-links button span{
-  width:24px;
-  height:24px;
-  border-radius:7px;
-  background:#f6edfb;
+.department-links .department-icon{
+  width:27px;
+  height:27px;
+  border-radius:9px;
+  background:#f5efe6;
   display:grid;
   place-items:center;
-  font-size:14px;
   line-height:1;
 }
 
