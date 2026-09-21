@@ -731,3 +731,119 @@
     grid-template-columns:1fr;
   }
 }
+
+
+/* === Availability request admin === */
+.admin-stock-alerts-card{
+  margin-bottom:18px;
+}
+.admin-stock-alerts-list{
+  margin-top:12px;
+  display:grid;
+  gap:8px;
+}
+.admin-stock-alert{
+  border:1px solid #e1d7cc;
+  border-radius:13px;
+  padding:11px;
+  background:#fcf9f5;
+  display:grid;
+  gap:9px;
+}
+.admin-stock-alert.alert-contacted{
+  background:#f4f7f4;
+}
+.admin-stock-alert.alert-closed{
+  opacity:.72;
+  background:#f4f2ef;
+}
+.admin-stock-alert-main{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+.admin-stock-alert-main>div{
+  display:grid;
+  gap:3px;
+  min-width:0;
+}
+.admin-stock-alert-main>div>span{
+  color:#8a7c70;
+  font-size:7.5px;
+}
+.admin-stock-alert-main strong{
+  color:#302a25;
+  font-size:10px;
+}
+.admin-stock-alert-main small{
+  color:#7d7066;
+  font-size:8px;
+}
+.alert-status-pending{
+  background:#fff4d8;
+  border-color:#ead59c;
+  color:#7c5d1e;
+}
+.alert-status-contacted{
+  background:#e8f3ed;
+  border-color:#c6dfd2;
+  color:#24543d;
+}
+.alert-status-closed{
+  background:#efedeb;
+  border-color:#d9d3ce;
+  color:#716963;
+}
+.admin-stock-alert-contact{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 14px;
+}
+.admin-stock-alert-contact a{
+  color:#5f544c;
+  font-size:8.5px;
+  text-decoration:none;
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+.admin-stock-alert-contact a:hover{
+  color:#7a2330;
+}
+.admin-stock-alert-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  align-items:center;
+}
+.admin-stock-alert-actions .admin-secondary-btn,
+.admin-stock-alert-actions .status-pill,
+.stock-alert-whatsapp{
+  min-height:35px;
+}
+.stock-alert-whatsapp{
+  padding:0 11px;
+  border-radius:9px;
+  background:#1f4d3f;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  text-decoration:none;
+  font-size:8.5px;
+  font-weight:900;
+}
+@media(max-width:620px){
+  .admin-stock-alert-main{
+    display:grid;
+  }
+  .admin-stock-alert-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+  .stock-alert-whatsapp{
+    grid-column:1/-1;
+  }
+}
