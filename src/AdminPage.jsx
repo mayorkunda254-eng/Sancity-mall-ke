@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import JSZip from 'jszip'
 import {
   Boxes, CheckCircle2, ChevronRight, ImagePlus, Loader2, LogOut, PackagePlus,
-  RefreshCw, Search, ShieldCheck, Store, Trash2, UploadCloud, XCircle
+  RefreshCw, Search, Settings2, ShieldCheck, Store, Trash2, UploadCloud, XCircle
 } from 'lucide-react'
 import { isSupabaseConfigured, PRODUCT_IMAGE_BUCKET, supabase } from './lib/supabase.js'
 import './admin.css'
@@ -69,6 +69,9 @@ export default function AdminPage() {
   const [batchUploading, setBatchUploading] = useState(false)
   const [batchProgress, setBatchProgress] = useState('')
   const [publishAfterBatch, setPublishAfterBatch] = useState(true)
+  const [variantProduct, setVariantProduct] = useState(null)
+  const [variantText, setVariantText] = useState('')
+  const [variantSaving, setVariantSaving] = useState(false)
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -126,7 +129,7 @@ export default function AdminPage() {
     setListLoading(true)
     const { data, error } = await supabase
       .from('products')
-      .select('id,name,slug,category,description,dimensions,material,colour,key_features,care_instructions,delivery_note,price,compare_at_price,price_from,stock_quantity,badge,status,created_at,product_images(id,public_url,storage_path,sort_order)')
+      .select('id,name,slug,category,description,dimensions,material,colour,key_features,care_instructions,delivery_note,price,compare_at_price,price_from,stock_quantity,badge,status,created_at,product_images(id,public_url,storage_path,sort_order),product_variants(id,label,size,colour,price,stock_quantity,is_active,sort_order)')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -369,6 +372,98 @@ export default function AdminPage() {
       setNotice({ type: 'error', text: error.message || 'Could not add product photos.' })
     } finally {
       setUploadingProductId(null)
+    }
+  }
+
+  function openVariantEditor(product) {
+    const lines = [...(product.product_variants || [])]
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      .map((variant) => [
+        variant.label || '',
+        variant.size || '',
+        variant.colour || '',
+        variant.price ?? '',
+        variant.stock_quantity ?? '',
+      ].join(' | '))
+
+    setVariantProduct(product)
+    setVariantText(lines.join('\n'))
+    setNotice(null)
+  }
+
+  function parseVariantLines(value) {
+    const lines = value
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+
+    const seen = new Set()
+
+    return lines.map((line, index) => {
+      const [labelRaw = '', sizeRaw = '', colourRaw = '', priceRaw = '', stockRaw = ''] = line
+        .split('|')
+        .map((part) => part.trim())
+
+      if (!labelRaw) throw new Error(`Variant line ${index + 1} needs a label.`)
+
+      const duplicateKey = labelRaw.toLowerCase()
+      if (seen.has(duplicateKey)) throw new Error(`Duplicate variant label: ${labelRaw}`)
+      seen.add(duplicateKey)
+
+      const price = priceRaw === '' ? null : Number(priceRaw)
+      const stock = stockRaw === '' ? null : Number(stockRaw)
+
+      if (price !== null && (!Number.isFinite(price) || price < 0)) {
+        throw new Error(`Variant line ${index + 1} has an invalid price.`)
+      }
+      if (stock !== null && (!Number.isInteger(stock) || stock < 0)) {
+        throw new Error(`Variant line ${index + 1} has an invalid stock quantity.`)
+      }
+
+      return {
+        product_id: variantProduct.id,
+        label: labelRaw,
+        size: sizeRaw || null,
+        colour: colourRaw || null,
+        price,
+        stock_quantity: stock,
+        is_active: true,
+        sort_order: index,
+      }
+    })
+  }
+
+  async function saveVariants() {
+    if (!variantProduct) return
+    setVariantSaving(true)
+    setNotice(null)
+
+    try {
+      const rows = parseVariantLines(variantText)
+
+      const { error: deleteError } = await supabase
+        .from('product_variants')
+        .delete()
+        .eq('product_id', variantProduct.id)
+
+      if (deleteError) throw deleteError
+
+      if (rows.length > 0) {
+        const { error: insertError } = await supabase.from('product_variants').insert(rows)
+        if (insertError) throw insertError
+      }
+
+      setNotice({
+        type: 'success',
+        text: `Saved ${rows.length} variant${rows.length === 1 ? '' : 's'} for ${variantProduct.name}.`,
+      })
+      setVariantProduct(null)
+      setVariantText('')
+      await loadProducts()
+    } catch (error) {
+      setNotice({ type: 'error', text: error.message || 'Could not save product variants.' })
+    } finally {
+      setVariantSaving(false)
     }
   }
 
@@ -761,9 +856,12 @@ export default function AdminPage() {
                     <div className="admin-product-copy">
                       <span>{product.category}</span>
                       <strong>{product.name}</strong>
-                      <small>{product.price_from && product.price !== null ? 'From ' : ''}{money(product.price)} • Stock: {product.stock_quantity} • {images.length} photo{images.length === 1 ? '' : 's'}</small>
+                      <small>{product.price_from && product.price !== null ? 'From ' : ''}{money(product.price)} • Stock: {product.stock_quantity} • {images.length} photo{images.length === 1 ? '' : 's'} • {(product.product_variants || []).length} variant{(product.product_variants || []).length === 1 ? '' : 's'}</small>
                     </div>
                     <div className="admin-product-actions">
+                      <button className="admin-variants-btn" onClick={() => openVariantEditor(product)} type="button">
+                        <Settings2 size={15} /> Variants
+                      </button>
                       <label className={`admin-add-images ${images.length >= 10 ? 'disabled' : ''}`}>
                         {uploadingProductId === product.id ? <Loader2 className="spin" size={15} /> : <ImagePlus size={15} />}
                         <span>{images.length >= 10 ? '10 photos' : 'Add photos'}</span>
@@ -786,6 +884,45 @@ export default function AdminPage() {
             </div>
           </section>
         </div>
+
+        {variantProduct && (
+          <div className="variant-editor-backdrop" role="presentation" onMouseDown={() => !variantSaving && setVariantProduct(null)}>
+            <section className="variant-editor" role="dialog" aria-modal="true" aria-labelledby="variant-editor-title" onMouseDown={(event) => event.stopPropagation()}>
+              <div className="variant-editor-heading">
+                <div>
+                  <span>Product variants</span>
+                  <h2 id="variant-editor-title">{variantProduct.name}</h2>
+                </div>
+                <button type="button" onClick={() => setVariantProduct(null)} disabled={variantSaving} aria-label="Close variant editor">×</button>
+              </div>
+
+              <p className="variant-editor-help">
+                One variant per line: <strong>Label | Size | Colour | Price | Stock</strong>. Price and stock may be left blank.
+              </p>
+
+              <textarea
+                rows="11"
+                value={variantText}
+                disabled={variantSaving}
+                onChange={(event) => setVariantText(event.target.value)}
+                placeholder={'1 Seater | 90–140 cm | Grey | 1499 | 4\n2 Seater | 145–185 cm | Grey | 1999 | 2\n3 Seater | 190–230 cm | Burgundy | 2499 |'}
+              />
+
+              <div className="variant-editor-example">
+                <strong>How it works</strong>
+                <span>The customer chooses the exact variant before Add to Cart. A blank price inherits the product’s base price.</span>
+              </div>
+
+              <div className="variant-editor-actions">
+                <button type="button" className="admin-secondary-btn" onClick={() => setVariantProduct(null)} disabled={variantSaving}>Cancel</button>
+                <button type="button" className="admin-primary-btn" onClick={saveVariants} disabled={variantSaving}>
+                  {variantSaving ? <Loader2 className="spin" size={17} /> : <Settings2 size={17} />}
+                  {variantSaving ? 'Saving variants…' : 'Save variants'}
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
       </main>
     </div>
   )
