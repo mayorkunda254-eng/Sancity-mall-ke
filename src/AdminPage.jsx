@@ -121,6 +121,23 @@ export default function AdminPage() {
     )
   }, [products, query])
 
+  const merchantFeedItemCount = useMemo(() => products.reduce((count, product) => {
+    const images = product.product_images || []
+    if (product.status !== 'published' || images.length === 0) return count
+
+    const variants = (product.product_variants || []).filter((variant) => variant.is_active !== false)
+    if (variants.length > 0) {
+      const eligibleVariants = variants.filter((variant) =>
+        (variant.price !== null && variant.price !== undefined)
+        || (product.price !== null && product.price !== undefined)
+      )
+      return count + eligibleVariants.length
+    }
+
+    if (product.price === null || product.price === undefined || product.price_from) return count
+    return count + 1
+  }, 0), [products])
+
   async function login(event) {
     event.preventDefault()
     setAuthError('')
@@ -857,6 +874,34 @@ export default function AdminPage() {
             {notice.text}
           </div>
         )}
+
+        <section className="admin-card admin-seo-card">
+          <div className="admin-card-heading">
+            <span className="admin-step"><Search size={16} /></span>
+            <div>
+              <h2>Google Shopping & SEO</h2>
+              <p>Live catalogue endpoints for Merchant Center and Google Search.</p>
+            </div>
+          </div>
+
+          <div className="admin-seo-grid">
+            <div>
+              <span>Feed-ready items</span>
+              <strong>{merchantFeedItemCount}</strong>
+              <small>Published products/variants with an image and exact price.</small>
+            </div>
+            <a href="/merchant-feed.xml" target="_blank" rel="noreferrer">
+              <span>Merchant Center feed</span>
+              <strong>/merchant-feed.xml</strong>
+              <small>Use this URL as the scheduled product data source in Google Merchant Center.</small>
+            </a>
+            <a href="/sitemap.xml" target="_blank" rel="noreferrer">
+              <span>Product sitemap</span>
+              <strong>/sitemap.xml</strong>
+              <small>Submit this URL in Google Search Console.</small>
+            </a>
+          </div>
+        </section>
 
         <section className="admin-card admin-delivery-zones-card">
           <div className="admin-card-heading orders-heading">
