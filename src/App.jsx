@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, ArrowUpDown, Baby, Banknote, BedDouble, Boxes, Check, ChevronRight, CircleHelp, CookingPot, Dumbbell, Eye, Heart, HousePlug, LogIn, MapPin, Menu, MessageCircle, Minus, PackageCheck, Plus, RotateCcw, Search, ShieldCheck, ShoppingCart, SlidersHorizontal, Sparkles, Tag, Truck, UserRound, X } from 'lucide-react'
+import { ArrowLeft, ArrowUpDown, Baby, Banknote, BedDouble, Bell, Boxes, Check, ChevronRight, CircleHelp, CookingPot, Dumbbell, Eye, Heart, HousePlug, LogIn, MapPin, Menu, MessageCircle, Minus, PackageCheck, Plus, RotateCcw, Search, ShieldCheck, ShoppingCart, SlidersHorizontal, Sparkles, Tag, Truck, UserRound, X } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './lib/supabase.js'
 
 const departments = [
@@ -219,6 +219,8 @@ export default function App({ initialProducts = null, initialPath = null }) {
   const [detailSlug, setDetailSlug] = useState(initialDetailSlug)
   const [galleryIndex, setGalleryIndex] = useState(0)
   const [selectedVariantId, setSelectedVariantId] = useState('')
+  const [stockAlertPhone, setStockAlertPhone] = useState('')
+  const [stockAlertState, setStockAlertState] = useState({ status: 'idle', message: '' })
   const [recentlyViewed, setRecentlyViewed] = useState([])
   const [recentlyAddedId, setRecentlyAddedId] = useState(null)
   const [toastProduct, setToastProduct] = useState(null)
@@ -445,6 +447,16 @@ export default function App({ initialProducts = null, initialPath = null }) {
     ? selectedVariant.stock_quantity
     : detailProduct?.stock_quantity
 
+  const canRequestStockAlert = Boolean(
+    detailProduct
+    && !(Number(detailStock) > 0)
+    && (detailVariants.length === 0 || selectedVariant),
+  )
+
+  useEffect(() => {
+    setStockAlertState({ status: 'idle', message: '' })
+  }, [detailProduct?.id, selectedVariantId])
+
   const detailSpecs = detailProduct ? [
     { label: 'Category', value: detailProduct.category },
     {
@@ -644,6 +656,41 @@ export default function App({ initialProducts = null, initialPath = null }) {
     return `https://wa.me/254710900548?text=${encodeURIComponent(message)}`
   }
 
+
+  const submitStockAlert = async (event) => {
+    event.preventDefault()
+    if (!detailProduct || stockAlertState.status === 'submitting') return
+
+    if (detailVariants.length > 0 && !selectedVariant) {
+      setStockAlertState({ status: 'error', message: 'Choose the exact product option first.' })
+      return
+    }
+
+    setStockAlertState({ status: 'submitting', message: '' })
+
+    try {
+      const { data, error } = await supabase.rpc('request_stock_alert', {
+        p_product_id: detailProduct.id,
+        p_variant_id: selectedVariant?.id || null,
+        p_customer_phone: stockAlertPhone.trim(),
+      })
+
+      if (error) throw error
+
+      const result = Array.isArray(data) ? data[0] : data
+      setStockAlertState({
+        status: 'success',
+        message: result?.already_requested
+          ? 'You already have an active availability request for this item.'
+          : 'Request saved. Sancity can contact you on WhatsApp when availability is confirmed.',
+      })
+    } catch (error) {
+      setStockAlertState({
+        status: 'error',
+        message: error.message || 'Could not save your availability request.',
+      })
+    }
+  }
 
   const openCheckout = () => {
     if (cartItems.length === 0 || hasUnpricedCartItems) return
@@ -1528,6 +1575,52 @@ export default function App({ initialProducts = null, initialPath = null }) {
                         <Heart size={18} fill={saved.includes(detailProduct.id) ? 'currentColor' : 'none'} />
                       </button>
                     </div>
+
+                    {canRequestStockAlert && (
+                      <section className="stock-alert-panel" aria-label="Availability notification">
+                        <div className="stock-alert-copy">
+                          <span className="stock-alert-icon"><Bell size={18} /></span>
+                          <div>
+                            <strong>Get an availability update</strong>
+                            <p>
+                              Leave your WhatsApp number and Sancity can contact you when
+                              {selectedVariant ? ` ${selectedVariant.label}` : ' this item'} is confirmed available.
+                            </p>
+                          </div>
+                        </div>
+
+                        {stockAlertState.status === 'success' ? (
+                          <div className="stock-alert-success">
+                            <Check size={17} />
+                            <span>{stockAlertState.message}</span>
+                          </div>
+                        ) : (
+                          <form className="stock-alert-form" onSubmit={submitStockAlert}>
+                            <label>
+                              <span>WhatsApp number</span>
+                              <input
+                                required
+                                inputMode="tel"
+                                autoComplete="tel"
+                                value={stockAlertPhone}
+                                onChange={(event) => setStockAlertPhone(event.target.value)}
+                                placeholder="07XX XXX XXX"
+                              />
+                            </label>
+                            <button type="submit" disabled={stockAlertState.status === 'submitting'}>
+                              <Bell size={16} />
+                              {stockAlertState.status === 'submitting' ? 'Saving…' : 'Notify me'}
+                            </button>
+                          </form>
+                        )}
+
+                        {stockAlertState.status === 'error' && (
+                          <div className="stock-alert-error">{stockAlertState.message}</div>
+                        )}
+
+                        <small>Your number is used only for this availability request and order support.</small>
+                      </section>
+                    )}
 
                     <div className="product-confidence-grid">
                       <div>
