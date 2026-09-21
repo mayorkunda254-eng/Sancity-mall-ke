@@ -871,7 +871,7 @@ export default function App() {
                 </div>
               ) : (
                 cartItems.map((item) => (
-                  <article className="cart-line" key={item.id}>
+                  <article className="cart-line" key={item.cartKey}>
                     <span className={`cart-line-emoji ${productMainImage(item) ? 'has-photo' : ''}`}>
                       {productMainImage(item) ? (
                         <img src={productMainImage(item)} alt="" loading="lazy" decoding="async" />
@@ -880,14 +880,21 @@ export default function App() {
                     <div className="cart-line-copy">
                       <small>{item.category}</small>
                       <strong>{item.name}</strong>
-                      <span>{formatPrice(item)}</span>
+                      {item.selectedVariant && (
+                        <em>
+                          {item.selectedVariant.label}
+                          {item.selectedVariant.size ? ` • ${item.selectedVariant.size}` : ''}
+                          {item.selectedVariant.colour ? ` • ${item.selectedVariant.colour}` : ''}
+                        </em>
+                      )}
+                      <span>{formatPrice(item, item.selectedVariant)}</span>
                     </div>
                     <div className="cart-line-controls">
-                      <button onClick={() => changeCartQty(item.id, -1)} aria-label={`Reduce ${item.name}`}><Minus size={13} /></button>
+                      <button onClick={() => changeCartQty(item.cartKey, -1)} aria-label={`Reduce ${item.name}`}><Minus size={13} /></button>
                       <b>{item.qty}</b>
-                      <button onClick={() => changeCartQty(item.id, 1)} aria-label={`Add another ${item.name}`}><Plus size={13} /></button>
+                      <button onClick={() => changeCartQty(item.cartKey, 1)} aria-label={`Add another ${item.name}`}><Plus size={13} /></button>
                     </div>
-                    <button className="remove-cart-line" onClick={() => removeFromCart(item.id)} aria-label={`Remove ${item.name}`}>
+                    <button className="remove-cart-line" onClick={() => removeFromCart(item.cartKey)} aria-label={`Remove ${item.name}`}>
                       <X size={14} />
                     </button>
                   </article>
@@ -984,10 +991,12 @@ export default function App() {
               <div className="quick-view-actions">
                 <button
                   className={recentlyAddedId === quickViewProduct.id ? 'added' : ''}
-                  onClick={() => addToCart(quickViewProduct)}
+                  onClick={() => activeVariants(quickViewProduct).length > 0 ? openProductPage(quickViewProduct) : addToCart(quickViewProduct)}
                 >
                   {recentlyAddedId === quickViewProduct.id ? <Check size={17} /> : <ShoppingCart size={17} />}
-                  {recentlyAddedId === quickViewProduct.id ? 'Added to cart' : 'Add to cart'}
+                  {activeVariants(quickViewProduct).length > 0
+                    ? 'Choose options'
+                    : recentlyAddedId === quickViewProduct.id ? 'Added to cart' : 'Add to cart'}
                 </button>
                 <a href={waLink(quickViewProduct.name)} target="_blank" rel="noreferrer">
                   <MessageCircle size={17} /> Order on WhatsApp
@@ -1050,10 +1059,42 @@ export default function App() {
                     <h1>{detailProduct.name}</h1>
                     <p className="product-detail-description">{detailProduct.description}</p>
 
+                    {detailVariants.length > 0 && (
+                      <div className="product-variant-picker">
+                        <div className="product-variant-heading">
+                          <span>Choose your option</span>
+                          <small>{selectedVariant ? selectedVariant.label : 'Select one before adding to cart'}</small>
+                        </div>
+                        <div className="product-variant-grid">
+                          {detailVariants.map((variant) => (
+                            <button
+                              key={variant.id}
+                              type="button"
+                              className={selectedVariantId === variant.id ? 'active' : ''}
+                              onClick={() => setSelectedVariantId(variant.id)}
+                            >
+                              <strong>{variant.label}</strong>
+                              {(variant.size || variant.colour) && (
+                                <span>
+                                  {variant.size || ''}
+                                  {variant.size && variant.colour ? ' • ' : ''}
+                                  {variant.colour || ''}
+                                </span>
+                              )}
+                              <b>{formatPrice(detailProduct, variant)}</b>
+                              {variant.stock_quantity !== null && variant.stock_quantity !== undefined && (
+                                <small>{variant.stock_quantity > 0 ? `${variant.stock_quantity} available` : 'Confirm stock'}</small>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="product-detail-price-row">
                       <div className="product-detail-pricing">
                         <strong>
-                          {formatPrice(detailProduct)}
+                          {formatPrice(detailProduct, selectedVariant)}
                         </strong>
                         {detailProduct.compare_at_price !== null
                           && detailProduct.compare_at_price !== undefined
@@ -1062,9 +1103,9 @@ export default function App() {
                             <del>KSh {Number(detailProduct.compare_at_price).toLocaleString('en-KE')}</del>
                           )}
                       </div>
-                      <span className={detailProduct.stock_quantity > 0 ? 'in-stock' : ''}>
-                        {detailProduct.stock_quantity > 0
-                          ? `${detailProduct.stock_quantity} in stock`
+                      <span className={detailStock > 0 ? 'in-stock' : ''}>
+                        {detailStock > 0
+                          ? `${detailStock} in stock`
                           : 'Confirm current stock'}
                       </span>
                     </div>
@@ -1072,12 +1113,17 @@ export default function App() {
                     <div className="product-detail-actions">
                       <button
                         className={recentlyAddedId === detailProduct.id ? 'added' : ''}
-                        onClick={() => addToCart(detailProduct)}
+                        disabled={detailVariants.length > 0 && !selectedVariant}
+                        onClick={() => addToCart(detailProduct, selectedVariant)}
                       >
                         {recentlyAddedId === detailProduct.id ? <Check size={18} /> : <ShoppingCart size={18} />}
-                        {recentlyAddedId === detailProduct.id ? 'Added to cart' : 'Add to cart'}
+                        {detailVariants.length > 0 && !selectedVariant
+                          ? 'Choose an option'
+                          : recentlyAddedId === detailProduct.id ? 'Added to cart' : 'Add to cart'}
                       </button>
-                      <a href={waLink(detailProduct.name)} target="_blank" rel="noreferrer">
+                      <a href={waLink(
+                        `${detailProduct.name}${selectedVariant ? ` — ${selectedVariant.label}${selectedVariant.colour ? `, ${selectedVariant.colour}` : ''}` : ''}`,
+                      )} target="_blank" rel="noreferrer">
                         <MessageCircle size={18} /> Order on WhatsApp
                       </a>
                       <button
@@ -1249,13 +1295,21 @@ export default function App() {
 
                 <div className="product-mobile-buybar">
                   <div>
-                    <small>{detailProduct.name}</small>
-                    <strong>{formatPrice(detailProduct)}</strong>
+                    <small>{selectedVariant ? `${detailProduct.name} • ${selectedVariant.label}` : detailProduct.name}</small>
+                    <strong>{formatPrice(detailProduct, selectedVariant)}</strong>
                   </div>
-                  <button onClick={() => addToCart(detailProduct)}>
-                    <ShoppingCart size={17} /> Add
+                  <button
+                    disabled={detailVariants.length > 0 && !selectedVariant}
+                    onClick={() => addToCart(detailProduct, selectedVariant)}
+                  >
+                    <ShoppingCart size={17} /> {detailVariants.length > 0 && !selectedVariant ? 'Choose' : 'Add'}
                   </button>
-                  <a href={waLink(detailProduct.name)} target="_blank" rel="noreferrer" aria-label="Order on WhatsApp">
+                  <a
+                    href={waLink(`${detailProduct.name}${selectedVariant ? ` — ${selectedVariant.label}` : ''}`)}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Order on WhatsApp"
+                  >
                     <MessageCircle size={18} />
                   </a>
                 </div>
@@ -1566,9 +1620,14 @@ export default function App() {
                   </div>
 
                   <div className="product-card-actions">
-                    <button className={isRecentlyAdded ? 'added' : ''} onClick={() => addToCart(product)}>
+                    <button
+                      className={isRecentlyAdded ? 'added' : ''}
+                      onClick={() => activeVariants(product).length > 0 ? openProductPage(product) : addToCart(product)}
+                    >
                       {isRecentlyAdded ? <Check size={14} /> : <ShoppingCart size={14} />}
-                      {isRecentlyAdded ? 'Added' : 'Add to cart'}
+                      {activeVariants(product).length > 0
+                        ? 'Choose options'
+                        : isRecentlyAdded ? 'Added' : 'Add to cart'}
                     </button>
                     <button className="product-card-details" onClick={() => openProductPage(product)} aria-label={`Open full details for ${product.name}`}>
                       <Eye size={15} />
