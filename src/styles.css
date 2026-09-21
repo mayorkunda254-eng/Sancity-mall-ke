@@ -5116,3 +5116,16 @@ select:focus-visible{
     transform:none !important;
   }
 }
+
+
+.product-photo-fallback{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  display:grid;
+  place-items:center;
+  color:#b9aa99;
+  font-size:34px;
+  background:
+    radial-gradient(circle at 50% 42%,rgba(255,255,255,.95),rgba(248,244,238,.82) 52%,rgba(243,236,227,.9) 100%);
+}
