@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import JSZip from 'jszip'
 import {
-  Boxes, CheckCircle2, ChevronRight, ImagePlus, Loader2, LogOut, PackagePlus,
-  RefreshCw, Search, Settings2, ShieldCheck, Store, Trash2, UploadCloud, XCircle
+  Boxes, CheckCircle2, ChevronRight, ClipboardCheck, CreditCard, ImagePlus, Loader2, LogOut, MapPin, PackagePlus,
+  Phone, RefreshCw, Search, Settings2, ShieldCheck, Store, Trash2, Truck, UploadCloud, XCircle
 } from 'lucide-react'
 import { isSupabaseConfigured, PRODUCT_IMAGE_BUCKET, supabase } from './lib/supabase.js'
 import './admin.css'
@@ -72,6 +72,9 @@ export default function AdminPage() {
   const [variantProduct, setVariantProduct] = useState(null)
   const [variantText, setVariantText] = useState('')
   const [variantSaving, setVariantSaving] = useState(false)
+  const [orders, setOrders] = useState([])
+  const [ordersLoading, setOrdersLoading] = useState(false)
+  const [orderUpdatingId, setOrderUpdatingId] = useState(null)
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -99,7 +102,10 @@ export default function AdminPage() {
   }, [])
 
   useEffect(() => {
-    if (session) loadProducts()
+    if (session) {
+      loadProducts()
+      loadOrders()
+    }
   }, [session])
 
   const filteredProducts = useMemo(() => {
@@ -139,6 +145,81 @@ export default function AdminPage() {
     }
     setListLoading(false)
   }
+
+  async function loadOrders() {
+    setOrdersLoading(true)
+    const { data, error } = await supabase
+      .from('store_orders')
+      .select('id,order_number,customer_name,customer_phone,delivery_method,delivery_location,delivery_notes,subtotal,delivery_fee,total_amount,payment_method,payment_paybill,payment_account,mpesa_code,payment_status,order_status,created_at,store_order_items(id,product_name,variant_label,variant_size,variant_colour,unit_price,quantity,line_total)')
+      .order('created_at', { ascending: false })
+      .limit(60)
+
+    if (error) {
+      setNotice({ type: 'error', text: error.message })
+    } else {
+      setOrders(data || [])
+    }
+    setOrdersLoading(false)
+  }
+
+  async function updateOrder(order, patch, successText = 'Order updated.') {
+    setOrderUpdatingId(order.id)
+    setNotice(null)
+
+    const { error } = await supabase
+      .from('store_orders')
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq('id', order.id)
+
+    if (error) {
+      setNotice({ type: 'error', text: error.message })
+    } else {
+      setNotice({ type: 'success', text: successText })
+      await loadOrders()
+    }
+    setOrderUpdatingId(null)
+  }
+
+  async function saveDeliveryFee(event, order) {
+    event.preventDefault()
+    const raw = event.currentTarget.elements.delivery_fee.value
+    const fee = Number(raw)
+
+    if (!Number.isFinite(fee) || fee < 0) {
+      setNotice({ type: 'error', text: 'Enter a valid delivery fee.' })
+      return
+    }
+
+    await updateOrder(
+      order,
+      {
+        delivery_fee: fee,
+        total_amount: Number(order.subtotal) + fee,
+        order_status: order.order_status === 'awaiting_delivery_quote' ? 'new' : order.order_status,
+      },
+      `Delivery total saved for ${order.order_number}.`,
+    )
+  }
+
+  async function attachPaymentCode(event, order) {
+    event.preventDefault()
+    const code = String(event.currentTarget.elements.mpesa_code.value || '').trim().toUpperCase().replace(/\s/g, '')
+
+    if (!/^[A-Z0-9]{8,16}$/.test(code)) {
+      setNotice({ type: 'error', text: 'Enter a valid M-Pesa confirmation code.' })
+      return
+    }
+
+    await updateOrder(
+      order,
+      { mpesa_code: code, payment_status: 'pending_verification' },
+      `Payment code attached to ${order.order_number}.`,
+    )
+  }
+
+  const orderStatusLabel = (value = '') => value
+    .replaceAll('_', ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
 
   function onFileChange(event) {
     const picked = Array.from(event.target.files || []).slice(0, 6)
@@ -653,12 +734,16 @@ export default function AdminPage() {
       <main className="admin-main">
         <section className="admin-page-title">
           <div>
-            <span className="admin-kicker"><Boxes size={15} /> Catalogue manager</span>
-            <h1>Products</h1>
-            <p>Add a new item and publish it to the Sancity storefront.</p>
+            <span className="admin-kicker"><Boxes size={15} /> Store manager</span>
+            <h1>Orders & products</h1>
+            <p>Verify customer orders, manage fulfilment and maintain the Sancity catalogue.</p>
           </div>
-          <button onClick={loadProducts} className="admin-secondary-btn" disabled={listLoading}>
-            <RefreshCw size={16} className={listLoading ? 'spin' : ''} /> Refresh
+          <button
+            onClick={() => { loadProducts(); loadOrders() }}
+            className="admin-secondary-btn"
+            disabled={listLoading || ordersLoading}
+          >
+            <RefreshCw size={16} className={listLoading || ordersLoading ? 'spin' : ''} /> Refresh
           </button>
         </section>
 
@@ -668,6 +753,139 @@ export default function AdminPage() {
             {notice.text}
           </div>
         )}
+
+        <section className="admin-card admin-orders-card">
+          <div className="admin-card-heading orders-heading">
+            <span className="admin-step"><ClipboardCheck size={16} /></span>
+            <div>
+              <h2>Orders</h2>
+              <p>{orders.length} recent order{orders.length === 1 ? '' : 's'} • manual M-Pesa verification</p>
+            </div>
+          </div>
+
+          <div className="admin-orders-list">
+            {ordersLoading ? (
+              <div className="admin-empty"><Loader2 className="spin" /> Loading orders…</div>
+            ) : orders.length === 0 ? (
+              <div className="admin-empty"><ClipboardCheck /> No customer orders yet.</div>
+            ) : orders.map((order) => {
+              const items = order.store_order_items || []
+              const total = order.total_amount === null || order.total_amount === undefined
+                ? null
+                : Number(order.total_amount)
+              const busy = orderUpdatingId === order.id
+
+              return (
+                <article className="admin-order" key={order.id}>
+                  <div className="admin-order-top">
+                    <div>
+                      <span>{new Date(order.created_at).toLocaleString('en-KE')}</span>
+                      <strong>{order.order_number}</strong>
+                    </div>
+                    <div className="admin-order-badges">
+                      <span className={`order-badge payment-${order.payment_status}`}>{orderStatusLabel(order.payment_status)}</span>
+                      <span className={`order-badge status-${order.order_status}`}>{orderStatusLabel(order.order_status)}</span>
+                    </div>
+                  </div>
+
+                  <div className="admin-order-grid">
+                    <div className="admin-order-customer">
+                      <span><strong>{order.customer_name}</strong></span>
+                      <a href={`tel:${order.customer_phone}`}><Phone size={14} /> {order.customer_phone}</a>
+                      <span>
+                        {order.delivery_method === 'delivery' ? <Truck size={14} /> : <MapPin size={14} />}
+                        {order.delivery_method === 'delivery'
+                          ? order.delivery_location || 'Delivery location pending'
+                          : 'Pickup • RNG Plaza, Ronald Ngala Street'}
+                      </span>
+                      {order.delivery_notes && <small>Note: {order.delivery_notes}</small>}
+                    </div>
+
+                    <div className="admin-order-money">
+                      <span>Products <b>{money(order.subtotal)}</b></span>
+                      <span>Delivery <b>{order.delivery_fee === null ? 'Pending' : money(order.delivery_fee)}</b></span>
+                      <strong>Total <b>{total === null ? 'Pending quote' : money(total)}</b></strong>
+                    </div>
+                  </div>
+
+                  <div className="admin-order-items">
+                    {items.map((item) => (
+                      <div key={item.id}>
+                        <span>
+                          <strong>{item.product_name}</strong>
+                          {item.variant_label && <small>{item.variant_label}{item.variant_size ? ` • ${item.variant_size}` : ''}{item.variant_colour ? ` • ${item.variant_colour}` : ''}</small>}
+                        </span>
+                        <b>{item.quantity} × {money(item.unit_price)}</b>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="admin-order-payment">
+                    <CreditCard size={16} />
+                    <span>
+                      <small>M-Pesa via Equity • Paybill {order.payment_paybill} • Till {order.payment_account}</small>
+                      <strong>{order.mpesa_code || 'No confirmation code submitted yet'}</strong>
+                    </span>
+                  </div>
+
+                  {order.delivery_method === 'delivery' && order.delivery_fee === null && (
+                    <form className="admin-order-inline-form" onSubmit={(event) => saveDeliveryFee(event, order)}>
+                      <label>
+                        <span>Delivery fee (KSh)</span>
+                        <input name="delivery_fee" type="number" min="0" step="1" placeholder="e.g. 350" disabled={busy} />
+                      </label>
+                      <button className="admin-secondary-btn" disabled={busy}>{busy ? 'Saving…' : 'Set delivery total'}</button>
+                    </form>
+                  )}
+
+                  {!order.mpesa_code && order.total_amount !== null && (
+                    <form className="admin-order-inline-form" onSubmit={(event) => attachPaymentCode(event, order)}>
+                      <label>
+                        <span>Confirmation code received from customer</span>
+                        <input name="mpesa_code" placeholder="e.g. TXX123ABCD" maxLength="16" disabled={busy} />
+                      </label>
+                      <button className="admin-secondary-btn" disabled={busy}>{busy ? 'Saving…' : 'Attach code'}</button>
+                    </form>
+                  )}
+
+                  <div className="admin-order-controls">
+                    <label>
+                      <span>Payment</span>
+                      <select
+                        value={order.payment_status}
+                        disabled={busy}
+                        onChange={(event) => updateOrder(order, { payment_status: event.target.value }, `Payment status updated for ${order.order_number}.`)}
+                      >
+                        <option value="awaiting_payment">Awaiting payment</option>
+                        <option value="pending_verification">Pending verification</option>
+                        <option value="verified">Verified</option>
+                        <option value="rejected">Rejected</option>
+                      </select>
+                    </label>
+
+                    <label>
+                      <span>Fulfilment</span>
+                      <select
+                        value={order.order_status}
+                        disabled={busy}
+                        onChange={(event) => updateOrder(order, { order_status: event.target.value }, `Order status updated for ${order.order_number}.`)}
+                      >
+                        <option value="awaiting_delivery_quote">Awaiting delivery quote</option>
+                        <option value="new">New</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="preparing">Preparing</option>
+                        <option value="dispatched">Dispatched</option>
+                        <option value="ready_for_pickup">Ready for pickup</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </label>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        </section>
 
         <section className="admin-card batch-import-card">
           <div className="admin-card-heading">
