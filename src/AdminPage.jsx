@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import JSZip from 'jszip'
 import {
   Bell, Boxes, CheckCircle2, ChevronRight, ClipboardCheck, CreditCard, ImagePlus, Loader2, LogOut, MapPin, MessageCircle, PackagePlus,
-  Phone, RefreshCw, Search, Settings2, ShieldCheck, Store, Trash2, Truck, UploadCloud, XCircle
+  Phone, RefreshCw, Search, Settings2, ShieldCheck, Store, Tag, Trash2, Truck, UploadCloud, XCircle
 } from 'lucide-react'
 import { isSupabaseConfigured, PRODUCT_IMAGE_BUCKET, supabase } from './lib/supabase.js'
 import './admin.css'
@@ -52,6 +52,14 @@ const slugify = (value) =>
 const safeFileName = (name) =>
   name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').replace(/-+/g, '-')
 
+const toLocalDateTimeInput = (value) => {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  const local = new Date(date.getTime() - (date.getTimezoneOffset() * 60000))
+  return local.toISOString().slice(0, 16)
+}
+
 export default function AdminPage() {
   const [session, setSession] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
@@ -82,6 +90,19 @@ export default function AdminPage() {
   const [stockAlerts, setStockAlerts] = useState([])
   const [stockAlertsLoading, setStockAlertsLoading] = useState(false)
   const [stockAlertUpdatingId, setStockAlertUpdatingId] = useState(null)
+  const [promotions, setPromotions] = useState([])
+  const [promotionsLoading, setPromotionsLoading] = useState(false)
+  const [promotionSavingId, setPromotionSavingId] = useState(null)
+  const [newPromotion, setNewPromotion] = useState({
+    code: '',
+    name: '',
+    discount_type: 'percent',
+    discount_value: '10',
+    min_subtotal: '0',
+    starts_at: '',
+    expires_at: '',
+    max_redemptions: '',
+  })
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -114,6 +135,7 @@ export default function AdminPage() {
       loadOrders()
       loadDeliveryZones()
       loadStockAlerts()
+      loadPromotions()
     }
   }, [session])
 
@@ -176,7 +198,7 @@ export default function AdminPage() {
     setOrdersLoading(true)
     const { data, error } = await supabase
       .from('store_orders')
-      .select('id,order_number,customer_name,customer_phone,delivery_method,delivery_zone_id,delivery_zone_name,delivery_location,delivery_notes,subtotal,delivery_fee,total_amount,payment_method,payment_paybill,payment_account,mpesa_code,payment_status,order_status,created_at,store_order_items(id,product_name,variant_label,variant_size,variant_colour,unit_price,quantity,line_total)')
+      .select('id,order_number,customer_name,customer_phone,delivery_method,delivery_zone_id,delivery_zone_name,delivery_location,delivery_notes,subtotal,discount_amount,promotion_code,delivery_fee,total_amount,payment_method,payment_paybill,payment_account,mpesa_code,payment_status,order_status,created_at,store_order_items(id,product_name,variant_label,variant_size,variant_colour,unit_price,quantity,line_total)')
       .order('created_at', { ascending: false })
       .limit(60)
 
@@ -186,6 +208,148 @@ export default function AdminPage() {
       setOrders(data || [])
     }
     setOrdersLoading(false)
+  }
+
+  async function loadPromotions() {
+    setPromotionsLoading(true)
+    const { data, error } = await supabase
+      .from('promotions')
+      .select('id,code,name,discount_type,discount_value,min_subtotal,starts_at,expires_at,max_redemptions,times_redeemed,is_active,created_at')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      setNotice({ type: 'error', text: error.message })
+    } else {
+      setPromotions(data || [])
+    }
+    setPromotionsLoading(false)
+  }
+
+  async function createPromotion(event) {
+    event.preventDefault()
+
+    const code = newPromotion.code.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '')
+    const value = Number(newPromotion.discount_value)
+    const minimum = Number(newPromotion.min_subtotal || 0)
+    const maxRedemptions = newPromotion.max_redemptions === '' ? null : Number(newPromotion.max_redemptions)
+
+    if (!code) {
+      setNotice({ type: 'error', text: 'Enter a promo code.' })
+      return
+    }
+    if (!Number.isFinite(value) || value <= 0 || (newPromotion.discount_type === 'percent' && value > 100)) {
+      setNotice({ type: 'error', text: 'Enter a valid discount value.' })
+      return
+    }
+    if (!Number.isFinite(minimum) || minimum < 0) {
+      setNotice({ type: 'error', text: 'Enter a valid minimum subtotal.' })
+      return
+    }
+    if (maxRedemptions !== null && (!Number.isInteger(maxRedemptions) || maxRedemptions < 1)) {
+      setNotice({ type: 'error', text: 'Usage limit must be a whole number above zero.' })
+      return
+    }
+
+    setPromotionSavingId('new')
+    const { error } = await supabase.from('promotions').insert({
+      code,
+      name: newPromotion.name.trim() || null,
+      discount_type: newPromotion.discount_type,
+      discount_value: value,
+      min_subtotal: minimum,
+      starts_at: newPromotion.starts_at ? new Date(newPromotion.starts_at).toISOString() : null,
+      expires_at: newPromotion.expires_at ? new Date(newPromotion.expires_at).toISOString() : null,
+      max_redemptions: maxRedemptions,
+      is_active: true,
+    })
+
+    if (error) {
+      setNotice({ type: 'error', text: error.message })
+    } else {
+      setNotice({ type: 'success', text: `Promo code ${code} created.` })
+      setNewPromotion({
+        code: '',
+        name: '',
+        discount_type: 'percent',
+        discount_value: '10',
+        min_subtotal: '0',
+        starts_at: '',
+        expires_at: '',
+        max_redemptions: '',
+      })
+      await loadPromotions()
+    }
+    setPromotionSavingId(null)
+  }
+
+  async function updatePromotion(promotion, patch, successText = 'Promotion updated.') {
+    setPromotionSavingId(promotion.id)
+    setNotice(null)
+
+    const { error } = await supabase
+      .from('promotions')
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq('id', promotion.id)
+
+    if (error) {
+      setNotice({ type: 'error', text: error.message })
+    } else {
+      setNotice({ type: 'success', text: successText })
+      await loadPromotions()
+    }
+    setPromotionSavingId(null)
+  }
+
+  async function savePromotionDetails(event, promotion) {
+    event.preventDefault()
+    const form = event.currentTarget
+    const type = form.elements.discount_type.value
+    const value = Number(form.elements.discount_value.value)
+    const minimum = Number(form.elements.min_subtotal.value || 0)
+    const maxRaw = form.elements.max_redemptions.value
+    const maxRedemptions = maxRaw === '' ? null : Number(maxRaw)
+    const startsRaw = form.elements.starts_at.value
+    const expiresRaw = form.elements.expires_at.value
+
+    if (!Number.isFinite(value) || value <= 0 || (type === 'percent' && value > 100)) {
+      setNotice({ type: 'error', text: 'Enter a valid discount value.' })
+      return
+    }
+    if (!Number.isFinite(minimum) || minimum < 0) {
+      setNotice({ type: 'error', text: 'Enter a valid minimum subtotal.' })
+      return
+    }
+    if (maxRedemptions !== null && (!Number.isInteger(maxRedemptions) || maxRedemptions < 1)) {
+      setNotice({ type: 'error', text: 'Usage limit must be a whole number above zero.' })
+      return
+    }
+
+    await updatePromotion(
+      promotion,
+      {
+        discount_type: type,
+        discount_value: value,
+        min_subtotal: minimum,
+        starts_at: startsRaw ? new Date(startsRaw).toISOString() : null,
+        expires_at: expiresRaw ? new Date(expiresRaw).toISOString() : null,
+        max_redemptions: maxRedemptions,
+      },
+      `Promo code ${promotion.code} updated.`,
+    )
+  }
+
+  async function deletePromotion(promotion) {
+    if (!window.confirm(`Delete promo code "${promotion.code}"?`)) return
+    setPromotionSavingId(promotion.id)
+
+    const { error } = await supabase.from('promotions').delete().eq('id', promotion.id)
+    if (error) {
+      setNotice({ type: 'error', text: error.message })
+    } else {
+      setNotice({ type: 'success', text: `Promo code ${promotion.code} deleted.` })
+      await loadPromotions()
+    }
+    setPromotionSavingId(null)
   }
 
   async function loadDeliveryZones() {
@@ -364,7 +528,7 @@ export default function AdminPage() {
       order,
       {
         delivery_fee: fee,
-        total_amount: Number(order.subtotal) + fee,
+        total_amount: Math.max(Number(order.subtotal) - Number(order.discount_amount || 0), 0) + fee,
         order_status: order.order_status === 'awaiting_delivery_quote' ? 'new' : order.order_status,
       },
       `Delivery total saved for ${order.order_number}.`,
@@ -909,11 +1073,11 @@ export default function AdminPage() {
             <p>Verify customer orders, manage fulfilment and maintain the Sancity catalogue.</p>
           </div>
           <button
-            onClick={() => { loadProducts(); loadOrders(); loadDeliveryZones(); loadStockAlerts() }}
+            onClick={() => { loadProducts(); loadOrders(); loadDeliveryZones(); loadStockAlerts(); loadPromotions() }}
             className="admin-secondary-btn"
-            disabled={listLoading || ordersLoading || zonesLoading || stockAlertsLoading}
+            disabled={listLoading || ordersLoading || zonesLoading || stockAlertsLoading || promotionsLoading}
           >
-            <RefreshCw size={16} className={listLoading || ordersLoading || zonesLoading || stockAlertsLoading ? 'spin' : ''} /> Refresh
+            <RefreshCw size={16} className={listLoading || ordersLoading || zonesLoading || stockAlertsLoading || promotionsLoading ? 'spin' : ''} /> Refresh
           </button>
         </section>
 
@@ -949,6 +1113,178 @@ export default function AdminPage() {
               <strong>/sitemap.xml</strong>
               <small>Submit this URL in Google Search Console.</small>
             </a>
+          </div>
+        </section>
+
+        <section className="admin-card admin-promotions-card">
+          <div className="admin-card-heading orders-heading">
+            <span className="admin-step"><Tag size={16} /></span>
+            <div>
+              <h2>Promotions & coupons</h2>
+              <p>Create checkout discounts with minimum spend, dates and optional usage limits.</p>
+            </div>
+          </div>
+
+          <form className="admin-promo-create" onSubmit={createPromotion}>
+            <label>
+              <span>Code</span>
+              <input
+                value={newPromotion.code}
+                onChange={(event) => setNewPromotion({
+                  ...newPromotion,
+                  code: event.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ''),
+                })}
+                placeholder="SANCITY10"
+                maxLength="24"
+                disabled={promotionSavingId === 'new'}
+              />
+            </label>
+            <label>
+              <span>Name</span>
+              <input
+                value={newPromotion.name}
+                onChange={(event) => setNewPromotion({ ...newPromotion, name: event.target.value })}
+                placeholder="Weekend offer"
+                disabled={promotionSavingId === 'new'}
+              />
+            </label>
+            <label>
+              <span>Type</span>
+              <select
+                value={newPromotion.discount_type}
+                onChange={(event) => setNewPromotion({ ...newPromotion, discount_type: event.target.value })}
+                disabled={promotionSavingId === 'new'}
+              >
+                <option value="percent">Percent %</option>
+                <option value="fixed">Fixed KSh</option>
+              </select>
+            </label>
+            <label>
+              <span>Discount</span>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={newPromotion.discount_value}
+                onChange={(event) => setNewPromotion({ ...newPromotion, discount_value: event.target.value })}
+                disabled={promotionSavingId === 'new'}
+              />
+            </label>
+            <label>
+              <span>Minimum subtotal</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={newPromotion.min_subtotal}
+                onChange={(event) => setNewPromotion({ ...newPromotion, min_subtotal: event.target.value })}
+                disabled={promotionSavingId === 'new'}
+              />
+            </label>
+            <label>
+              <span>Starts</span>
+              <input
+                type="datetime-local"
+                value={newPromotion.starts_at}
+                onChange={(event) => setNewPromotion({ ...newPromotion, starts_at: event.target.value })}
+                disabled={promotionSavingId === 'new'}
+              />
+            </label>
+            <label>
+              <span>Expires</span>
+              <input
+                type="datetime-local"
+                value={newPromotion.expires_at}
+                onChange={(event) => setNewPromotion({ ...newPromotion, expires_at: event.target.value })}
+                disabled={promotionSavingId === 'new'}
+              />
+            </label>
+            <label>
+              <span>Usage limit</span>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={newPromotion.max_redemptions}
+                onChange={(event) => setNewPromotion({ ...newPromotion, max_redemptions: event.target.value })}
+                placeholder="Unlimited"
+                disabled={promotionSavingId === 'new'}
+              />
+            </label>
+            <button className="admin-primary-btn" disabled={promotionSavingId === 'new'}>
+              {promotionSavingId === 'new' ? 'Creating…' : 'Create promo'}
+            </button>
+          </form>
+
+          <div className="admin-promotions-list">
+            {promotionsLoading ? (
+              <div className="admin-empty"><Loader2 className="spin" /> Loading promotions…</div>
+            ) : promotions.length === 0 ? (
+              <div className="admin-empty"><Tag /> No promo codes yet.</div>
+            ) : promotions.map((promotion) => {
+              const busy = promotionSavingId === promotion.id
+              return (
+                <article className={`admin-promotion ${promotion.is_active ? '' : 'inactive'}`} key={promotion.id}>
+                  <div className="admin-promotion-title">
+                    <span className={promotion.is_active ? 'active' : 'inactive'}>{promotion.is_active ? 'Active' : 'Paused'}</span>
+                    <strong>{promotion.code}</strong>
+                    <small>
+                      {promotion.name || 'Promotion'} • used {promotion.times_redeemed}
+                      {promotion.max_redemptions ? ` / ${promotion.max_redemptions}` : ''}
+                    </small>
+                  </div>
+
+                  <form className="admin-promotion-fields" onSubmit={(event) => savePromotionDetails(event, promotion)}>
+                    <label>
+                      <span>Type</span>
+                      <select name="discount_type" defaultValue={promotion.discount_type} disabled={busy}>
+                        <option value="percent">Percent %</option>
+                        <option value="fixed">Fixed KSh</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Value</span>
+                      <input name="discount_value" type="number" min="0.01" step="0.01" defaultValue={promotion.discount_value} disabled={busy} />
+                    </label>
+                    <label>
+                      <span>Min KSh</span>
+                      <input name="min_subtotal" type="number" min="0" step="1" defaultValue={promotion.min_subtotal || 0} disabled={busy} />
+                    </label>
+                    <label>
+                      <span>Starts</span>
+                      <input name="starts_at" type="datetime-local" defaultValue={toLocalDateTimeInput(promotion.starts_at)} disabled={busy} />
+                    </label>
+                    <label>
+                      <span>Expires</span>
+                      <input name="expires_at" type="datetime-local" defaultValue={toLocalDateTimeInput(promotion.expires_at)} disabled={busy} />
+                    </label>
+                    <label>
+                      <span>Limit</span>
+                      <input name="max_redemptions" type="number" min="1" step="1" defaultValue={promotion.max_redemptions ?? ''} placeholder="∞" disabled={busy} />
+                    </label>
+                    <button className="admin-secondary-btn" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
+                  </form>
+
+                  <div className="admin-promotion-actions">
+                    <button
+                      type="button"
+                      className="status-pill"
+                      disabled={busy}
+                      onClick={() => updatePromotion(
+                        promotion,
+                        { is_active: !promotion.is_active },
+                        `${promotion.code} ${promotion.is_active ? 'paused' : 'activated'}.`,
+                      )}
+                    >
+                      {promotion.is_active ? 'Pause' : 'Activate'}
+                    </button>
+                    <button className="danger-icon" type="button" disabled={busy} onClick={() => deletePromotion(promotion)} title="Delete promo">
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </article>
+              )
+            })}
           </div>
         </section>
 
@@ -1192,6 +1528,12 @@ export default function AdminPage() {
 
                     <div className="admin-order-money">
                       <span>Products <b>{money(order.subtotal)}</b></span>
+                      {Number(order.discount_amount || 0) > 0 && (
+                        <span className="order-discount">
+                          {order.promotion_code ? `Promo ${order.promotion_code}` : 'Discount'}
+                          <b>− {money(order.discount_amount)}</b>
+                        </span>
+                      )}
                       <span>Delivery <b>{order.delivery_fee === null ? 'Pending' : money(order.delivery_fee)}</b></span>
                       <strong>Total <b>{total === null ? 'Pending quote' : money(total)}</b></strong>
                     </div>
