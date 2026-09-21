@@ -24,6 +24,33 @@ const productCategories = [
   'Home Essentials',
 ]
 
+const roomCollections = [
+  {
+    key: 'kitchen-edit',
+    eyebrow: 'Kitchen Edit',
+    title: 'A more organised kitchen',
+    description: 'Everyday pieces selected to make prep, storage and serving feel cleaner and easier.',
+    category: 'Kitchen & Dining',
+    className: 'room-kitchen',
+  },
+  {
+    key: 'calm-bedroom',
+    eyebrow: 'Calm Bedroom',
+    title: 'Comfort starts here',
+    description: 'Bedroom essentials chosen around rest, softness and a more considered sleeping space.',
+    category: 'Bedroom & Sleep',
+    className: 'room-bedroom',
+  },
+  {
+    key: 'smart-storage',
+    eyebrow: 'Smart Storage',
+    title: 'Create space without clutter',
+    description: 'Useful organisation pieces for bedrooms, wardrobes and everyday small-space living.',
+    category: 'Storage & Organisation',
+    className: 'room-storage',
+  },
+]
+
 const fallbackProducts = [
   {
     id: 1,
@@ -105,6 +132,7 @@ function waLink(product) {
 export default function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const [searchActive, setSearchActive] = useState(false)
   const [activeCategory, setActiveCategory] = useState('All')
   const [saved, setSaved] = useState([])
   const [wishlistOnly, setWishlistOnly] = useState(false)
@@ -228,6 +256,34 @@ export default function App() {
       return categoryMatch && wishlistMatch && (!q || haystack.includes(q))
     })
   }, [products, query, activeCategory, wishlistOnly, saved])
+
+  const predictiveProducts = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return []
+
+    return products
+      .filter((item) => {
+        const categoryMatch = activeCategory === 'All' || item.category === activeCategory
+        const haystack = `${item.name || ''} ${item.category || ''} ${item.description || ''}`.toLowerCase()
+        return categoryMatch && haystack.includes(q)
+      })
+      .slice(0, 5)
+  }, [products, query, activeCategory])
+
+  const predictiveCategories = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return []
+
+    return productCategories
+      .filter((category) => category.toLowerCase().includes(q))
+      .slice(0, 3)
+  }, [query])
+
+  const collectionCards = useMemo(() => roomCollections.map((collection) => {
+    const matches = products.filter((product) => product.category === collection.category)
+    const featured = matches.find((product) => productMainImage(product)) || matches[0] || null
+    return { ...collection, featured, count: matches.length }
+  }), [products])
 
   const detailProduct = useMemo(
     () => detailSlug ? products.find((item) => productSlug(item) === detailSlug) || null : null,
@@ -371,6 +427,29 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  const submitSearch = () => {
+    setSearchActive(false)
+    if (detailSlug) {
+      window.history.pushState({}, '', '/')
+      setDetailSlug('')
+    }
+    window.setTimeout(() => {
+      document.querySelector('#products')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 40)
+  }
+
+  const choosePredictiveCategory = (category) => {
+    setQuery('')
+    setSearchActive(false)
+    jumpToProducts(category)
+  }
+
+  const openCollection = (collection) => {
+    setQuery('')
+    setSearchActive(false)
+    jumpToProducts(collection.category)
+  }
+
   const backToShop = () => {
     window.history.pushState({}, '', '/')
     setDetailSlug('')
@@ -411,18 +490,32 @@ export default function App() {
             </span>
           </a>
 
-          <div className="global-search">
+          <div
+            className={`global-search ${searchActive && query.trim() ? 'predictive-open' : ''}`}
+            onFocus={() => setSearchActive(true)}
+            onBlur={() => window.setTimeout(() => setSearchActive(false), 140)}
+          >
             <Search size={19} />
             <input
               ref={searchRef}
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value)
+                setSearchActive(true)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') submitSearch()
+              }}
               placeholder="Search for products, categories or brands..."
               aria-label="Search Sancity products"
+              autoComplete="off"
             />
             <select
               value={activeCategory}
-              onChange={(e) => setActiveCategory(e.target.value)}
+              onChange={(e) => {
+                setActiveCategory(e.target.value)
+                setSearchActive(true)
+              }}
               aria-label="Choose search category"
             >
               <option value="All">All categories</option>
@@ -430,16 +523,77 @@ export default function App() {
                 <option key={category} value={category}>{category}</option>
               ))}
             </select>
-            <button
-              className="search-button"
-              onClick={() => document.querySelector('#products')?.scrollIntoView({ behavior: 'smooth' })}
-            >
+            <button className="search-button" onClick={submitSearch}>
               Search
             </button>
             {query && (
-              <button className="clear-search" onClick={() => setQuery('')} aria-label="Clear search">
+              <button
+                className="clear-search"
+                onClick={() => {
+                  setQuery('')
+                  setSearchActive(false)
+                }}
+                aria-label="Clear search"
+              >
                 <X size={15} />
               </button>
+            )}
+
+            {searchActive && query.trim() && (
+              <div className="predictive-search" role="listbox" aria-label="Search suggestions">
+                <div className="predictive-search-top">
+                  <span>Search suggestions</span>
+                  <small>{predictiveProducts.length} product{predictiveProducts.length === 1 ? '' : 's'} found</small>
+                </div>
+
+                {predictiveCategories.length > 0 && (
+                  <div className="predictive-categories">
+                    {predictiveCategories.map((category) => (
+                      <button key={category} onMouseDown={(e) => e.preventDefault()} onClick={() => choosePredictiveCategory(category)}>
+                        <Search size={13} />
+                        <span>{category}</span>
+                        <ChevronRight size={13} />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {predictiveProducts.length > 0 ? (
+                  <div className="predictive-products">
+                    {predictiveProducts.map((product) => (
+                      <button
+                        key={product.id}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => openProductPage(product)}
+                      >
+                        <span className={`predictive-image ${productMainImage(product) ? 'has-photo' : ''}`}>
+                          {productMainImage(product)
+                            ? <img src={productMainImage(product)} alt="" />
+                            : <span>{categoryEmoji(product.category)}</span>}
+                        </span>
+                        <span className="predictive-copy">
+                          <small>{product.category}</small>
+                          <strong>{product.name}</strong>
+                          <b>{product.price !== null && product.price !== undefined ? `KSh ${Number(product.price).toLocaleString('en-KE')}` : 'Price on request'}</b>
+                        </span>
+                        <ChevronRight size={15} />
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="predictive-empty">
+                    <Search size={20} />
+                    <span>
+                      <strong>No direct matches yet</strong>
+                      <small>Try a broader product name or another category.</small>
+                    </span>
+                  </div>
+                )}
+
+                <button className="predictive-view-all" onMouseDown={(e) => e.preventDefault()} onClick={submitSearch}>
+                  View all matching products <ChevronRight size={14} />
+                </button>
+              </div>
             )}
           </div>
 
@@ -957,6 +1111,40 @@ export default function App() {
                   <strong>{department.short}</strong>
                 </div>
               </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="room-collections" id="collections">
+          <div className="room-collections-heading">
+            <div>
+              <span>Curated for the home</span>
+              <h2>Shop the Sancity Edit</h2>
+              <p>Start with a room, then discover products that naturally belong together.</p>
+            </div>
+            <button onClick={() => jumpToProducts('All')}>Explore all products <ChevronRight size={15} /></button>
+          </div>
+
+          <div className="room-collection-grid">
+            {collectionCards.map((collection) => (
+              <article key={collection.key} className={`room-collection-card ${collection.className}`}>
+                <button className="room-card-hitarea" onClick={() => openCollection(collection)} aria-label={`Shop ${collection.eyebrow}`} />
+                <div className={`room-collection-media ${collection.featured && productMainImage(collection.featured) ? 'has-photo' : ''}`}>
+                  {collection.featured && productMainImage(collection.featured) ? (
+                    <img src={productMainImage(collection.featured)} alt={collection.featured.name} loading="lazy" />
+                  ) : (
+                    <span>{categoryEmoji(collection.category)}</span>
+                  )}
+                  <div className="room-collection-scrim" />
+                  <small>{collection.count > 0 ? `${collection.count} products` : 'Collection building'}</small>
+                </div>
+                <div className="room-collection-copy">
+                  <span>{collection.eyebrow}</span>
+                  <h3>{collection.title}</h3>
+                  <p>{collection.description}</p>
+                  <strong>Shop collection <ChevronRight size={15} /></strong>
+                </div>
+              </article>
             ))}
           </div>
         </section>
