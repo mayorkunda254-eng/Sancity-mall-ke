@@ -163,6 +163,7 @@ const emptyCheckoutForm = {
   customer_name: '',
   customer_phone: '',
   delivery_method: 'delivery',
+  delivery_zone_id: '',
   delivery_location: '',
   delivery_notes: '',
   mpesa_code: '',
@@ -205,6 +206,7 @@ export default function App() {
   const [checkoutSubmitting, setCheckoutSubmitting] = useState(false)
   const [checkoutError, setCheckoutError] = useState('')
   const [checkoutResult, setCheckoutResult] = useState(null)
+  const [deliveryZones, setDeliveryZones] = useState([])
   const [storageReady, setStorageReady] = useState(false)
   const [products, setProducts] = useState(fallbackProducts)
   const [quickViewProduct, setQuickViewProduct] = useState(null)
@@ -234,7 +236,20 @@ export default function App() {
       setProducts(data.length > 0 ? data : fallbackProducts)
     }
 
+    async function loadDeliveryZones() {
+      const { data, error } = await supabase
+        .from('delivery_zones')
+        .select('id,name,fee,eta_text,sort_order')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true })
+        .order('name', { ascending: true })
+
+      if (!active || error || !data) return
+      setDeliveryZones(data)
+    }
+
     loadPublishedProducts()
+    loadDeliveryZones()
 
     return () => {
       active = false
@@ -481,6 +496,18 @@ export default function App() {
       || (!item.selectedVariant && item.price_from)
   })
 
+  const selectedDeliveryZone = checkoutForm.delivery_zone_id
+    ? deliveryZones.find((zone) => zone.id === checkoutForm.delivery_zone_id) || null
+    : null
+  const selectedDeliveryFee = selectedDeliveryZone?.fee === null || selectedDeliveryZone?.fee === undefined
+    ? null
+    : Number(selectedDeliveryZone.fee)
+  const checkoutHasKnownTotal = checkoutForm.delivery_method === 'pickup'
+    || (checkoutForm.delivery_method === 'delivery' && selectedDeliveryFee !== null)
+  const checkoutEstimatedTotal = checkoutForm.delivery_method === 'pickup'
+    ? knownCartTotal
+    : selectedDeliveryFee === null ? null : knownCartTotal + selectedDeliveryFee
+
   const toggleSaved = (id) => {
     setSaved((items) => (items.includes(id) ? items.filter((item) => item !== id) : [...items, id]))
   }
@@ -578,9 +605,9 @@ export default function App() {
 
   const checkoutWhatsappLink = (result = checkoutResult) => {
     const reference = result?.order_number || 'my Sancity order'
-    const message = checkoutForm.delivery_method === 'delivery'
-      ? `Hello Sancity Mall KE, I have placed order ${reference}. Please confirm my delivery fee and final total.`
-      : `Hello Sancity Mall KE, I have placed pickup order ${reference} and submitted my M-Pesa confirmation code for verification.`
+    const message = result?.total_amount
+      ? `Hello Sancity Mall KE, I have placed order ${reference} and submitted my M-Pesa confirmation code for verification.`
+      : `Hello Sancity Mall KE, I have placed order ${reference}. Please confirm my delivery fee and final total.`
     return `https://wa.me/254710900548?text=${encodeURIComponent(message)}`
   }
 
@@ -595,13 +622,13 @@ export default function App() {
       return
     }
 
-    if (checkoutForm.delivery_method === 'pickup' && !checkoutForm.mpesa_code.trim()) {
-      setCheckoutError('Enter the M-Pesa confirmation code after paying the pickup total.')
+    if (checkoutForm.delivery_method === 'delivery' && !checkoutForm.delivery_location.trim()) {
+      setCheckoutError('Enter the delivery address, estate or landmark.')
       return
     }
 
-    if (checkoutForm.delivery_method === 'delivery' && !checkoutForm.delivery_location.trim()) {
-      setCheckoutError('Enter the delivery area or location.')
+    if (checkoutHasKnownTotal && !checkoutForm.mpesa_code.trim()) {
+      setCheckoutError('Enter the M-Pesa confirmation code after paying the displayed total.')
       return
     }
 
@@ -621,8 +648,11 @@ export default function App() {
         p_delivery_location: checkoutForm.delivery_location.trim() || null,
         p_delivery_notes: checkoutForm.delivery_notes.trim() || null,
         p_items: items,
-        p_mpesa_code: checkoutForm.delivery_method === 'pickup'
+        p_mpesa_code: checkoutHasKnownTotal
           ? checkoutForm.mpesa_code.trim().toUpperCase()
+          : null,
+        p_delivery_zone_id: checkoutForm.delivery_method === 'delivery'
+          ? checkoutForm.delivery_zone_id || null
           : null,
       })
 
@@ -1035,22 +1065,22 @@ export default function App() {
                 <span>Order reference</span>
                 <strong>{checkoutResult.order_number}</strong>
 
-                {checkoutForm.delivery_method === 'delivery' ? (
+                {checkoutResult.total_amount ? (
+                  <>
+                    <h3>Payment submitted for verification</h3>
+                    <p>Your M-Pesa code has been attached to the order. Sancity will verify the transaction before fulfilment.</p>
+                    <div className="checkout-summary-line">
+                      <span>Amount submitted</span>
+                      <b>KSh {Number(checkoutResult.total_amount || 0).toLocaleString('en-KE')}</b>
+                    </div>
+                  </>
+                ) : (
                   <>
                     <h3>Delivery total will be confirmed first</h3>
                     <p>Your products are reserved in the order. Sancity will confirm the delivery fee and final amount before asking you to pay.</p>
                     <div className="checkout-summary-line">
                       <span>Product subtotal</span>
                       <b>KSh {Number(checkoutResult.subtotal || 0).toLocaleString('en-KE')}</b>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <h3>Payment submitted for verification</h3>
-                    <p>Your M-Pesa code has been attached to the order. Sancity will verify the payment before preparing the pickup.</p>
-                    <div className="checkout-summary-line">
-                      <span>Amount submitted</span>
-                      <b>KSh {Number(checkoutResult.total_amount || checkoutResult.subtotal || 0).toLocaleString('en-KE')}</b>
                     </div>
                   </>
                 )}
@@ -1110,30 +1140,69 @@ export default function App() {
                       name="delivery-method"
                       value="pickup"
                       checked={checkoutForm.delivery_method === 'pickup'}
-                      onChange={() => setCheckoutForm({ ...checkoutForm, delivery_method: 'pickup' })}
+                      onChange={() => setCheckoutForm({ ...checkoutForm, delivery_method: 'pickup', delivery_zone_id: '', delivery_location: '' })}
                     />
                     <MapPin size={20} />
                     <span><strong>Pickup</strong><small>RNG Plaza, Ronald Ngala Street</small></span>
                   </label>
                 </fieldset>
 
-                {checkoutForm.delivery_method === 'delivery' ? (
+                {checkoutForm.delivery_method === 'delivery' && (
                   <div className="checkout-delivery-block">
                     <label>
-                      <span>Delivery area / location</span>
+                      <span>Delivery zone</span>
+                      <select
+                        value={checkoutForm.delivery_zone_id}
+                        onChange={(event) => setCheckoutForm({
+                          ...checkoutForm,
+                          delivery_zone_id: event.target.value,
+                          mpesa_code: '',
+                        })}
+                      >
+                        <option value="">My area is not listed / request a quote</option>
+                        {deliveryZones.map((zone) => (
+                          <option key={zone.id} value={zone.id}>
+                            {zone.name}{zone.fee === null || zone.fee === undefined ? ' — quote required' : ` — KSh ${Number(zone.fee).toLocaleString('en-KE')}`}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      <span>Exact delivery address / landmark</span>
                       <input
                         required
                         value={checkoutForm.delivery_location}
                         onChange={(event) => setCheckoutForm({ ...checkoutForm, delivery_location: event.target.value })}
-                        placeholder="e.g. Kasarani, Ruiru, Westlands"
+                        placeholder="Estate, building, street or nearby landmark"
                       />
                     </label>
-                    <div className="checkout-info-note">
-                      <Truck size={18} />
-                      <span><strong>Do not pay yet.</strong> Submit the order first. Sancity will confirm the delivery fee and final total before payment.</span>
-                    </div>
+
+                    {selectedDeliveryZone && (
+                      <div className="checkout-zone-summary">
+                        <span>
+                          <strong>{selectedDeliveryZone.name}</strong>
+                          <small>{selectedDeliveryZone.eta_text || 'Delivery timing confirmed with your order.'}</small>
+                        </span>
+                        <b>{selectedDeliveryFee === null ? 'Quote required' : `KSh ${selectedDeliveryFee.toLocaleString('en-KE')}`}</b>
+                      </div>
+                    )}
+
+                    {selectedDeliveryFee === null ? (
+                      <div className="checkout-info-note">
+                        <Truck size={18} />
+                        <span><strong>Do not pay yet.</strong> Submit the order first. Sancity will confirm the delivery fee and final total before payment.</span>
+                      </div>
+                    ) : (
+                      <div className="checkout-final-total">
+                        <span><small>Products</small><b>KSh {knownCartTotal.toLocaleString('en-KE')}</b></span>
+                        <span><small>Delivery</small><b>KSh {selectedDeliveryFee.toLocaleString('en-KE')}</b></span>
+                        <strong><small>Final total</small><b>KSh {checkoutEstimatedTotal.toLocaleString('en-KE')}</b></strong>
+                      </div>
+                    )}
                   </div>
-                ) : (
+                )}
+
+                {checkoutHasKnownTotal && (
                   <div className="checkout-payment-card">
                     <div className="checkout-payment-title">
                       <Banknote size={20} />
@@ -1143,7 +1212,7 @@ export default function App() {
                       <li>Open <strong>Lipa na M-Pesa → Paybill</strong></li>
                       <li>Business No. <strong>247247</strong></li>
                       <li>Account / Till <strong>0705287264</strong></li>
-                      <li>Amount <strong>KSh {knownCartTotal.toLocaleString('en-KE')}</strong></li>
+                      <li>Amount <strong>KSh {Number(checkoutEstimatedTotal || knownCartTotal).toLocaleString('en-KE')}</strong></li>
                     </ol>
                     <label>
                       <span>M-Pesa confirmation code</span>
@@ -1175,7 +1244,7 @@ export default function App() {
                 <button className="checkout-submit" disabled={checkoutSubmitting}>
                   {checkoutSubmitting
                     ? 'Placing order…'
-                    : checkoutForm.delivery_method === 'pickup'
+                    : checkoutHasKnownTotal
                       ? 'Submit paid order'
                       : 'Request delivery total'}
                 </button>
