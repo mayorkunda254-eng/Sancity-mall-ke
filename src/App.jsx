@@ -1400,9 +1400,12 @@ export default function App({ initialProducts = null, initialPath = null }) {
             aria-labelledby="quick-view-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <button autoFocus className="quick-view-close" onClick={() => setQuickViewProduct(null)} aria-label="Close product details">
-              <X size={20} />
-            </button>
+            <div className="quick-view-mobile-toolbar">
+              <span>Quick view</span>
+              <button autoFocus className="quick-view-close" onClick={() => setQuickViewProduct(null)} aria-label="Close product details">
+                <X size={20} />
+              </button>
+            </div>
 
             <div className={`quick-view-media ${productMainImage(quickViewProduct) ? 'has-photo' : ''}`}>
               {productMainImage(quickViewProduct) ? (
