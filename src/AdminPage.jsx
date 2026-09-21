@@ -168,6 +168,15 @@ export default function AdminPage() {
         throw new Error('The ZIP manifest does not contain any product mappings.')
       }
 
+      setBatchProgress('Refreshing catalogue from Supabase…')
+      const { data: freshCatalogue, error: catalogueError } = await supabase
+        .from('products')
+        .select('id,name,slug,status,product_images(id,public_url,storage_path,sort_order)')
+        .order('created_at', { ascending: false })
+
+      if (catalogueError) throw catalogueError
+
+      const catalogueProducts = freshCatalogue || []
       const imagePattern = /\.(jpe?g|png|webp|avif)$/i
       let uploadedTotal = 0
       let matchedProducts = 0
@@ -176,7 +185,7 @@ export default function AdminPage() {
 
       for (let productIndex = 0; productIndex < manifest.products.length; productIndex += 1) {
         const mapping = manifest.products[productIndex]
-        const product = products.find((item) => item.slug === mapping.slug)
+        const product = catalogueProducts.find((item) => item.slug === mapping.slug)
 
         if (!product) {
           warnings.push(`No catalogue product found for ${mapping.slug}`)
@@ -268,11 +277,19 @@ export default function AdminPage() {
         }
       }
 
+      if (matchedProducts === 0) {
+        throw new Error(
+          `No ZIP products matched the live catalogue. Checked ${manifest.products.length} mapped product${manifest.products.length === 1 ? '' : 's'}. Refresh the admin page and try again.`,
+        )
+      }
+
       await loadProducts()
       setBatchProgress('')
       setNotice({
-        type: 'success',
-        text: `Batch complete: ${uploadedTotal} photo${uploadedTotal === 1 ? '' : 's'} added across ${matchedProducts} product${matchedProducts === 1 ? '' : 's'}${publishedProducts ? `, ${publishedProducts} draft${publishedProducts === 1 ? '' : 's'} published` : ''}.${warnings.length ? ` ${warnings.length} note${warnings.length === 1 ? '' : 's'}: ${warnings.slice(0, 2).join('; ')}${warnings.length > 2 ? '…' : ''}` : ''}`,
+        type: uploadedTotal > 0 ? 'success' : 'error',
+        text: uploadedTotal > 0
+          ? `Batch complete: ${uploadedTotal} photo${uploadedTotal === 1 ? '' : 's'} added across ${matchedProducts} product${matchedProducts === 1 ? '' : 's'}${publishedProducts ? `, ${publishedProducts} draft${publishedProducts === 1 ? '' : 's'} published` : ''}.${warnings.length ? ` ${warnings.length} note${warnings.length === 1 ? '' : 's'}: ${warnings.slice(0, 2).join('; ')}${warnings.length > 2 ? '…' : ''}` : ''}`
+          : `The ZIP matched ${matchedProducts} product${matchedProducts === 1 ? '' : 's'}, but no photos were added. ${warnings.slice(0, 3).join('; ')}`,
       })
     } catch (error) {
       setBatchProgress('')
