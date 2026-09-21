@@ -1287,7 +1287,13 @@ export default function App({ initialProducts = null, initialPath = null }) {
                     Secure checkout <Banknote size={17} />
                   </button>
                 )}
-                <a className="cart-whatsapp-fallback" href={cartWhatsappLink()} target="_blank" rel="noreferrer">
+                <a
+                  className="cart-whatsapp-fallback"
+                  href={cartWhatsappLink()}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => trackWhatsappClick(null, null, 'cart')}
+                >
                   {hasUnpricedCartItems ? 'Checkout on WhatsApp' : 'Prefer WhatsApp?'} <MessageCircle size={17} />
                 </a>
               </div>
@@ -1345,7 +1351,13 @@ export default function App({ initialProducts = null, initialPath = null }) {
                   </>
                 )}
 
-                <a className="checkout-whatsapp-result" href={checkoutWhatsappLink(checkoutResult)} target="_blank" rel="noreferrer">
+                <a
+                  className="checkout-whatsapp-result"
+                  href={checkoutWhatsappLink(checkoutResult)}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => trackWhatsappClick(null, null, 'checkout_success')}
+                >
                   <MessageCircle size={18} /> Continue with Sancity on WhatsApp
                 </a>
                 <button type="button" className="checkout-done" onClick={closeCheckout}>Done</button>
@@ -1640,7 +1652,12 @@ export default function App({ initialProducts = null, initialPath = null }) {
                     ? 'Choose options'
                     : recentlyAddedId === quickViewProduct.id ? 'Added to cart' : 'Add to cart'}
                 </button>
-                <a href={waLink(quickViewProduct.name)} target="_blank" rel="noreferrer">
+                <a
+                  href={waLink(quickViewProduct.name)}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => trackWhatsappClick(quickViewProduct, null, 'quick_view')}
+                >
                   <MessageCircle size={17} /> Order on WhatsApp
                 </a>
                 <button className="quick-view-full" onClick={() => openProductPage(quickViewProduct)}>
@@ -1765,7 +1782,11 @@ export default function App({ initialProducts = null, initialPath = null }) {
                       </button>
                       <a href={waLink(
                         `${detailProduct.name}${selectedVariant ? ` — ${selectedVariant.label}${selectedVariant.colour ? `, ${selectedVariant.colour}` : ''}` : ''}`,
-                      )} target="_blank" rel="noreferrer">
+                      )}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={() => trackWhatsappClick(detailProduct, selectedVariant, 'product_detail')}
+                      >
                         <MessageCircle size={18} /> Order on WhatsApp
                       </a>
                       <button
@@ -1997,6 +2018,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                     target="_blank"
                     rel="noreferrer"
                     aria-label="Order on WhatsApp"
+                    onClick={() => trackWhatsappClick(detailProduct, selectedVariant, 'mobile_buybar')}
                   >
                     <MessageCircle size={18} />
                   </a>
@@ -2325,7 +2347,13 @@ export default function App({ initialProducts = null, initialPath = null }) {
                     <button className="product-card-details" onClick={() => openProductPage(product)} aria-label={`Open full details for ${product.name}`}>
                       <Eye size={15} />
                     </button>
-                    <a href={waLink(product.name)} target="_blank" rel="noreferrer" aria-label={`Ask about ${product.name} on WhatsApp`}>
+                    <a
+                      href={waLink(product.name)}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`Ask about ${product.name} on WhatsApp`}
+                      onClick={() => trackWhatsappClick(product, null, 'product_card')}
+                    >
                       <MessageCircle size={15} />
                     </a>
                   </div>
@@ -2397,6 +2425,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
             target="_blank"
             rel="noreferrer"
             aria-label="Chat with Sancity Mall on WhatsApp"
+            onClick={() => trackWhatsappClick(null, null, 'floating_button')}
           >
             <MessageCircle size={18} /> WhatsApp
           </a>
