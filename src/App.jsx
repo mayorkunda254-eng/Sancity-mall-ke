@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Baby, BedDouble, Boxes, Check, CookingPot, Dumbbell, Eye, Heart, HousePlug, LogIn, Menu, MessageCircle, Minus, PackageCheck, Plus, Search, ShieldCheck, ShoppingCart, UserRound, X } from 'lucide-react'
+import { Baby, BedDouble, Boxes, Check, CircleHelp, CookingPot, Dumbbell, Eye, Heart, HousePlug, LogIn, Menu, MessageCircle, Minus, PackageCheck, Plus, Search, ShieldCheck, ShoppingCart, Tag, UserRound, X } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './lib/supabase.js'
 
 const departments = [
@@ -410,21 +410,27 @@ export default function App() {
 
         <nav className="department-nav" aria-label="Shopping departments">
           <button className="all-departments" onClick={() => jumpToProducts('All')}>
-            <span>☰</span> All Departments
+            <Menu size={18} strokeWidth={2} /> All Departments
           </button>
 
           <div className="department-links">
             {departments.map((department) => (
-              <button key={department.short} onClick={() => handleDepartment(department)}>
-                <span>{department.emoji}</span>
+              <button
+                key={department.short}
+                className={department.className}
+                onClick={() => handleDepartment(department)}
+              >
+                <span className="department-icon" aria-hidden="true">
+                  <department.icon strokeWidth={1.9} />
+                </span>
                 {department.short}
               </button>
             ))}
           </div>
 
           <div className="nav-help">
-            <button onClick={() => jumpToProducts('All')}>🏷️ Offers</button>
-            <a href={whatsapp} target="_blank" rel="noreferrer">❔ Help</a>
+            <button onClick={() => jumpToProducts('All')}><Tag size={15} /> Offers</button>
+            <a href={whatsapp} target="_blank" rel="noreferrer"><CircleHelp size={15} /> Help</a>
           </div>
         </nav>
       </header>
@@ -506,12 +512,15 @@ export default function App() {
             {departments.map((department) => (
               <button
                 key={department.short}
+                className={department.className}
                 onClick={() => {
                   setMenuOpen(false)
                   handleDepartment(department)
                 }}
               >
-                <span>{department.emoji}</span>
+                <span className="drawer-department-icon" aria-hidden="true">
+                  <department.icon strokeWidth={1.9} />
+                </span>
                 {department.short}
               </button>
             ))}
