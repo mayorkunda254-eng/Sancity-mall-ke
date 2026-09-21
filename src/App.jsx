@@ -122,11 +122,42 @@ const slugify = (value = '') => value
 
 const productSlug = (product) => product?.slug || slugify(product?.name)
 
-const formatPrice = (product) => {
+const activeVariants = (product) => [...(product?.product_variants || [])]
+  .filter((variant) => variant?.is_active !== false)
+  .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+
+const effectivePrice = (product, variant = null) => {
+  if (variant?.price !== null && variant?.price !== undefined) return Number(variant.price)
+  if (product?.price !== null && product?.price !== undefined) return Number(product.price)
+  return null
+}
+
+const formatPrice = (product, variant = null) => {
+  if (variant) {
+    const price = effectivePrice(product, variant)
+    return price === null ? 'Price on request' : `KSh ${price.toLocaleString('en-KE')}`
+  }
+
+  const variants = activeVariants(product)
+  if (variants.length > 0) {
+    const prices = variants
+      .map((item) => effectivePrice(product, item))
+      .filter((price) => price !== null)
+
+    if (prices.length > 0) {
+      const min = Math.min(...prices)
+      const max = Math.max(...prices)
+      const amount = `KSh ${min.toLocaleString('en-KE')}`
+      return min !== max ? `From ${amount}` : amount
+    }
+  }
+
   if (product?.price === null || product?.price === undefined) return 'Price on request'
   const amount = `KSh ${Number(product.price).toLocaleString('en-KE')}`
   return product.price_from ? `From ${amount}` : amount
 }
+
+const cartEntryKey = (productId, variantId = null) => `${productId}::${variantId || 'base'}`
 
 function waLink(product) {
   const message = product
@@ -165,6 +196,7 @@ export default function App() {
   const [quickViewProduct, setQuickViewProduct] = useState(null)
   const [detailSlug, setDetailSlug] = useState('')
   const [galleryIndex, setGalleryIndex] = useState(0)
+  const [selectedVariantId, setSelectedVariantId] = useState('')
   const [recentlyViewed, setRecentlyViewed] = useState([])
   const [recentlyAddedId, setRecentlyAddedId] = useState(null)
   const [toastProduct, setToastProduct] = useState(null)
@@ -179,7 +211,7 @@ export default function App() {
     async function loadPublishedProducts() {
       const { data, error } = await supabase
         .from('products')
-        .select('id,name,slug,category,badge,description,dimensions,material,colour,key_features,care_instructions,delivery_note,price,compare_at_price,price_from,stock_quantity,created_at,product_images(public_url,sort_order)')
+        .select('id,name,slug,category,badge,description,dimensions,material,colour,key_features,care_instructions,delivery_note,price,compare_at_price,price_from,stock_quantity,created_at,product_images(public_url,sort_order),product_variants(id,label,size,colour,price,stock_quantity,is_active,sort_order)')
         .eq('status', 'published')
         .order('created_at', { ascending: false })
 
@@ -354,22 +386,34 @@ export default function App() {
 
   const detailImages = useMemo(() => detailProduct ? productImages(detailProduct) : [], [detailProduct])
   const activeDetailImage = detailImages[galleryIndex]?.public_url || productMainImage(detailProduct)
+  const detailVariants = useMemo(() => detailProduct ? activeVariants(detailProduct) : [], [detailProduct])
+  const selectedVariant = detailVariants.find((variant) => variant.id === selectedVariantId) || null
+
+  useEffect(() => {
+    if (detailVariants.length === 1) {
+      setSelectedVariantId(detailVariants[0].id)
+    } else {
+      setSelectedVariantId('')
+    }
+  }, [detailProduct?.id])
+
+  const detailStock = selectedVariant?.stock_quantity !== null && selectedVariant?.stock_quantity !== undefined
+    ? selectedVariant.stock_quantity
+    : detailProduct?.stock_quantity
 
   const detailSpecs = detailProduct ? [
     { label: 'Category', value: detailProduct.category },
     {
       label: 'Availability',
-      value: detailProduct.stock_quantity > 0
-        ? `${detailProduct.stock_quantity} in stock`
-        : 'Confirm current stock',
+      value: detailStock > 0 ? `${detailStock} in stock` : 'Confirm current stock',
     },
     {
       label: 'Pricing',
-      value: formatPrice(detailProduct),
+      value: formatPrice(detailProduct, selectedVariant),
     },
-    { label: 'Dimensions', value: detailProduct.dimensions },
+    { label: 'Size', value: selectedVariant?.size || detailProduct.dimensions },
     { label: 'Material', value: detailProduct.material },
-    { label: 'Colour', value: detailProduct.colour },
+    { label: 'Colour', value: selectedVariant?.colour || detailProduct.colour },
   ].filter((item) => item.value) : []
 
   const detailFeatureLines = detailProduct ? featureLines(detailProduct.key_features || '') : []
@@ -393,19 +437,34 @@ export default function App() {
 
   const cartItems = useMemo(() => cart
     .map((entry) => {
-      const product = products.find((item) => item.id === entry.id)
-      return product ? { ...product, qty: entry.qty } : null
+      const productId = entry.productId || entry.id
+      const product = products.find((item) => item.id === productId)
+      if (!product) return null
+      const variant = entry.variantId
+        ? activeVariants(product).find((item) => item.id === entry.variantId) || null
+        : null
+      return {
+        ...product,
+        qty: entry.qty,
+        selectedVariant: variant,
+        cartKey: cartEntryKey(productId, entry.variantId),
+      }
     })
     .filter(Boolean), [cart, products])
 
   const cartCount = cart.reduce((total, item) => total + item.qty, 0)
   const knownCartTotal = cartItems.reduce((total, item) => {
-    if (item.price === null || item.price === undefined || item.price_from) return total
-    return total + Number(item.price) * item.qty
+    const unresolvedVariant = activeVariants(item).length > 0 && !item.selectedVariant
+    const price = effectivePrice(item, item.selectedVariant)
+    if (price === null || unresolvedVariant || (!item.selectedVariant && item.price_from)) return total
+    return total + price * item.qty
   }, 0)
-  const hasUnpricedCartItems = cartItems.some(
-    (item) => item.price === null || item.price === undefined || item.price_from,
-  )
+  const hasUnpricedCartItems = cartItems.some((item) => {
+    const unresolvedVariant = activeVariants(item).length > 0 && !item.selectedVariant
+    return effectivePrice(item, item.selectedVariant) === null
+      || unresolvedVariant
+      || (!item.selectedVariant && item.price_from)
+  })
 
   const toggleSaved = (id) => {
     setSaved((items) => (items.includes(id) ? items.filter((item) => item !== id) : [...items, id]))
@@ -424,13 +483,24 @@ export default function App() {
     }, 40)
   }
 
-  const addToCart = (product) => {
+  const addToCart = (product, variant = null) => {
+    const variants = activeVariants(product)
+    if (variants.length > 0 && !variant) {
+      openProductPage(product)
+      return
+    }
+
+    const key = cartEntryKey(product.id, variant?.id)
     setCart((items) => {
-      const existing = items.find((item) => item.id === product.id)
+      const existing = items.find((item) => cartEntryKey(item.productId || item.id, item.variantId) === key)
       if (existing) {
-        return items.map((item) => item.id === product.id ? { ...item, qty: item.qty + 1 } : item)
+        return items.map((item) => (
+          cartEntryKey(item.productId || item.id, item.variantId) === key
+            ? { ...item, qty: item.qty + 1 }
+            : item
+        ))
       }
-      return [...items, { id: product.id, qty: 1 }]
+      return [...items, { productId: product.id, variantId: variant?.id || null, qty: 1 }]
     })
 
     setRecentlyAddedId(product.id)
@@ -442,18 +512,29 @@ export default function App() {
     }, 2600)
   }
 
-  const changeCartQty = (id, amount) => {
+  const changeCartQty = (key, amount) => {
     setCart((items) => items
-      .map((item) => item.id === id ? { ...item, qty: Math.max(0, item.qty + amount) } : item)
+      .map((item) => (
+        cartEntryKey(item.productId || item.id, item.variantId) === key
+          ? { ...item, qty: Math.max(0, item.qty + amount) }
+          : item
+      ))
       .filter((item) => item.qty > 0))
   }
 
-  const removeFromCart = (id) => {
-    setCart((items) => items.filter((item) => item.id !== id))
+  const removeFromCart = (key) => {
+    setCart((items) => items.filter(
+      (item) => cartEntryKey(item.productId || item.id, item.variantId) !== key,
+    ))
   }
 
   const cartWhatsappLink = () => {
-    const lines = cartItems.map((item) => `• ${item.name} × ${item.qty}`)
+    const lines = cartItems.map((item) => {
+      const variantText = item.selectedVariant
+        ? ` — ${item.selectedVariant.label}${item.selectedVariant.size ? ` (${item.selectedVariant.size})` : ''}${item.selectedVariant.colour ? `, ${item.selectedVariant.colour}` : ''}`
+        : ''
+      return `• ${item.name}${variantText} × ${item.qty}`
+    })
     const message = [
       'Hello Sancity Mall KE, I would like to place this order:',
       '',
