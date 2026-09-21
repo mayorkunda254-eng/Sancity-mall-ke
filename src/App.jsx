@@ -694,7 +694,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
   useEffect(() => {
     if (typeof document === 'undefined') return
 
-    const siteUrl = 'https://sancity-mall-ke-v3.vercel.app'
+    const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://sancity-mall-ke-v3.vercel.app').replace(/\/$/, '')
     const isMissingProduct = Boolean(detailSlug && !detailProduct)
     const title = detailProduct
       ? `${detailProduct.name} | Sancity Mall KE`
@@ -1737,7 +1737,11 @@ export default function App({ initialProducts = null, initialPath = null }) {
                       ? 'Submit paid order'
                       : 'Request delivery total'}
                 </button>
-                <small className="checkout-privacy">Your details are used only to fulfil this order and contact you about it.</small>
+                <small className="checkout-privacy">
+                  By submitting, you agree to the <a href="/terms" target="_blank" rel="noreferrer">Terms</a>.
+                  See our <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a> and
+                  <a href="/shipping-returns" target="_blank" rel="noreferrer"> Shipping & Returns</a>.
+                </small>
               </form>
             )}
           </section>
