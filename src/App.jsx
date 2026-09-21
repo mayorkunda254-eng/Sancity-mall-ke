@@ -187,6 +187,161 @@ const featureLines = (value = '') => value
   .map((item) => item.trim())
   .filter(Boolean)
 
+const legalPages = {
+  '/privacy': {
+    eyebrow: 'Privacy',
+    title: 'Privacy Policy',
+    description: 'How Sancity Mall KE handles order, checkout and availability-request information.',
+    intro: 'This policy explains what information Sancity Mall KE collects through this website, why it is used and the choices available to customers.',
+    sections: [
+      {
+        title: 'Information we collect',
+        paragraphs: [
+          'When you place an order, request delivery pricing or ask for an availability update, we may collect your name, phone number, delivery location, order details and any notes you choose to provide.',
+          'For manual M-Pesa verification, we may collect the transaction confirmation code you submit. We do not ask for or store your M-Pesa PIN.',
+        ],
+      },
+      {
+        title: 'Shopping and analytics data',
+        paragraphs: [
+          'The site stores cart, wishlist and recently viewed information in your browser so those shopping features can work.',
+          'We also use first-party anonymous session analytics to understand product views, cart activity, checkout use, WhatsApp clicks and placed orders. These analytics do not include customer names or phone numbers.',
+        ],
+      },
+      {
+        title: 'How we use information',
+        items: [
+          'To process, verify and fulfil customer orders.',
+          'To calculate or confirm delivery arrangements.',
+          'To respond to product and availability enquiries.',
+          'To prevent duplicate requests, troubleshoot the website and understand shopping performance.',
+        ],
+      },
+      {
+        title: 'Service providers',
+        paragraphs: [
+          'The website uses service providers for hosting, database storage and communications. Information is shared only as needed to operate the store, fulfil orders or communicate with you.',
+          'If you choose to continue a conversation on WhatsApp or make a payment through M-Pesa/Equity, those services process information under their own terms and privacy practices.',
+        ],
+      },
+      {
+        title: 'Retention and your choices',
+        paragraphs: [
+          'Order and payment-verification records may be retained for operational, accounting, dispute-resolution and legal purposes. Availability requests can be closed once they are no longer needed.',
+          'You may contact Sancity Mall KE to ask for correction or deletion of personal information where applicable, subject to records that must be retained for legitimate business or legal reasons.',
+        ],
+      },
+      {
+        title: 'Contact',
+        paragraphs: [
+          'For privacy questions, contact Sancity Mall KE at Sancitymallke@gmail.com or through the store WhatsApp contact shown on this website.',
+        ],
+      },
+    ],
+  },
+  '/terms': {
+    eyebrow: 'Store terms',
+    title: 'Terms of Service',
+    description: 'The terms that apply when browsing, ordering or paying for products from Sancity Mall KE.',
+    intro: 'These terms apply to use of the Sancity Mall KE website and to orders placed through the website or its linked WhatsApp checkout support.',
+    sections: [
+      {
+        title: 'Products, prices and availability',
+        paragraphs: [
+          'Product photos, descriptions, colours and dimensions are provided to help customers evaluate items. Small visual or measurement differences may occur between product batches.',
+          'Prices and stock can change. Where the website says “Confirm current stock”, availability is not guaranteed until Sancity confirms it.',
+        ],
+      },
+      {
+        title: 'Orders and payment',
+        paragraphs: [
+          'Submitting an order creates an order request. An order is not treated as paid until the submitted M-Pesa transaction is verified by Sancity.',
+          'For M-Pesa payments through Equity, customers should use the payment instructions displayed at checkout and verify that the recipient details are correct before confirming payment. Sancity will never ask for an M-Pesa PIN.',
+        ],
+      },
+      {
+        title: 'Delivery and pickup',
+        paragraphs: [
+          'Delivery charges are either calculated from a configured delivery zone or confirmed manually before payment. Delivery times are estimates and can be affected by distance, traffic, stock confirmation and courier availability.',
+          'Customers are responsible for providing an accurate phone number, delivery location and any access details needed to complete delivery.',
+        ],
+      },
+      {
+        title: 'Promotions',
+        paragraphs: [
+          'Promo codes may have minimum spend, start and expiry dates, usage limits or other conditions shown at checkout. Discounts apply only when the server validates the code.',
+          'Sancity may pause or end a promotion where necessary, but an already accepted and paid order will not be changed solely because a promotion later ends.',
+        ],
+      },
+      {
+        title: 'Returns, problems and cancellations',
+        paragraphs: [
+          'If an item is damaged, incorrect or materially different from what was ordered, contact Sancity promptly with the order reference and supporting photos where appropriate.',
+          'Return, replacement or refund eligibility is confirmed case by case and subject to applicable consumer rights. Do not send an item back before receiving return instructions.',
+        ],
+      },
+      {
+        title: 'Website use',
+        paragraphs: [
+          'Do not misuse the website, interfere with checkout or analytics systems, attempt unauthorised access, or submit false payment or order information.',
+          'Sancity may update these terms as the store, checkout or fulfilment processes change. The current version published on this page applies from its stated update date.',
+        ],
+      },
+      {
+        title: 'Contact',
+        paragraphs: [
+          'Questions about an order or these terms can be sent to Sancitymallke@gmail.com or through the store WhatsApp contact shown on this website.',
+        ],
+      },
+    ],
+  },
+  '/shipping-returns': {
+    eyebrow: 'Delivery & after-sales',
+    title: 'Shipping & Returns',
+    description: 'How delivery, pickup, damaged-item reports, returns and refunds are handled by Sancity Mall KE.',
+    intro: 'This page summarises Sancity Mall KE delivery and return handling. Product-specific or order-specific arrangements confirmed directly with the customer take priority where applicable.',
+    sections: [
+      {
+        title: 'Delivery charges',
+        paragraphs: [
+          'Where a delivery zone has a published fee, checkout adds it to the order total. For unlisted or quote-required locations, Sancity confirms the delivery charge before asking the customer to pay.',
+        ],
+      },
+      {
+        title: 'Delivery timing',
+        paragraphs: [
+          'Any delivery timing shown on the website is an estimate, not a guaranteed arrival time. Sancity may contact the customer where stock, routing, traffic or courier conditions affect fulfilment.',
+        ],
+      },
+      {
+        title: 'Pickup',
+        paragraphs: [
+          'Pickup orders can be collected from the pickup point shown at checkout after Sancity confirms that the order is ready. Customers should not travel for pickup until they receive that confirmation.',
+        ],
+      },
+      {
+        title: 'Damaged or incorrect items',
+        paragraphs: [
+          'If you receive a damaged, defective or incorrect item, contact Sancity promptly and keep the product, packaging and order reference available for review. Photos may be requested so the issue can be assessed quickly.',
+        ],
+      },
+      {
+        title: 'Returns and refunds',
+        paragraphs: [
+          'Return approval depends on the product condition, the reason for return and applicable consumer rights. Change-of-mind returns are not automatically guaranteed, so eligibility should be confirmed before sending anything back.',
+          'Approved refunds or replacements are processed after the returned item or supporting evidence has been reviewed. Payment-processing or delivery charges may be treated separately where appropriate.',
+        ],
+      },
+      {
+        title: 'Need help?',
+        paragraphs: [
+          'Contact Sancity Mall KE using the website WhatsApp button or email Sancitymallke@gmail.com and include your order reference where available.',
+        ],
+      },
+    ],
+  },
+}
+
 const createAnalyticsSessionId = () => {
   if (typeof window === 'undefined') return ''
 
@@ -207,8 +362,11 @@ const createAnalyticsSessionId = () => {
 
 export default function App({ initialProducts = null, initialPath = null }) {
   const routePath = initialPath || (typeof window !== 'undefined' ? window.location.pathname : '/')
-  const routeMatch = routePath.match(/^\/products\/([^/]+)\/?$/)
+  const normalizedRoute = routePath === '/' ? '/' : routePath.replace(/\/+$/, '')
+  const routeMatch = normalizedRoute.match(/^\/products\/([^/]+)$/)
   const initialDetailSlug = routeMatch ? decodeURIComponent(routeMatch[1]) : ''
+  const legalPage = legalPages[normalizedRoute] || null
+  const isNotFoundRoute = !legalPage && normalizedRoute !== '/' && !routeMatch
 
   const [menuOpen, setMenuOpen] = useState(false)
   const [query, setQuery] = useState('')
