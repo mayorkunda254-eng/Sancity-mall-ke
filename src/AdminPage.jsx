@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import JSZip from 'jszip'
 import {
-  Boxes, CheckCircle2, ChevronRight, ClipboardCheck, CreditCard, ImagePlus, Loader2, LogOut, MapPin, PackagePlus,
+  Bell, Boxes, CheckCircle2, ChevronRight, ClipboardCheck, CreditCard, ImagePlus, Loader2, LogOut, MapPin, MessageCircle, PackagePlus,
   Phone, RefreshCw, Search, Settings2, ShieldCheck, Store, Trash2, Truck, UploadCloud, XCircle
 } from 'lucide-react'
 import { isSupabaseConfigured, PRODUCT_IMAGE_BUCKET, supabase } from './lib/supabase.js'
@@ -79,6 +79,9 @@ export default function AdminPage() {
   const [zonesLoading, setZonesLoading] = useState(false)
   const [zoneSavingId, setZoneSavingId] = useState(null)
   const [newZone, setNewZone] = useState({ name: '', fee: '', eta_text: '' })
+  const [stockAlerts, setStockAlerts] = useState([])
+  const [stockAlertsLoading, setStockAlertsLoading] = useState(false)
+  const [stockAlertUpdatingId, setStockAlertUpdatingId] = useState(null)
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -110,6 +113,7 @@ export default function AdminPage() {
       loadProducts()
       loadOrders()
       loadDeliveryZones()
+      loadStockAlerts()
     }
   }, [session])
 
@@ -282,6 +286,51 @@ export default function AdminPage() {
     }
     setZoneSavingId(null)
   }
+
+  async function loadStockAlerts() {
+    setStockAlertsLoading(true)
+    const { data, error } = await supabase
+      .from('stock_alerts')
+      .select('id,customer_phone,status,created_at,updated_at,contacted_at,products(id,name,slug),product_variants(id,label,size,colour)')
+      .order('created_at', { ascending: false })
+      .limit(80)
+
+    if (error) {
+      setNotice({ type: 'error', text: error.message })
+    } else {
+      setStockAlerts(data || [])
+    }
+    setStockAlertsLoading(false)
+  }
+
+  async function updateStockAlert(alert, patch, successText) {
+    setStockAlertUpdatingId(alert.id)
+    setNotice(null)
+
+    const { error } = await supabase
+      .from('stock_alerts')
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq('id', alert.id)
+
+    if (error) {
+      setNotice({ type: 'error', text: error.message })
+    } else {
+      setNotice({ type: 'success', text: successText })
+      await loadStockAlerts()
+    }
+    setStockAlertUpdatingId(null)
+  }
+
+  function stockAlertWhatsappLink(alert) {
+    const productName = alert.products?.name || 'the product you asked about'
+    const variant = alert.product_variants
+      ? ` — ${alert.product_variants.label}${alert.product_variants.colour ? `, ${alert.product_variants.colour}` : ''}`
+      : ''
+    const message = `Hello, this is Sancity Mall KE. You asked us to update you about ${productName}${variant}. We are following up on its current availability.`
+    return `https://wa.me/${alert.customer_phone}?text=${encodeURIComponent(message)}`
+  }
+
+  const pendingStockAlertCount = stockAlerts.filter((alert) => alert.status === 'pending').length
 
   async function updateOrder(order, patch, successText = 'Order updated.') {
     setOrderUpdatingId(order.id)
@@ -860,11 +909,11 @@ export default function AdminPage() {
             <p>Verify customer orders, manage fulfilment and maintain the Sancity catalogue.</p>
           </div>
           <button
-            onClick={() => { loadProducts(); loadOrders(); loadDeliveryZones() }}
+            onClick={() => { loadProducts(); loadOrders(); loadDeliveryZones(); loadStockAlerts() }}
             className="admin-secondary-btn"
-            disabled={listLoading || ordersLoading || zonesLoading}
+            disabled={listLoading || ordersLoading || zonesLoading || stockAlertsLoading}
           >
-            <RefreshCw size={16} className={listLoading || ordersLoading || zonesLoading ? 'spin' : ''} /> Refresh
+            <RefreshCw size={16} className={listLoading || ordersLoading || zonesLoading || stockAlertsLoading ? 'spin' : ''} /> Refresh
           </button>
         </section>
 
@@ -999,6 +1048,94 @@ export default function AdminPage() {
                     <button className="danger-icon" type="button" disabled={busy} onClick={() => deleteDeliveryZone(zone)} title="Delete zone">
                       <Trash2 size={15} />
                     </button>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        </section>
+
+        <section className="admin-card admin-stock-alerts-card">
+          <div className="admin-card-heading orders-heading">
+            <span className="admin-step"><Bell size={16} /></span>
+            <div>
+              <h2>Availability requests</h2>
+              <p>{pendingStockAlertCount} pending request{pendingStockAlertCount === 1 ? '' : 's'} • WhatsApp follow-up</p>
+            </div>
+          </div>
+
+          <div className="admin-stock-alerts-list">
+            {stockAlertsLoading ? (
+              <div className="admin-empty"><Loader2 className="spin" /> Loading availability requests…</div>
+            ) : stockAlerts.length === 0 ? (
+              <div className="admin-empty"><Bell /> No availability requests yet.</div>
+            ) : stockAlerts.map((alert) => {
+              const product = alert.products
+              const variant = alert.product_variants
+              const busy = stockAlertUpdatingId === alert.id
+
+              return (
+                <article className={`admin-stock-alert alert-${alert.status}`} key={alert.id}>
+                  <div className="admin-stock-alert-main">
+                    <div>
+                      <span>{new Date(alert.created_at).toLocaleString('en-KE')}</span>
+                      <strong>{product?.name || 'Product removed'}</strong>
+                      {variant && (
+                        <small>
+                          {variant.label}
+                          {variant.size ? ` • ${variant.size}` : ''}
+                          {variant.colour ? ` • ${variant.colour}` : ''}
+                        </small>
+                      )}
+                    </div>
+                    <span className={`order-badge alert-status-${alert.status}`}>
+                      {orderStatusLabel(alert.status)}
+                    </span>
+                  </div>
+
+                  <div className="admin-stock-alert-contact">
+                    <a href={`tel:+${alert.customer_phone}`}><Phone size={14} /> +{alert.customer_phone}</a>
+                    {product?.slug && (
+                      <a href={`/products/${product.slug}`} target="_blank" rel="noreferrer">
+                        <Store size={14} /> View product
+                      </a>
+                    )}
+                  </div>
+
+                  <div className="admin-stock-alert-actions">
+                    <a href={stockAlertWhatsappLink(alert)} target="_blank" rel="noreferrer" className="stock-alert-whatsapp">
+                      <MessageCircle size={15} /> Contact on WhatsApp
+                    </a>
+
+                    {alert.status === 'pending' && (
+                      <button
+                        type="button"
+                        className="admin-secondary-btn"
+                        disabled={busy}
+                        onClick={() => updateStockAlert(
+                          alert,
+                          { status: 'contacted', contacted_at: new Date().toISOString() },
+                          `Marked availability request for ${product?.name || 'product'} as contacted.`,
+                        )}
+                      >
+                        {busy ? 'Saving…' : 'Mark contacted'}
+                      </button>
+                    )}
+
+                    {alert.status !== 'closed' && (
+                      <button
+                        type="button"
+                        className="status-pill"
+                        disabled={busy}
+                        onClick={() => updateStockAlert(
+                          alert,
+                          { status: 'closed' },
+                          'Availability request closed.',
+                        )}
+                      >
+                        Close
+                      </button>
+                    )}
                   </div>
                 </article>
               )
