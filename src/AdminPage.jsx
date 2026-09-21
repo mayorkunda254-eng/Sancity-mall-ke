@@ -22,6 +22,12 @@ const emptyForm = {
   name: '',
   category: 'Kitchen & Dining',
   description: '',
+  dimensions: '',
+  material: '',
+  colour: '',
+  key_features: '',
+  care_instructions: '',
+  delivery_note: '',
   price: '',
   compare_at_price: '',
   stock_quantity: '0',
@@ -114,7 +120,7 @@ export default function AdminPage() {
     setListLoading(true)
     const { data, error } = await supabase
       .from('products')
-      .select('id,name,category,description,price,compare_at_price,stock_quantity,badge,status,created_at,product_images(id,public_url,storage_path,sort_order)')
+      .select('id,name,category,description,dimensions,material,colour,key_features,care_instructions,delivery_note,price,compare_at_price,stock_quantity,badge,status,created_at,product_images(id,public_url,storage_path,sort_order)')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -158,6 +164,12 @@ export default function AdminPage() {
         slug: slugify(form.name),
         category: form.category,
         description: form.description.trim() || null,
+        dimensions: form.dimensions.trim() || null,
+        material: form.material.trim() || null,
+        colour: form.colour.trim() || null,
+        key_features: form.key_features.trim() || null,
+        care_instructions: form.care_instructions.trim() || null,
+        delivery_note: form.delivery_note.trim() || null,
         price: form.price === '' ? null : Number(form.price),
         compare_at_price: form.compare_at_price === '' ? null : Number(form.compare_at_price),
         stock_quantity: Number(form.stock_quantity || 0),
@@ -380,7 +392,42 @@ export default function AdminPage() {
 
               <label className="admin-field full">
                 <span>Description</span>
-                <textarea rows="5" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="What is useful about this product? Include size, material or key features where known." />
+                <textarea rows="5" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="What is useful about this product? Explain what it does and why a customer would want it." />
+              </label>
+
+              <div className="admin-field full admin-spec-heading">
+                <span>Optional premium details</span>
+                <small>Add only details you know. Empty fields stay hidden on the storefront.</small>
+              </div>
+
+              <label className="admin-field">
+                <span>Dimensions / size</span>
+                <input value={form.dimensions} onChange={(e) => setForm({ ...form, dimensions: e.target.value })} placeholder="e.g. 60 × 35 × 80 cm" />
+              </label>
+
+              <label className="admin-field">
+                <span>Material</span>
+                <input value={form.material} onChange={(e) => setForm({ ...form, material: e.target.value })} placeholder="e.g. Stainless steel" />
+              </label>
+
+              <label className="admin-field">
+                <span>Colour</span>
+                <input value={form.colour} onChange={(e) => setForm({ ...form, colour: e.target.value })} placeholder="e.g. Black / gold" />
+              </label>
+
+              <label className="admin-field">
+                <span>Care instructions</span>
+                <input value={form.care_instructions} onChange={(e) => setForm({ ...form, care_instructions: e.target.value })} placeholder="e.g. Wipe clean with a damp cloth" />
+              </label>
+
+              <label className="admin-field full">
+                <span>Key features <small>one per line</small></span>
+                <textarea rows="4" value={form.key_features} onChange={(e) => setForm({ ...form, key_features: e.target.value })} placeholder={'Space-saving design\nEasy to assemble\nSuitable for everyday use'} />
+              </label>
+
+              <label className="admin-field full">
+                <span>Special delivery note</span>
+                <input value={form.delivery_note} onChange={(e) => setForm({ ...form, delivery_note: e.target.value })} placeholder="Optional — only if this item has special delivery or pickup requirements" />
               </label>
 
               <div className="admin-field full">
