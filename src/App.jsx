@@ -273,12 +273,16 @@ export default function App() {
   }
 
   const openWishlist = () => {
+    if (detailSlug) {
+      window.history.pushState({}, '', '/')
+      setDetailSlug('')
+    }
     setWishlistOnly(true)
     setActiveCategory('All')
     setQuery('')
     window.setTimeout(() => {
       document.querySelector('#products')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 20)
+    }, 40)
   }
 
   const addToCart = (product) => {
@@ -322,16 +326,26 @@ export default function App() {
   }
 
   const jumpToProducts = (category = 'All') => {
+    if (detailSlug) {
+      window.history.pushState({}, '', '/')
+      setDetailSlug('')
+    }
     setWishlistOnly(false)
     setActiveCategory(category)
     window.setTimeout(() => {
       document.querySelector('#products')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 20)
+    }, 40)
   }
 
   const handleDepartment = (department) => {
     if (department.wholesale) {
-      document.querySelector('#wholesale')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      if (detailSlug) {
+        window.history.pushState({}, '', '/')
+        setDetailSlug('')
+      }
+      window.setTimeout(() => {
+        document.querySelector('#wholesale')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 40)
       return
     }
 
@@ -1103,30 +1117,34 @@ export default function App() {
         </div>
         <div className="footer-links">
           <a href="#categories">Departments</a>
-          <a href="#products">Products</a>
-          <a href="#wholesale">Wholesale</a>
-          <a href="#contact">Contact</a>
+          <a href="/#products">Products</a>
+          <a href="/#wholesale">Wholesale</a>
+          <a href="/#contact">Contact</a>
         </div>
         <small>© 2026 Sancity Mall KE</small>
       </footer>
 
-      <a
-        className="mobile-whatsapp-fab"
-        href={whatsapp}
-        target="_blank"
-        rel="noreferrer"
-        aria-label="Chat with Sancity Mall on WhatsApp"
-      >
-        <MessageCircle size={18} /> WhatsApp
-      </a>
+      {!detailSlug && (
+        <>
+          <a
+            className="mobile-whatsapp-fab"
+            href={whatsapp}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Chat with Sancity Mall on WhatsApp"
+          >
+            <MessageCircle size={18} /> WhatsApp
+          </a>
 
-      <nav className="mobile-bottom-bar" aria-label="Mobile shopping navigation">
-        <a href="#home"><span>🏠</span>Home</a>
-        <a href="#categories"><span>🧺</span>Categories</a>
-        <button onClick={focusSearch}><span>🔎</span>Search</button>
-        <button onClick={openWishlist}><span>♡</span>Wishlist</button>
-        <button onClick={() => setCartOpen(true)}><span>🛒</span>Cart{cartCount > 0 ? ` (${cartCount})` : ''}</button>
-      </nav>
+          <nav className="mobile-bottom-bar" aria-label="Mobile shopping navigation">
+            <a href="#home"><span>🏠</span>Home</a>
+            <a href="#categories"><span>🧺</span>Categories</a>
+            <button onClick={focusSearch}><span>🔎</span>Search</button>
+            <button onClick={openWishlist}><span>♡</span>Wishlist</button>
+            <button onClick={() => setCartOpen(true)}><span>🛒</span>Cart{cartCount > 0 ? ` (${cartCount})` : ''}</button>
+          </nav>
+        </>
+      )}
 
       {toastProduct && (
         <div className="cart-toast" role="status" aria-live="polite">
