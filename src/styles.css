@@ -5316,3 +5316,113 @@ select:focus-visible{
     font-size:16px;
   }
 }
+
+
+/* === Checkout promo codes === */
+.checkout-promo{
+  padding:13px;
+  border:1px solid #dfd3c7;
+  border-radius:13px;
+  background:#fbf7f1;
+  display:grid;
+  gap:10px;
+}
+.checkout-promo-heading{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  color:#7a2330;
+}
+.checkout-promo-heading>span{
+  display:grid;
+  gap:2px;
+}
+.checkout-promo-heading strong{
+  color:#3a312b;
+  font-size:10px;
+}
+.checkout-promo-heading small{
+  color:#83766b;
+  font-size:7.5px;
+}
+.checkout-promo-entry{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:7px;
+}
+.checkout-promo-entry input{
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  font-weight:800;
+}
+.checkout-promo-entry button{
+  min-width:88px;
+  min-height:41px;
+  border:0;
+  border-radius:10px;
+  padding:0 12px;
+  background:#7a2330;
+  color:#fff;
+  font-size:8.5px;
+  font-weight:900;
+}
+.checkout-promo-entry button.remove{
+  border:1px solid #d9cdc0;
+  background:#fff;
+  color:#6c5e54;
+}
+.checkout-promo-entry button:disabled{
+  opacity:.55;
+}
+.checkout-promo-message{
+  padding:9px 10px;
+  border-radius:10px;
+  display:flex;
+  align-items:flex-start;
+  gap:7px;
+  font-size:8.5px;
+  line-height:1.45;
+}
+.checkout-promo-message.valid{
+  border:1px solid #c6dfd2;
+  background:#eaf5ee;
+  color:#24543d;
+}
+.checkout-promo-message.invalid{
+  border:1px solid #e4c7c3;
+  background:#fff0ef;
+  color:#8a342f;
+}
+.checkout-promo-success{
+  width:min(420px,100%);
+  padding:9px 11px;
+  border:1px solid #c6dfd2;
+  border-radius:10px;
+  background:#eaf5ee;
+  color:#24543d;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  font-size:8.5px;
+  font-weight:800;
+}
+.checkout-final-total>span.discount{
+  background:#eef7f1;
+}
+.checkout-final-total>span.discount small,
+.checkout-final-total>span.discount b{
+  color:#24543d;
+}
+
+@media(max-width:700px){
+  .checkout-promo{
+    padding:11px;
+  }
+  .checkout-promo-entry{
+    grid-template-columns:1fr auto;
+  }
+  .checkout-promo-entry button{
+    min-width:78px;
+  }
+}
