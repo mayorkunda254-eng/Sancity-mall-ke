@@ -122,6 +122,12 @@ const slugify = (value = '') => value
 
 const productSlug = (product) => product?.slug || slugify(product?.name)
 
+const formatPrice = (product) => {
+  if (product?.price === null || product?.price === undefined) return 'Price on request'
+  const amount = `KSh ${Number(product.price).toLocaleString('en-KE')}`
+  return product.price_from ? `From ${amount}` : amount
+}
+
 function waLink(product) {
   const message = product
     ? `Hello Sancity Mall KE, I would like the current price and availability for ${product}.`
@@ -173,7 +179,7 @@ export default function App() {
     async function loadPublishedProducts() {
       const { data, error } = await supabase
         .from('products')
-        .select('id,name,slug,category,badge,description,dimensions,material,colour,key_features,care_instructions,delivery_note,price,compare_at_price,stock_quantity,created_at,product_images(public_url,sort_order)')
+        .select('id,name,slug,category,badge,description,dimensions,material,colour,key_features,care_instructions,delivery_note,price,compare_at_price,price_from,stock_quantity,created_at,product_images(public_url,sort_order)')
         .eq('status', 'published')
         .order('created_at', { ascending: false })
 
@@ -359,9 +365,7 @@ export default function App() {
     },
     {
       label: 'Pricing',
-      value: detailProduct.price !== null && detailProduct.price !== undefined
-        ? `KSh ${Number(detailProduct.price).toLocaleString('en-KE')}`
-        : 'Price on request',
+      value: formatPrice(detailProduct),
     },
     { label: 'Dimensions', value: detailProduct.dimensions },
     { label: 'Material', value: detailProduct.material },
@@ -396,10 +400,12 @@ export default function App() {
 
   const cartCount = cart.reduce((total, item) => total + item.qty, 0)
   const knownCartTotal = cartItems.reduce((total, item) => {
-    if (item.price === null || item.price === undefined) return total
+    if (item.price === null || item.price === undefined || item.price_from) return total
     return total + Number(item.price) * item.qty
   }, 0)
-  const hasUnpricedCartItems = cartItems.some((item) => item.price === null || item.price === undefined)
+  const hasUnpricedCartItems = cartItems.some(
+    (item) => item.price === null || item.price === undefined || item.price_from,
+  )
 
   const toggleSaved = (id) => {
     setSaved((items) => (items.includes(id) ? items.filter((item) => item !== id) : [...items, id]))
@@ -651,7 +657,7 @@ export default function App() {
                         <span className="predictive-copy">
                           <small>{product.category}</small>
                           <strong>{product.name}</strong>
-                          <b>{product.price !== null && product.price !== undefined ? `KSh ${Number(product.price).toLocaleString('en-KE')}` : 'Price on request'}</b>
+                          <b>{formatPrice(product)}</b>
                         </span>
                         <ChevronRight size={15} />
                       </button>
@@ -793,7 +799,7 @@ export default function App() {
                     <div className="cart-line-copy">
                       <small>{item.category}</small>
                       <strong>{item.name}</strong>
-                      <span>{item.price !== null && item.price !== undefined ? `KSh ${Number(item.price).toLocaleString('en-KE')}` : 'Price on request'}</span>
+                      <span>{formatPrice(item)}</span>
                     </div>
                     <div className="cart-line-controls">
                       <button onClick={() => changeCartQty(item.id, -1)} aria-label={`Reduce ${item.name}`}><Minus size={13} /></button>
@@ -814,7 +820,7 @@ export default function App() {
                   <span>{hasUnpricedCartItems ? 'Known subtotal' : 'Subtotal'}</span>
                   <strong>KSh {knownCartTotal.toLocaleString('en-KE')}</strong>
                 </div>
-                {hasUnpricedCartItems && <small>Some items are price-on-request. We’ll confirm the final total on WhatsApp.</small>}
+                {hasUnpricedCartItems && <small>Some items have variable or enquiry pricing. We’ll confirm the final total on WhatsApp.</small>}
                 <a href={cartWhatsappLink()} target="_blank" rel="noreferrer">
                   Checkout on WhatsApp <MessageCircle size={17} />
                 </a>
@@ -885,9 +891,7 @@ export default function App() {
 
               <div className="quick-view-meta">
                 <strong>
-                  {quickViewProduct.price !== null && quickViewProduct.price !== undefined
-                    ? `KSh ${Number(quickViewProduct.price).toLocaleString('en-KE')}`
-                    : 'Price on request'}
+                  {formatPrice(quickViewProduct)}
                 </strong>
                 <span>
                   {quickViewProduct.stock_quantity > 0
@@ -968,9 +972,7 @@ export default function App() {
                     <div className="product-detail-price-row">
                       <div className="product-detail-pricing">
                         <strong>
-                          {detailProduct.price !== null && detailProduct.price !== undefined
-                            ? `KSh ${Number(detailProduct.price).toLocaleString('en-KE')}`
-                            : 'Price on request'}
+                          {formatPrice(detailProduct)}
                         </strong>
                         {detailProduct.compare_at_price !== null
                           && detailProduct.compare_at_price !== undefined
@@ -1134,7 +1136,7 @@ export default function App() {
                           </div>
                           <small>{product.category}</small>
                           <strong>{product.name}</strong>
-                          <b>{product.price !== null && product.price !== undefined ? `KSh ${Number(product.price).toLocaleString('en-KE')}` : 'Price on request'}</b>
+                          <b>{formatPrice(product)}</b>
                         </button>
                       ))}
                     </div>
@@ -1157,7 +1159,7 @@ export default function App() {
                           </div>
                           <small>{product.category}</small>
                           <strong>{product.name}</strong>
-                          <b>{product.price !== null && product.price !== undefined ? `KSh ${Number(product.price).toLocaleString('en-KE')}` : 'Price on request'}</b>
+                          <b>{formatPrice(product)}</b>
                         </button>
                       ))}
                     </div>
@@ -1167,7 +1169,7 @@ export default function App() {
                 <div className="product-mobile-buybar">
                   <div>
                     <small>{detailProduct.name}</small>
-                    <strong>{detailProduct.price !== null && detailProduct.price !== undefined ? `KSh ${Number(detailProduct.price).toLocaleString('en-KE')}` : 'Price on request'}</strong>
+                    <strong>{formatPrice(detailProduct)}</strong>
                   </div>
                   <button onClick={() => addToCart(detailProduct)}>
                     <ShoppingCart size={17} /> Add
@@ -1471,9 +1473,7 @@ export default function App() {
 
                   <div className="product-meta">
                     <strong>
-                      {product.price !== null && product.price !== undefined
-                        ? `KSh ${Number(product.price).toLocaleString('en-KE')}`
-                        : 'Price on request'}
+                      {formatPrice(product)}
                     </strong>
                     <span>
                       {product.stock_quantity === null || product.stock_quantity === undefined
