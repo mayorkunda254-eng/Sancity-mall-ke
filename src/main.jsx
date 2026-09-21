@@ -6,9 +6,22 @@ import './styles.css'
 
 const isAdminRoute = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/')
 const root = document.getElementById('root')
+
+let preloadedProducts = null
+const preloadNode = document.getElementById('sancity-preloaded-products')
+if (preloadNode?.textContent) {
+  try {
+    preloadedProducts = JSON.parse(preloadNode.textContent)
+  } catch {
+    preloadedProducts = null
+  }
+}
+
 const app = (
   <React.StrictMode>
-    {isAdminRoute ? <AdminPage /> : <App />}
+    {isAdminRoute
+      ? <AdminPage />
+      : <App initialProducts={preloadedProducts} initialPath={window.location.pathname} />}
   </React.StrictMode>
 )
 
