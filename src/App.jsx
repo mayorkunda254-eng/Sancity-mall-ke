@@ -187,6 +187,24 @@ const featureLines = (value = '') => value
   .map((item) => item.trim())
   .filter(Boolean)
 
+const createAnalyticsSessionId = () => {
+  if (typeof window === 'undefined') return ''
+
+  try {
+    const stored = window.sessionStorage.getItem('sancity_analytics_session')
+    if (stored && /^[A-Za-z0-9_-]{8,80}$/.test(stored)) return stored
+
+    const token = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID().replace(/-/g, '')
+      : `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`
+    const sessionId = `sc_${token.slice(0, 48)}`
+    window.sessionStorage.setItem('sancity_analytics_session', sessionId)
+    return sessionId
+  } catch {
+    return `sc_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`
+  }
+}
+
 export default function App({ initialProducts = null, initialPath = null }) {
   const routePath = initialPath || (typeof window !== 'undefined' ? window.location.pathname : '/')
   const routeMatch = routePath.match(/^\/products\/([^/]+)\/?$/)
@@ -229,6 +247,44 @@ export default function App({ initialProducts = null, initialPath = null }) {
   const [toastProduct, setToastProduct] = useState(null)
   const searchRef = useRef(null)
   const feedbackTimeoutRef = useRef(null)
+  const analyticsSessionRef = useRef('')
+  const trackedProductViewsRef = useRef(new Set())
+
+  const getAnalyticsSessionId = () => {
+    if (!analyticsSessionRef.current) {
+      analyticsSessionRef.current = createAnalyticsSessionId()
+    }
+    return analyticsSessionRef.current
+  }
+
+  const trackStoreEvent = (eventType, {
+    productId = null,
+    variantId = null,
+    value = null,
+    metadata = {},
+  } = {}) => {
+    if (!isSupabaseConfigured || typeof window === 'undefined') return
+
+    const sessionId = getAnalyticsSessionId()
+    if (!sessionId) return
+
+    supabase.rpc('record_store_event', {
+      p_session_id: sessionId,
+      p_event_type: eventType,
+      p_product_id: productId,
+      p_variant_id: variantId,
+      p_event_value: value,
+      p_metadata: metadata,
+    }).then(() => {}).catch(() => {})
+  }
+
+  const trackWhatsappClick = (product = null, variant = null, source = 'general') => {
+    trackStoreEvent('whatsapp_click', {
+      productId: product?.id || null,
+      variantId: variant?.id || null,
+      metadata: { source },
+    })
+  }
 
   useEffect(() => {
     if (!isSupabaseConfigured) return
@@ -537,6 +593,12 @@ export default function App({ initialProducts = null, initialPath = null }) {
     setRecentlyViewed((items) => [detailProduct.id, ...items.filter((id) => id !== detailProduct.id)].slice(0, 8))
   }, [detailProduct])
 
+  useEffect(() => {
+    if (!detailProduct || trackedProductViewsRef.current.has(detailProduct.id)) return
+    trackedProductViewsRef.current.add(detailProduct.id)
+    trackStoreEvent('product_view', { productId: detailProduct.id })
+  }, [detailProduct?.id])
+
   const cartItems = useMemo(() => cart
     .map((entry) => {
       const productId = entry.productId || entry.id
@@ -621,6 +683,12 @@ export default function App({ initialProducts = null, initialPath = null }) {
       return [...items, { productId: product.id, variantId: variant?.id || null, qty: 1 }]
     })
 
+    trackStoreEvent('add_to_cart', {
+      productId: product.id,
+      variantId: variant?.id || null,
+      value: effectivePrice(product, variant),
+    })
+
     setRecentlyAddedId(product.id)
     setToastProduct(product)
     window.clearTimeout(feedbackTimeoutRef.current)
@@ -691,6 +759,13 @@ export default function App({ initialProducts = null, initialPath = null }) {
           ? 'You already have an active availability request for this item.'
           : 'Request saved. Sancity can contact you on WhatsApp when availability is confirmed.',
       })
+
+      if (!result?.already_requested) {
+        trackStoreEvent('stock_alert_request', {
+          productId: detailProduct.id,
+          variantId: selectedVariant?.id || null,
+        })
+      }
     } catch (error) {
       setStockAlertState({
         status: 'error',
@@ -705,6 +780,10 @@ export default function App({ initialProducts = null, initialPath = null }) {
     setCheckoutResult(null)
     setPromoCodeInput('')
     setPromoPreview(null)
+    trackStoreEvent('checkout_open', {
+      value: knownCartTotal,
+      metadata: { cart_items: cartCount },
+    })
     setCheckoutOpen(true)
     setCartOpen(false)
   }
@@ -741,7 +820,13 @@ export default function App({ initialProducts = null, initialPath = null }) {
         discount_amount: 0,
       })
 
-      if (result?.valid) setPromoCodeInput(result.promo_code || code)
+      if (result?.valid) {
+        setPromoCodeInput(result.promo_code || code)
+        trackStoreEvent('promo_applied', {
+          value: Number(result.discount_amount || 0),
+          metadata: { code: result.promo_code || code },
+        })
+      }
     } catch (error) {
       setPromoPreview({
         valid: false,
@@ -797,7 +882,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
         quantity: entry.qty,
       }))
 
-      const { data, error } = await supabase.rpc('create_store_order_v2', {
+      const { data, error } = await supabase.rpc('create_store_order_v3', {
         p_customer_name: checkoutForm.customer_name.trim(),
         p_customer_phone: checkoutForm.customer_phone.trim(),
         p_delivery_method: checkoutForm.delivery_method,
@@ -811,6 +896,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
           ? checkoutForm.delivery_zone_id || null
           : null,
         p_promo_code: promoPreview?.valid ? promoPreview.promo_code : null,
+        p_session_id: getAnalyticsSessionId(),
       })
 
       if (error) throw error
@@ -861,6 +947,11 @@ export default function App({ initialProducts = null, initialPath = null }) {
     }
     window.scrollTo({ top: 0, behavior: 'smooth' })
     window.setTimeout(() => searchRef.current?.focus(), 220)
+  }
+
+  const openQuickView = (product) => {
+    setQuickViewProduct(product)
+    trackStoreEvent('quick_view', { productId: product.id })
   }
 
   const openProductPage = (product) => {
@@ -2165,7 +2256,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
               <article className="emoji-product-card" key={product.id} style={{ '--card-delay': `${Math.min(index, 10) * 28}ms` }}>
                 <button
                   className="product-card-click-target"
-                  onClick={() => setQuickViewProduct(product)}
+                  onClick={() => openQuickView(product)}
                   aria-label={`View details for ${product.name}`}
                   aria-haspopup="dialog"
                 />
