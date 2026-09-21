@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Check, Eye, Heart, LogIn, Menu, MessageCircle, Minus, Plus, Search, ShoppingCart, UserRound, X } from 'lucide-react'
+import { Baby, BedDouble, Boxes, Check, CookingPot, Dumbbell, Eye, Heart, HousePlug, LogIn, Menu, MessageCircle, Minus, PackageCheck, Plus, Search, ShieldCheck, ShoppingCart, UserRound, X } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './lib/supabase.js'
 
 const departments = [
-  { name: 'Kitchen & Dining', short: 'Kitchen', emoji: '🍲', className: 'dept-kitchen' },
-  { name: 'Bedroom & Sleep', short: 'Bedroom', emoji: '🛏️', className: 'dept-bedroom' },
-  { name: 'Storage & Organisation', short: 'Storage', emoji: '🧺', className: 'dept-storage' },
-  { name: 'Everyday Home Utility', short: 'Home Utility', emoji: '🧹', className: 'dept-utility' },
-  { name: 'Kids & Baby', short: 'Kids & Baby', emoji: '🧸', className: 'dept-kids' },
-  { name: 'Mosquito Nets', short: 'Mosquito Nets', emoji: '🦟', className: 'dept-nets' },
-  { name: 'Home Fitness', short: 'Fitness', emoji: '🏋️', className: 'dept-fitness' },
-  { name: 'Wholesale', short: 'Wholesale', emoji: '📦', className: 'dept-wholesale', wholesale: true },
+  { name: 'Kitchen & Dining', short: 'Kitchen', emoji: '🍲', icon: CookingPot, className: 'dept-kitchen' },
+  { name: 'Bedroom & Sleep', short: 'Bedroom', emoji: '🛏️', icon: BedDouble, className: 'dept-bedroom' },
+  { name: 'Storage & Organisation', short: 'Storage', emoji: '🧺', icon: Boxes, className: 'dept-storage' },
+  { name: 'Everyday Home Utility', short: 'Home Utility', emoji: '🧹', icon: HousePlug, className: 'dept-utility' },
+  { name: 'Kids & Baby', short: 'Kids & Baby', emoji: '🧸', icon: Baby, className: 'dept-kids' },
+  { name: 'Mosquito Nets', short: 'Mosquito Nets', emoji: '🦟', icon: ShieldCheck, className: 'dept-nets' },
+  { name: 'Home Fitness', short: 'Fitness', emoji: '🏋️', icon: Dumbbell, className: 'dept-fitness' },
+  { name: 'Wholesale', short: 'Wholesale', emoji: '📦', icon: PackageCheck, className: 'dept-wholesale', wholesale: true },
 ]
 
 const productCategories = [
@@ -670,7 +670,9 @@ export default function App() {
                 className={`category-card ${department.className}`}
                 onClick={() => handleDepartment(department)}
               >
-                <span className="category-emoji">{department.emoji}</span>
+                <span className="category-emoji" aria-hidden="true">
+                  <department.icon strokeWidth={1.8} />
+                </span>
                 <div>
                   <strong>{department.short}</strong>
                 </div>
