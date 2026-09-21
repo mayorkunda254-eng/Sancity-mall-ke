@@ -221,7 +221,6 @@ export default function AdminPage() {
 
         for (let imageIndex = 0; imageIndex < folderImages.length; imageIndex += 1) {
           const entry = folderImages[imageIndex]
-          const blob = await entry.async('blob')
           const fileName = entry.name.split('/').pop() || `image-${imageIndex + 1}.jpg`
           const extension = fileName.split('.').pop()?.toLowerCase()
           const mimeType = extension === 'png'
@@ -232,11 +231,17 @@ export default function AdminPage() {
                 ? 'image/avif'
                 : 'image/jpeg'
 
+          // JSZip returns extracted blobs as application/octet-stream in some browsers.
+          // Rebuild the payload with an explicit image MIME type so Supabase Storage
+          // accepts it against the bucket's image-only MIME allowlist.
+          const imageBytes = await entry.async('uint8array')
+          const typedBlob = new Blob([imageBytes], { type: mimeType })
+
           const storagePath = `${product.id}/${Date.now()}-batch-${existingImages.length + imageIndex}-${safeFileName(fileName)}`
 
           const { error: uploadError } = await supabase.storage
             .from(PRODUCT_IMAGE_BUCKET)
-            .upload(storagePath, blob, {
+            .upload(storagePath, typedBlob, {
               cacheControl: '31536000',
               contentType: mimeType,
               upsert: false,
