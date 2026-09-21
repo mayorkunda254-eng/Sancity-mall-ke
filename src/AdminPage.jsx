@@ -75,6 +75,10 @@ export default function AdminPage() {
   const [orders, setOrders] = useState([])
   const [ordersLoading, setOrdersLoading] = useState(false)
   const [orderUpdatingId, setOrderUpdatingId] = useState(null)
+  const [deliveryZones, setDeliveryZones] = useState([])
+  const [zonesLoading, setZonesLoading] = useState(false)
+  const [zoneSavingId, setZoneSavingId] = useState(null)
+  const [newZone, setNewZone] = useState({ name: '', fee: '', eta_text: '' })
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -105,6 +109,7 @@ export default function AdminPage() {
     if (session) {
       loadProducts()
       loadOrders()
+      loadDeliveryZones()
     }
   }, [session])
 
@@ -150,7 +155,7 @@ export default function AdminPage() {
     setOrdersLoading(true)
     const { data, error } = await supabase
       .from('store_orders')
-      .select('id,order_number,customer_name,customer_phone,delivery_method,delivery_location,delivery_notes,subtotal,delivery_fee,total_amount,payment_method,payment_paybill,payment_account,mpesa_code,payment_status,order_status,created_at,store_order_items(id,product_name,variant_label,variant_size,variant_colour,unit_price,quantity,line_total)')
+      .select('id,order_number,customer_name,customer_phone,delivery_method,delivery_zone_id,delivery_zone_name,delivery_location,delivery_notes,subtotal,delivery_fee,total_amount,payment_method,payment_paybill,payment_account,mpesa_code,payment_status,order_status,created_at,store_order_items(id,product_name,variant_label,variant_size,variant_colour,unit_price,quantity,line_total)')
       .order('created_at', { ascending: false })
       .limit(60)
 
@@ -160,6 +165,105 @@ export default function AdminPage() {
       setOrders(data || [])
     }
     setOrdersLoading(false)
+  }
+
+  async function loadDeliveryZones() {
+    setZonesLoading(true)
+    const { data, error } = await supabase
+      .from('delivery_zones')
+      .select('id,name,fee,eta_text,is_active,sort_order,created_at')
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true })
+
+    if (error) {
+      setNotice({ type: 'error', text: error.message })
+    } else {
+      setDeliveryZones(data || [])
+    }
+    setZonesLoading(false)
+  }
+
+  async function addDeliveryZone(event) {
+    event.preventDefault()
+    const name = newZone.name.trim()
+    const fee = newZone.fee === '' ? null : Number(newZone.fee)
+
+    if (!name) {
+      setNotice({ type: 'error', text: 'Enter a delivery zone name.' })
+      return
+    }
+    if (fee !== null && (!Number.isFinite(fee) || fee < 0)) {
+      setNotice({ type: 'error', text: 'Enter a valid delivery fee or leave it blank for quote-required.' })
+      return
+    }
+
+    setZoneSavingId('new')
+    const { error } = await supabase.from('delivery_zones').insert({
+      name,
+      fee,
+      eta_text: newZone.eta_text.trim() || null,
+      is_active: true,
+      sort_order: deliveryZones.length * 10 + 10,
+    })
+
+    if (error) {
+      setNotice({ type: 'error', text: error.message })
+    } else {
+      setNotice({ type: 'success', text: `${name} was added to delivery zones.` })
+      setNewZone({ name: '', fee: '', eta_text: '' })
+      await loadDeliveryZones()
+    }
+    setZoneSavingId(null)
+  }
+
+  async function updateDeliveryZone(zone, patch) {
+    setZoneSavingId(zone.id)
+    setNotice(null)
+
+    const { error } = await supabase
+      .from('delivery_zones')
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq('id', zone.id)
+
+    if (error) {
+      setNotice({ type: 'error', text: error.message })
+    } else {
+      await loadDeliveryZones()
+    }
+    setZoneSavingId(null)
+  }
+
+  async function saveDeliveryZoneFee(event, zone) {
+    event.preventDefault()
+    const form = event.currentTarget
+    const feeRaw = form.elements.fee.value
+    const eta = String(form.elements.eta_text.value || '').trim()
+    const fee = feeRaw === '' ? null : Number(feeRaw)
+
+    if (fee !== null && (!Number.isFinite(fee) || fee < 0)) {
+      setNotice({ type: 'error', text: 'Enter a valid fee or leave it blank for manual quote.' })
+      return
+    }
+
+    await updateDeliveryZone(zone, { fee, eta_text: eta || null })
+    setNotice({
+      type: 'success',
+      text: `${zone.name} updated — ${fee === null ? 'manual quote required' : money(fee)} delivery.`,
+    })
+  }
+
+  async function deleteDeliveryZone(zone) {
+    if (!window.confirm(`Delete delivery zone "${zone.name}"?`)) return
+    setZoneSavingId(zone.id)
+
+    const { error } = await supabase.from('delivery_zones').delete().eq('id', zone.id)
+    if (error) {
+      setNotice({ type: 'error', text: error.message })
+    } else {
+      setNotice({ type: 'success', text: `${zone.name} was removed.` })
+      await loadDeliveryZones()
+    }
+    setZoneSavingId(null)
   }
 
   async function updateOrder(order, patch, successText = 'Order updated.') {
@@ -739,11 +843,11 @@ export default function AdminPage() {
             <p>Verify customer orders, manage fulfilment and maintain the Sancity catalogue.</p>
           </div>
           <button
-            onClick={() => { loadProducts(); loadOrders() }}
+            onClick={() => { loadProducts(); loadOrders(); loadDeliveryZones() }}
             className="admin-secondary-btn"
-            disabled={listLoading || ordersLoading}
+            disabled={listLoading || ordersLoading || zonesLoading}
           >
-            <RefreshCw size={16} className={listLoading || ordersLoading ? 'spin' : ''} /> Refresh
+            <RefreshCw size={16} className={listLoading || ordersLoading || zonesLoading ? 'spin' : ''} /> Refresh
           </button>
         </section>
 
@@ -753,6 +857,109 @@ export default function AdminPage() {
             {notice.text}
           </div>
         )}
+
+        <section className="admin-card admin-delivery-zones-card">
+          <div className="admin-card-heading orders-heading">
+            <span className="admin-step"><Truck size={16} /></span>
+            <div>
+              <h2>Delivery zones</h2>
+              <p>Set automatic delivery fees. Leave a fee blank when Sancity should quote that area manually.</p>
+            </div>
+          </div>
+
+          <form className="admin-zone-create" onSubmit={addDeliveryZone}>
+            <label>
+              <span>Zone / area</span>
+              <input
+                value={newZone.name}
+                onChange={(event) => setNewZone({ ...newZone, name: event.target.value })}
+                placeholder="e.g. Nairobi CBD"
+                disabled={zoneSavingId === 'new'}
+              />
+            </label>
+            <label>
+              <span>Fee (KSh)</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={newZone.fee}
+                onChange={(event) => setNewZone({ ...newZone, fee: event.target.value })}
+                placeholder="Blank = quote"
+                disabled={zoneSavingId === 'new'}
+              />
+            </label>
+            <label>
+              <span>Delivery ETA</span>
+              <input
+                value={newZone.eta_text}
+                onChange={(event) => setNewZone({ ...newZone, eta_text: event.target.value })}
+                placeholder="e.g. Same day / 1–2 days"
+                disabled={zoneSavingId === 'new'}
+              />
+            </label>
+            <button className="admin-primary-btn" disabled={zoneSavingId === 'new'}>
+              {zoneSavingId === 'new' ? 'Adding…' : 'Add zone'}
+            </button>
+          </form>
+
+          <div className="admin-zones-list">
+            {zonesLoading ? (
+              <div className="admin-empty"><Loader2 className="spin" /> Loading delivery zones…</div>
+            ) : deliveryZones.length === 0 ? (
+              <div className="admin-empty"><Truck /> No automatic delivery zones yet. Add the first area above.</div>
+            ) : deliveryZones.map((zone) => {
+              const busy = zoneSavingId === zone.id
+              return (
+                <article className="admin-zone-row" key={zone.id}>
+                  <div className="admin-zone-title">
+                    <span className={zone.is_active ? 'active' : 'inactive'}>{zone.is_active ? 'Active' : 'Hidden'}</span>
+                    <strong>{zone.name}</strong>
+                  </div>
+
+                  <form className="admin-zone-fields" onSubmit={(event) => saveDeliveryZoneFee(event, zone)}>
+                    <label>
+                      <span>Fee</span>
+                      <input
+                        name="fee"
+                        type="number"
+                        min="0"
+                        step="1"
+                        defaultValue={zone.fee ?? ''}
+                        placeholder="Quote"
+                        disabled={busy}
+                      />
+                    </label>
+                    <label>
+                      <span>ETA</span>
+                      <input
+                        name="eta_text"
+                        defaultValue={zone.eta_text || ''}
+                        placeholder="Optional"
+                        disabled={busy}
+                      />
+                    </label>
+                    <button className="admin-secondary-btn" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
+                  </form>
+
+                  <div className="admin-zone-actions">
+                    <button
+                      className="status-pill"
+                      type="button"
+                      disabled={busy}
+                      onClick={() => updateDeliveryZone(zone, { is_active: !zone.is_active })}
+                    >
+                      {zone.is_active ? 'Hide' : 'Activate'}
+                    </button>
+                    <button className="danger-icon" type="button" disabled={busy} onClick={() => deleteDeliveryZone(zone)} title="Delete zone">
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        </section>
 
         <section className="admin-card admin-orders-card">
           <div className="admin-card-heading orders-heading">
@@ -795,7 +1002,7 @@ export default function AdminPage() {
                       <span>
                         {order.delivery_method === 'delivery' ? <Truck size={14} /> : <MapPin size={14} />}
                         {order.delivery_method === 'delivery'
-                          ? order.delivery_location || 'Delivery location pending'
+                          ? [order.delivery_zone_name, order.delivery_location].filter(Boolean).join(' • ') || 'Delivery location pending'
                           : 'Pickup • RNG Plaza, Ronald Ngala Street'}
                       </span>
                       {order.delivery_notes && <small>Note: {order.delivery_notes}</small>}
