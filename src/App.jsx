@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, Baby, BedDouble, Boxes, Check, ChevronRight, CircleHelp, CookingPot, Dumbbell, Eye, Heart, HousePlug, LogIn, Menu, MessageCircle, Minus, PackageCheck, Plus, Search, ShieldCheck, ShoppingCart, Tag, Truck, UserRound, X } from 'lucide-react'
+import { ArrowLeft, ArrowUpDown, Baby, BedDouble, Boxes, Check, ChevronRight, CircleHelp, CookingPot, Dumbbell, Eye, Heart, HousePlug, LogIn, Menu, MessageCircle, Minus, PackageCheck, Plus, RotateCcw, Search, ShieldCheck, ShoppingCart, SlidersHorizontal, Sparkles, Tag, Truck, UserRound, X } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './lib/supabase.js'
 
 const departments = [
@@ -134,6 +134,10 @@ export default function App() {
   const [query, setQuery] = useState('')
   const [searchActive, setSearchActive] = useState(false)
   const [activeCategory, setActiveCategory] = useState('All')
+  const [sortBy, setSortBy] = useState('newest')
+  const [stockFilter, setStockFilter] = useState('all')
+  const [priceFilter, setPriceFilter] = useState('all')
+  const [newOnly, setNewOnly] = useState(false)
   const [saved, setSaved] = useState([])
   const [wishlistOnly, setWishlistOnly] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
@@ -248,14 +252,41 @@ export default function App() {
 
   const visibleProducts = useMemo(() => {
     const q = query.trim().toLowerCase()
+    const newCutoff = Date.now() - (1000 * 60 * 60 * 24 * 45)
 
-    return products.filter((item) => {
+    const filtered = products.filter((item) => {
       const categoryMatch = activeCategory === 'All' || item.category === activeCategory
       const wishlistMatch = !wishlistOnly || saved.includes(item.id)
       const haystack = `${item.name || ''} ${item.category || ''} ${item.description || ''}`.toLowerCase()
-      return categoryMatch && wishlistMatch && (!q || haystack.includes(q))
+      const searchMatch = !q || haystack.includes(q)
+      const stockMatch = stockFilter === 'all'
+        || (stockFilter === 'in-stock' && Number(item.stock_quantity) > 0)
+        || (stockFilter === 'confirm' && !(Number(item.stock_quantity) > 0))
+      const priceMatch = priceFilter === 'all'
+        || (priceFilter === 'priced' && item.price !== null && item.price !== undefined)
+        || (priceFilter === 'request' && (item.price === null || item.price === undefined))
+      const createdAt = item.created_at ? new Date(item.created_at).getTime() : 0
+      const badgeLooksNew = /new|fresh|arrival/i.test(item.badge || '')
+      const freshnessMatch = !newOnly || createdAt >= newCutoff || badgeLooksNew
+
+      return categoryMatch && wishlistMatch && searchMatch && stockMatch && priceMatch && freshnessMatch
     })
-  }, [products, query, activeCategory, wishlistOnly, saved])
+
+    return filtered.sort((a, b) => {
+      if (sortBy === 'price-low') {
+        const aPrice = a.price === null || a.price === undefined ? Number.POSITIVE_INFINITY : Number(a.price)
+        const bPrice = b.price === null || b.price === undefined ? Number.POSITIVE_INFINITY : Number(b.price)
+        return aPrice - bPrice
+      }
+      if (sortBy === 'price-high') {
+        const aPrice = a.price === null || a.price === undefined ? Number.NEGATIVE_INFINITY : Number(a.price)
+        const bPrice = b.price === null || b.price === undefined ? Number.NEGATIVE_INFINITY : Number(b.price)
+        return bPrice - aPrice
+      }
+      if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '')
+      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+    })
+  }, [products, query, activeCategory, wishlistOnly, saved, sortBy, stockFilter, priceFilter, newOnly])
 
   const predictiveProducts = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -284,6 +315,20 @@ export default function App() {
     const featured = matches.find((product) => productMainImage(product)) || matches[0] || null
     return { ...collection, featured, count: matches.length }
   }), [products])
+
+  const activeFilterCount = [
+    stockFilter !== 'all',
+    priceFilter !== 'all',
+    newOnly,
+    sortBy !== 'newest',
+  ].filter(Boolean).length
+
+  const resetCatalogueControls = () => {
+    setSortBy('newest')
+    setStockFilter('all')
+    setPriceFilter('all')
+    setNewOnly(false)
+  }
 
   const detailProduct = useMemo(
     () => detailSlug ? products.find((item) => productSlug(item) === detailSlug) || null : null,
@@ -1171,10 +1216,80 @@ export default function App() {
             </div>
           </div>
 
-          {query && (
-            <div className="search-chip">
-              Search: <strong>{query}</strong>
-              <button onClick={() => setQuery('')}>Clear</button>
+          <div className="catalogue-controls">
+            <div className="catalogue-control-group">
+              <span className="catalogue-control-label"><SlidersHorizontal size={15} /> Refine</span>
+
+              <label>
+                <span>Availability</span>
+                <select value={stockFilter} onChange={(e) => setStockFilter(e.target.value)}>
+                  <option value="all">All stock</option>
+                  <option value="in-stock">In stock</option>
+                  <option value="confirm">Confirm stock</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Pricing</span>
+                <select value={priceFilter} onChange={(e) => setPriceFilter(e.target.value)}>
+                  <option value="all">All pricing</option>
+                  <option value="priced">Priced products</option>
+                  <option value="request">Price on request</option>
+                </select>
+              </label>
+
+              <button
+                className={`new-arrivals-toggle ${newOnly ? 'active' : ''}`}
+                onClick={() => setNewOnly((value) => !value)}
+              >
+                <Sparkles size={14} /> New arrivals
+              </button>
+            </div>
+
+            <div className="catalogue-sort">
+              <ArrowUpDown size={15} />
+              <span>Sort</span>
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                <option value="newest">Newest first</option>
+                <option value="price-low">Price: low to high</option>
+                <option value="price-high">Price: high to low</option>
+                <option value="name">Name A–Z</option>
+              </select>
+            </div>
+          </div>
+
+          {(query || activeFilterCount > 0) && (
+            <div className="active-filter-chips">
+              {query && (
+                <button onClick={() => setQuery('')}>
+                  Search: <strong>{query}</strong> <X size={12} />
+                </button>
+              )}
+              {stockFilter !== 'all' && (
+                <button onClick={() => setStockFilter('all')}>
+                  {stockFilter === 'in-stock' ? 'In stock' : 'Confirm stock'} <X size={12} />
+                </button>
+              )}
+              {priceFilter !== 'all' && (
+                <button onClick={() => setPriceFilter('all')}>
+                  {priceFilter === 'priced' ? 'Priced products' : 'Price on request'} <X size={12} />
+                </button>
+              )}
+              {newOnly && (
+                <button onClick={() => setNewOnly(false)}>
+                  New arrivals <X size={12} />
+                </button>
+              )}
+              {sortBy !== 'newest' && (
+                <button onClick={() => setSortBy('newest')}>
+                  {sortBy === 'price-low' ? 'Price ↑' : sortBy === 'price-high' ? 'Price ↓' : 'Name A–Z'} <X size={12} />
+                </button>
+              )}
+              {activeFilterCount > 1 && (
+                <button className="clear-all-filters" onClick={resetCatalogueControls}>
+                  <RotateCcw size={12} /> Reset
+                </button>
+              )}
             </div>
           )}
 
