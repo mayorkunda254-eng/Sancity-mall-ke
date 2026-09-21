@@ -14,6 +14,18 @@
       "destination": "/api/sitemap"
     },
     {
+      "source": "/privacy",
+      "destination": "/privacy/index.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/terms/index.html"
+    },
+    {
+      "source": "/shipping-returns",
+      "destination": "/shipping-returns/index.html"
+    },
+    {
       "source": "/admin",
       "destination": "/admin/index.html"
     },
