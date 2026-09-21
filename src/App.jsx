@@ -187,7 +187,11 @@ const featureLines = (value = '') => value
   .map((item) => item.trim())
   .filter(Boolean)
 
-export default function App() {
+export default function App({ initialProducts = null, initialPath = null }) {
+  const routePath = initialPath || (typeof window !== 'undefined' ? window.location.pathname : '/')
+  const routeMatch = routePath.match(/^\/products\/([^/]+)\/?$/)
+  const initialDetailSlug = routeMatch ? decodeURIComponent(routeMatch[1]) : ''
+
   const [menuOpen, setMenuOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [searchActive, setSearchActive] = useState(false)
@@ -208,9 +212,11 @@ export default function App() {
   const [checkoutResult, setCheckoutResult] = useState(null)
   const [deliveryZones, setDeliveryZones] = useState([])
   const [storageReady, setStorageReady] = useState(false)
-  const [products, setProducts] = useState(fallbackProducts)
+  const [products, setProducts] = useState(
+    Array.isArray(initialProducts) && initialProducts.length > 0 ? initialProducts : fallbackProducts,
+  )
   const [quickViewProduct, setQuickViewProduct] = useState(null)
-  const [detailSlug, setDetailSlug] = useState('')
+  const [detailSlug, setDetailSlug] = useState(initialDetailSlug)
   const [galleryIndex, setGalleryIndex] = useState(0)
   const [selectedVariantId, setSelectedVariantId] = useState('')
   const [recentlyViewed, setRecentlyViewed] = useState([])
@@ -420,6 +426,14 @@ export default function App() {
   const selectedVariant = detailVariants.find((variant) => variant.id === selectedVariantId) || null
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const requestedVariant = new URLSearchParams(window.location.search).get('variant')
+      if (requestedVariant && detailVariants.some((variant) => variant.id === requestedVariant)) {
+        setSelectedVariantId(requestedVariant)
+        return
+      }
+    }
+
     if (detailVariants.length === 1) {
       setSelectedVariantId(detailVariants[0].id)
     } else {
@@ -447,6 +461,49 @@ export default function App() {
   ].filter((item) => item.value) : []
 
   const detailFeatureLines = detailProduct ? featureLines(detailProduct.key_features || '') : []
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+
+    const siteUrl = 'https://sancity-mall-ke-v3.vercel.app'
+    const title = detailProduct
+      ? `${detailProduct.name} | Sancity Mall KE`
+      : 'Sancity Mall KE | Household Products, Retail & Wholesale'
+    const description = detailProduct?.description
+      ? detailProduct.description.slice(0, 160)
+      : 'Sancity Mall KE — shop household, kitchen, bedroom and storage essentials in Nairobi with delivery across Kenya.'
+    const canonical = detailProduct
+      ? `${siteUrl}/products/${productSlug(detailProduct)}`
+      : `${siteUrl}/`
+
+    document.title = title
+
+    const upsertMeta = (selector, attrName, attrValue, content) => {
+      let element = document.head.querySelector(selector)
+      if (!element) {
+        element = document.createElement('meta')
+        element.setAttribute(attrName, attrValue)
+        document.head.appendChild(element)
+      }
+      element.setAttribute('content', content)
+    }
+
+    upsertMeta('meta[name="description"]', 'name', 'description', description)
+    upsertMeta('meta[property="og:title"]', 'property', 'og:title', title)
+    upsertMeta('meta[property="og:description"]', 'property', 'og:description', description)
+    upsertMeta('meta[property="og:url"]', 'property', 'og:url', canonical)
+
+    const image = detailProduct ? productMainImage(detailProduct) : null
+    if (image) upsertMeta('meta[property="og:image"]', 'property', 'og:image', image)
+
+    let canonicalLink = document.head.querySelector('link[rel="canonical"]')
+    if (!canonicalLink) {
+      canonicalLink = document.createElement('link')
+      canonicalLink.setAttribute('rel', 'canonical')
+      document.head.appendChild(canonicalLink)
+    }
+    canonicalLink.setAttribute('href', canonical)
+  }, [detailProduct?.id])
 
   const relatedProducts = useMemo(() => {
     if (!detailProduct) return []
