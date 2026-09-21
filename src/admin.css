@@ -989,3 +989,244 @@
     grid-template-columns:1fr;
   }
 }
+
+
+/* === Conversion analytics dashboard === */
+.admin-analytics-card{
+  margin-bottom:18px;
+}
+.analytics-heading{
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+}
+.analytics-periods{
+  display:flex;
+  gap:5px;
+  align-items:center;
+}
+.analytics-periods button{
+  min-width:40px;
+  height:34px;
+  border:1px solid #ddd2c6;
+  border-radius:9px;
+  background:#fff;
+  color:#76695f;
+  font-size:8px;
+  font-weight:900;
+  cursor:pointer;
+}
+.analytics-periods button.active{
+  border-color:#b99145;
+  background:#f4e7c8;
+  color:#634817;
+}
+.analytics-periods button:disabled{
+  opacity:.55;
+  cursor:wait;
+}
+.analytics-kpis{
+  margin-top:13px;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:9px;
+}
+.analytics-kpis>div{
+  min-width:0;
+  padding:13px;
+  border:1px solid #e0d6cb;
+  border-radius:13px;
+  background:#fbf8f4;
+  display:grid;
+  gap:4px;
+}
+.analytics-kpis span{
+  color:#80746b;
+  font-size:7.5px;
+  font-weight:900;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+.analytics-kpis strong{
+  color:#2f2925;
+  font-size:20px;
+  line-height:1.15;
+}
+.analytics-kpis>div:nth-child(2) strong{
+  color:#7a2330;
+}
+.analytics-kpis>div:nth-child(3) strong{
+  color:#1f4d3f;
+}
+.analytics-kpis small{
+  color:#85786f;
+  font-size:7.5px;
+  line-height:1.45;
+}
+.analytics-detail-grid{
+  margin-top:10px;
+  display:grid;
+  grid-template-columns:1.05fr .95fr;
+  gap:10px;
+}
+.analytics-funnel-panel,
+.analytics-top-products{
+  min-width:0;
+  padding:13px;
+  border:1px solid #e0d6cb;
+  border-radius:13px;
+  background:#fffdf9;
+}
+.analytics-panel-heading{
+  margin-bottom:11px;
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:flex-start;
+}
+.analytics-panel-heading>span{
+  color:#3c342e;
+  font-size:10px;
+  font-weight:900;
+}
+.analytics-panel-heading>small{
+  color:#8b8076;
+  font-size:7.5px;
+  text-align:right;
+}
+.analytics-funnel{
+  display:grid;
+  gap:10px;
+}
+.analytics-funnel-label{
+  margin-bottom:5px;
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+}
+.analytics-funnel-label span{
+  color:#61564e;
+  font-size:8.5px;
+  font-weight:800;
+}
+.analytics-funnel-label strong{
+  color:#312b26;
+  font-size:9px;
+}
+.analytics-funnel-label strong small{
+  margin-left:4px;
+  color:#8a7d72;
+  font-size:7px;
+  font-weight:800;
+}
+.analytics-funnel-track{
+  height:9px;
+  border-radius:999px;
+  background:#eee7df;
+  overflow:hidden;
+}
+.analytics-funnel-track i{
+  display:block;
+  height:100%;
+  border-radius:inherit;
+  background:linear-gradient(90deg,#7a2330,#b99145);
+}
+.analytics-secondary-metrics{
+  margin-top:12px;
+  padding-top:10px;
+  border-top:1px solid #ece3da;
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+}
+.analytics-secondary-metrics span{
+  padding:6px 8px;
+  border-radius:999px;
+  background:#f4eee7;
+  color:#70645a;
+  font-size:7.5px;
+}
+.analytics-secondary-metrics b{
+  color:#3c342e;
+}
+.analytics-product-list{
+  display:grid;
+  gap:4px;
+}
+.analytics-product-list>a{
+  min-width:0;
+  padding:8px 6px;
+  border-radius:9px;
+  display:grid;
+  grid-template-columns:24px minmax(0,1fr);
+  gap:8px;
+  align-items:center;
+  text-decoration:none;
+}
+.analytics-product-list>a:hover{
+  background:#f7f1ea;
+}
+.analytics-product-list>a>b{
+  width:24px;
+  height:24px;
+  border-radius:8px;
+  background:#f0e4cc;
+  color:#795a22;
+  display:grid;
+  place-items:center;
+  font-size:8px;
+}
+.analytics-product-list>a>span{
+  min-width:0;
+  display:grid;
+  gap:2px;
+}
+.analytics-product-list strong{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#3b342e;
+  font-size:8.5px;
+}
+.analytics-product-list small{
+  color:#867970;
+  font-size:7.3px;
+}
+.analytics-no-data{
+  padding:18px 8px;
+  color:#8a7e74;
+  font-size:8.5px;
+  text-align:center;
+}
+@media(max-width:900px){
+  .analytics-kpis{
+    grid-template-columns:1fr 1fr;
+  }
+  .analytics-detail-grid{
+    grid-template-columns:1fr;
+  }
+}
+@media(max-width:620px){
+  .analytics-heading{
+    grid-template-columns:auto 1fr;
+  }
+  .analytics-periods{
+    grid-column:1/-1;
+    width:100%;
+  }
+  .analytics-periods button{
+    flex:1;
+  }
+  .analytics-kpis{
+    grid-template-columns:1fr 1fr;
+  }
+  .analytics-kpis strong{
+    font-size:17px;
+  }
+  .analytics-panel-heading{
+    display:grid;
+  }
+  .analytics-panel-heading>small{
+    text-align:left;
+  }
+}
