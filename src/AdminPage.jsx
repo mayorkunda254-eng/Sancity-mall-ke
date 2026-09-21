@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import JSZip from 'jszip'
 import {
   Boxes, CheckCircle2, ChevronRight, ImagePlus, Loader2, LogOut, PackagePlus,
   RefreshCw, Search, ShieldCheck, Store, Trash2, UploadCloud, XCircle
@@ -65,6 +66,9 @@ export default function AdminPage() {
   const [listLoading, setListLoading] = useState(false)
   const [notice, setNotice] = useState(null)
   const [uploadingProductId, setUploadingProductId] = useState(null)
+  const [batchUploading, setBatchUploading] = useState(false)
+  const [batchProgress, setBatchProgress] = useState('')
+  const [publishAfterBatch, setPublishAfterBatch] = useState(true)
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -122,7 +126,7 @@ export default function AdminPage() {
     setListLoading(true)
     const { data, error } = await supabase
       .from('products')
-      .select('id,name,category,description,dimensions,material,colour,key_features,care_instructions,delivery_note,price,compare_at_price,price_from,stock_quantity,badge,status,created_at,product_images(id,public_url,storage_path,sort_order)')
+      .select('id,name,slug,category,description,dimensions,material,colour,key_features,care_instructions,delivery_note,price,compare_at_price,price_from,stock_quantity,badge,status,created_at,product_images(id,public_url,storage_path,sort_order)')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -141,6 +145,144 @@ export default function AdminPage() {
       return
     }
     setFiles(picked)
+  }
+
+  async function importProductImageZip(event) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    setBatchUploading(true)
+    setBatchProgress('Reading ZIP package…')
+    setNotice(null)
+
+    try {
+      const zip = await JSZip.loadAsync(file)
+      const manifestEntry = zip.file('manifest.json')
+      if (!manifestEntry) {
+        throw new Error('This ZIP is missing manifest.json. Use a Sancity admin-import ZIP package.')
+      }
+
+      const manifest = JSON.parse(await manifestEntry.async('string'))
+      if (!Array.isArray(manifest?.products) || manifest.products.length === 0) {
+        throw new Error('The ZIP manifest does not contain any product mappings.')
+      }
+
+      const imagePattern = /\.(jpe?g|png|webp|avif)$/i
+      let uploadedTotal = 0
+      let matchedProducts = 0
+      let publishedProducts = 0
+      const warnings = []
+
+      for (let productIndex = 0; productIndex < manifest.products.length; productIndex += 1) {
+        const mapping = manifest.products[productIndex]
+        const product = products.find((item) => item.slug === mapping.slug)
+
+        if (!product) {
+          warnings.push(`No catalogue product found for ${mapping.slug}`)
+          continue
+        }
+
+        matchedProducts += 1
+        const existingImages = [...(product.product_images || [])]
+          .sort((a, b) => a.sort_order - b.sort_order)
+        const remainingSlots = Math.max(0, 10 - existingImages.length)
+
+        if (remainingSlots === 0) {
+          warnings.push(`${product.name} already has 10 photos`)
+          continue
+        }
+
+        const folderPrefix = `${String(mapping.folder || '').replace(/\/+$/, '')}/`
+        const folderImages = Object.values(zip.files)
+          .filter((entry) => !entry.dir && entry.name.startsWith(folderPrefix) && imagePattern.test(entry.name))
+          .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
+          .slice(0, remainingSlots)
+
+        if (folderImages.length === 0) {
+          warnings.push(`No importable images found for ${product.name}`)
+          continue
+        }
+
+        setBatchProgress(
+          `Uploading ${product.name} (${productIndex + 1} of ${manifest.products.length})…`,
+        )
+
+        const imageRows = []
+
+        for (let imageIndex = 0; imageIndex < folderImages.length; imageIndex += 1) {
+          const entry = folderImages[imageIndex]
+          const blob = await entry.async('blob')
+          const fileName = entry.name.split('/').pop() || `image-${imageIndex + 1}.jpg`
+          const extension = fileName.split('.').pop()?.toLowerCase()
+          const mimeType = extension === 'png'
+            ? 'image/png'
+            : extension === 'webp'
+              ? 'image/webp'
+              : extension === 'avif'
+                ? 'image/avif'
+                : 'image/jpeg'
+
+          const storagePath = `${product.id}/${Date.now()}-batch-${existingImages.length + imageIndex}-${safeFileName(fileName)}`
+
+          const { error: uploadError } = await supabase.storage
+            .from(PRODUCT_IMAGE_BUCKET)
+            .upload(storagePath, blob, {
+              cacheControl: '31536000',
+              contentType: mimeType,
+              upsert: false,
+            })
+
+          if (uploadError) throw uploadError
+
+          const { data: publicData } = supabase.storage
+            .from(PRODUCT_IMAGE_BUCKET)
+            .getPublicUrl(storagePath)
+
+          imageRows.push({
+            product_id: product.id,
+            storage_path: storagePath,
+            public_url: publicData.publicUrl,
+            sort_order: existingImages.length + imageIndex,
+          })
+        }
+
+        const { error: imageError } = await supabase.from('product_images').insert(imageRows)
+        if (imageError) throw imageError
+
+        uploadedTotal += imageRows.length
+
+        if (publishAfterBatch && product.status === 'draft') {
+          const { error: publishError } = await supabase
+            .from('products')
+            .update({ status: 'published', updated_at: new Date().toISOString() })
+            .eq('id', product.id)
+
+          if (publishError) throw publishError
+          publishedProducts += 1
+        }
+
+        if (folderImages.length < Object.values(zip.files)
+          .filter((entry) => !entry.dir && entry.name.startsWith(folderPrefix) && imagePattern.test(entry.name)).length) {
+          warnings.push(`${product.name} was capped at 10 total photos`)
+        }
+      }
+
+      await loadProducts()
+      setBatchProgress('')
+      setNotice({
+        type: 'success',
+        text: `Batch complete: ${uploadedTotal} photo${uploadedTotal === 1 ? '' : 's'} added across ${matchedProducts} product${matchedProducts === 1 ? '' : 's'}${publishedProducts ? `, ${publishedProducts} draft${publishedProducts === 1 ? '' : 's'} published` : ''}.${warnings.length ? ` ${warnings.length} note${warnings.length === 1 ? '' : 's'}: ${warnings.slice(0, 2).join('; ')}${warnings.length > 2 ? '…' : ''}` : ''}`,
+      })
+    } catch (error) {
+      setBatchProgress('')
+      setNotice({
+        type: 'error',
+        text: error.message || 'Batch ZIP import failed.',
+      })
+    } finally {
+      setBatchUploading(false)
+    }
   }
 
   async function addImagesToProduct(product, event) {
@@ -374,7 +516,7 @@ export default function AdminPage() {
         </section>
         <aside className="admin-login-art">
           <div><PackagePlus /><strong>Fast catalogue updates</strong><span>Add stock without touching website code.</span></div>
-          <div><UploadCloud /><strong>Real product photography</strong><span>Upload up to six images per item.</span></div>
+          <div><UploadCloud /><strong>Real product photography</strong><span>Upload up to ten images per item, including batch ZIP imports.</span></div>
           <div><Store /><strong>Publish when ready</strong><span>Use drafts for incomplete products.</span></div>
         </aside>
       </div>
@@ -409,6 +551,43 @@ export default function AdminPage() {
             {notice.text}
           </div>
         )}
+
+        <section className="admin-card batch-import-card">
+          <div className="admin-card-heading">
+            <span className="admin-step">00</span>
+            <div>
+              <h2>Batch image import</h2>
+              <p>Upload a prepared Sancity ZIP once and attach its images to the correct products automatically.</p>
+            </div>
+          </div>
+
+          <div className="batch-import-layout">
+            <label className={`batch-dropzone ${batchUploading ? 'busy' : ''}`}>
+              {batchUploading ? <Loader2 className="spin" /> : <UploadCloud />}
+              <strong>{batchUploading ? 'Importing catalogue photos…' : 'Choose Sancity admin-import ZIP'}</strong>
+              <small>{batchProgress || 'The ZIP must include manifest.json. Product videos are preserved but skipped for now.'}</small>
+              <input
+                type="file"
+                accept=".zip,application/zip"
+                disabled={batchUploading}
+                onChange={importProductImageZip}
+              />
+            </label>
+
+            <label className="batch-publish-toggle">
+              <input
+                type="checkbox"
+                checked={publishAfterBatch}
+                disabled={batchUploading}
+                onChange={(event) => setPublishAfterBatch(event.target.checked)}
+              />
+              <span>
+                <strong>Publish matched drafts after photos upload</strong>
+                <small>Existing published products remain published. Turn this off if you want to review drafts first.</small>
+              </span>
+            </label>
+          </div>
+        </section>
 
         <div className="admin-grid">
           <section className="admin-card upload-card">
@@ -508,7 +687,7 @@ export default function AdminPage() {
               </label>
 
               <div className="admin-field full">
-                <span>Product images * <small>Up to 6 images</small></span>
+                <span>Product images * <small>Up to 6 images on initial creation; add more later up to 10</small></span>
                 <label className="image-dropzone" htmlFor="product-images">
                   <ImagePlus />
                   <strong>Choose product photos</strong>
