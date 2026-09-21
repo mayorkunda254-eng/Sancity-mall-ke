@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, ArrowUpDown, Baby, BedDouble, Boxes, Check, ChevronRight, CircleHelp, CookingPot, Dumbbell, Eye, Heart, HousePlug, LogIn, Menu, MessageCircle, Minus, PackageCheck, Plus, RotateCcw, Search, ShieldCheck, ShoppingCart, SlidersHorizontal, Sparkles, Tag, Truck, UserRound, X } from 'lucide-react'
+import { ArrowLeft, ArrowUpDown, Baby, Banknote, BedDouble, Boxes, Check, ChevronRight, CircleHelp, CookingPot, Dumbbell, Eye, Heart, HousePlug, LogIn, MapPin, Menu, MessageCircle, Minus, PackageCheck, Plus, RotateCcw, Search, ShieldCheck, ShoppingCart, SlidersHorizontal, Sparkles, Tag, Truck, UserRound, X } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './lib/supabase.js'
 
 const departments = [
@@ -159,6 +159,15 @@ const formatPrice = (product, variant = null) => {
 
 const cartEntryKey = (productId, variantId = null) => `${productId}::${variantId || 'base'}`
 
+const emptyCheckoutForm = {
+  customer_name: '',
+  customer_phone: '',
+  delivery_method: 'delivery',
+  delivery_location: '',
+  delivery_notes: '',
+  mpesa_code: '',
+}
+
 function waLink(product) {
   const message = product
     ? `Hello Sancity Mall KE, I would like the current price and availability for ${product}.`
@@ -191,6 +200,11 @@ export default function App() {
   const [accountOpen, setAccountOpen] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
   const [cart, setCart] = useState([])
+  const [checkoutOpen, setCheckoutOpen] = useState(false)
+  const [checkoutForm, setCheckoutForm] = useState(emptyCheckoutForm)
+  const [checkoutSubmitting, setCheckoutSubmitting] = useState(false)
+  const [checkoutError, setCheckoutError] = useState('')
+  const [checkoutResult, setCheckoutResult] = useState(null)
   const [storageReady, setStorageReady] = useState(false)
   const [products, setProducts] = useState(fallbackProducts)
   const [quickViewProduct, setQuickViewProduct] = useState(null)
@@ -279,13 +293,14 @@ export default function App() {
   useEffect(() => () => window.clearTimeout(feedbackTimeoutRef.current), [])
 
   useEffect(() => {
-    const overlayOpen = cartOpen || menuOpen || Boolean(quickViewProduct)
+    const overlayOpen = cartOpen || checkoutOpen || menuOpen || Boolean(quickViewProduct)
     if (!overlayOpen) return undefined
 
     const previousOverflow = document.body.style.overflow
     const closeOverlays = (event) => {
       if (event.key !== 'Escape') return
       setCartOpen(false)
+      setCheckoutOpen(false)
       setMenuOpen(false)
       setQuickViewProduct(null)
     }
@@ -297,7 +312,7 @@ export default function App() {
       document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', closeOverlays)
     }
-  }, [cartOpen, menuOpen, quickViewProduct])
+  }, [cartOpen, checkoutOpen, menuOpen, quickViewProduct])
 
   const visibleProducts = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -543,6 +558,86 @@ export default function App() {
       'Please confirm availability, final price and delivery options.'
     ].join('\n')
     return `https://wa.me/254710900548?text=${encodeURIComponent(message)}`
+  }
+
+
+  const openCheckout = () => {
+    if (cartItems.length === 0 || hasUnpricedCartItems) return
+    setCheckoutError('')
+    setCheckoutResult(null)
+    setCheckoutOpen(true)
+    setCartOpen(false)
+  }
+
+  const closeCheckout = () => {
+    if (checkoutSubmitting) return
+    setCheckoutOpen(false)
+    setCheckoutError('')
+    setCheckoutResult(null)
+  }
+
+  const checkoutWhatsappLink = (result = checkoutResult) => {
+    const reference = result?.order_number || 'my Sancity order'
+    const message = checkoutForm.delivery_method === 'delivery'
+      ? `Hello Sancity Mall KE, I have placed order ${reference}. Please confirm my delivery fee and final total.`
+      : `Hello Sancity Mall KE, I have placed pickup order ${reference} and submitted my M-Pesa confirmation code for verification.`
+    return `https://wa.me/254710900548?text=${encodeURIComponent(message)}`
+  }
+
+  const submitCheckout = async (event) => {
+    event.preventDefault()
+    if (checkoutSubmitting || cartItems.length === 0) return
+
+    setCheckoutError('')
+
+    if (hasUnpricedCartItems) {
+      setCheckoutError('One or more items need price confirmation. Please use WhatsApp for this order.')
+      return
+    }
+
+    if (checkoutForm.delivery_method === 'pickup' && !checkoutForm.mpesa_code.trim()) {
+      setCheckoutError('Enter the M-Pesa confirmation code after paying the pickup total.')
+      return
+    }
+
+    if (checkoutForm.delivery_method === 'delivery' && !checkoutForm.delivery_location.trim()) {
+      setCheckoutError('Enter the delivery area or location.')
+      return
+    }
+
+    setCheckoutSubmitting(true)
+
+    try {
+      const items = cart.map((entry) => ({
+        product_id: entry.productId || entry.id,
+        variant_id: entry.variantId || null,
+        quantity: entry.qty,
+      }))
+
+      const { data, error } = await supabase.rpc('create_store_order', {
+        p_customer_name: checkoutForm.customer_name.trim(),
+        p_customer_phone: checkoutForm.customer_phone.trim(),
+        p_delivery_method: checkoutForm.delivery_method,
+        p_delivery_location: checkoutForm.delivery_location.trim() || null,
+        p_delivery_notes: checkoutForm.delivery_notes.trim() || null,
+        p_items: items,
+        p_mpesa_code: checkoutForm.delivery_method === 'pickup'
+          ? checkoutForm.mpesa_code.trim().toUpperCase()
+          : null,
+      })
+
+      if (error) throw error
+
+      const result = Array.isArray(data) ? data[0] : data
+      if (!result?.order_number) throw new Error('The order was not created. Please try again.')
+
+      setCheckoutResult(result)
+      setCart([])
+    } catch (error) {
+      setCheckoutError(error.message || 'Could not place the order. Please try again.')
+    } finally {
+      setCheckoutSubmitting(false)
+    }
   }
 
   const jumpToProducts = (category = 'All') => {
@@ -909,12 +1004,185 @@ export default function App() {
                   <strong>KSh {knownCartTotal.toLocaleString('en-KE')}</strong>
                 </div>
                 {hasUnpricedCartItems && <small>Some items have variable or enquiry pricing. We’ll confirm the final total on WhatsApp.</small>}
-                <a href={cartWhatsappLink()} target="_blank" rel="noreferrer">
-                  Checkout on WhatsApp <MessageCircle size={17} />
+                {!hasUnpricedCartItems && (
+                  <button type="button" className="cart-checkout-btn" onClick={openCheckout}>
+                    Secure checkout <Banknote size={17} />
+                  </button>
+                )}
+                <a className="cart-whatsapp-fallback" href={cartWhatsappLink()} target="_blank" rel="noreferrer">
+                  {hasUnpricedCartItems ? 'Checkout on WhatsApp' : 'Prefer WhatsApp?'} <MessageCircle size={17} />
                 </a>
               </div>
             )}
           </aside>
+        </div>
+      )}
+
+      {checkoutOpen && (
+        <div className="checkout-overlay" onMouseDown={closeCheckout}>
+          <section className="checkout-modal" role="dialog" aria-modal="true" aria-labelledby="checkout-title" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="checkout-head">
+              <div>
+                <span>Sancity secure checkout</span>
+                <h2 id="checkout-title">{checkoutResult ? 'Order received' : 'Complete your order'}</h2>
+              </div>
+              <button type="button" onClick={closeCheckout} disabled={checkoutSubmitting} aria-label="Close checkout"><X size={20} /></button>
+            </div>
+
+            {checkoutResult ? (
+              <div className="checkout-success">
+                <div className="checkout-success-icon"><Check size={25} /></div>
+                <span>Order reference</span>
+                <strong>{checkoutResult.order_number}</strong>
+
+                {checkoutForm.delivery_method === 'delivery' ? (
+                  <>
+                    <h3>Delivery total will be confirmed first</h3>
+                    <p>Your products are reserved in the order. Sancity will confirm the delivery fee and final amount before asking you to pay.</p>
+                    <div className="checkout-summary-line">
+                      <span>Product subtotal</span>
+                      <b>KSh {Number(checkoutResult.subtotal || 0).toLocaleString('en-KE')}</b>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h3>Payment submitted for verification</h3>
+                    <p>Your M-Pesa code has been attached to the order. Sancity will verify the payment before preparing the pickup.</p>
+                    <div className="checkout-summary-line">
+                      <span>Amount submitted</span>
+                      <b>KSh {Number(checkoutResult.total_amount || checkoutResult.subtotal || 0).toLocaleString('en-KE')}</b>
+                    </div>
+                  </>
+                )}
+
+                <a className="checkout-whatsapp-result" href={checkoutWhatsappLink(checkoutResult)} target="_blank" rel="noreferrer">
+                  <MessageCircle size={18} /> Continue with Sancity on WhatsApp
+                </a>
+                <button type="button" className="checkout-done" onClick={closeCheckout}>Done</button>
+              </div>
+            ) : (
+              <form className="checkout-form" onSubmit={submitCheckout}>
+                <div className="checkout-order-total">
+                  <span>Product subtotal</span>
+                  <strong>KSh {knownCartTotal.toLocaleString('en-KE')}</strong>
+                </div>
+
+                <div className="checkout-fields-grid">
+                  <label>
+                    <span>Name</span>
+                    <input
+                      required
+                      autoComplete="name"
+                      value={checkoutForm.customer_name}
+                      onChange={(event) => setCheckoutForm({ ...checkoutForm, customer_name: event.target.value })}
+                      placeholder="Your full name"
+                    />
+                  </label>
+                  <label>
+                    <span>Phone number</span>
+                    <input
+                      required
+                      inputMode="tel"
+                      autoComplete="tel"
+                      value={checkoutForm.customer_phone}
+                      onChange={(event) => setCheckoutForm({ ...checkoutForm, customer_phone: event.target.value })}
+                      placeholder="07XX XXX XXX"
+                    />
+                  </label>
+                </div>
+
+                <fieldset className="checkout-methods">
+                  <legend>How would you like to receive the order?</legend>
+                  <label className={checkoutForm.delivery_method === 'delivery' ? 'active' : ''}>
+                    <input
+                      type="radio"
+                      name="delivery-method"
+                      value="delivery"
+                      checked={checkoutForm.delivery_method === 'delivery'}
+                      onChange={() => setCheckoutForm({ ...checkoutForm, delivery_method: 'delivery', mpesa_code: '' })}
+                    />
+                    <Truck size={20} />
+                    <span><strong>Delivery</strong><small>Fee confirmed before payment</small></span>
+                  </label>
+                  <label className={checkoutForm.delivery_method === 'pickup' ? 'active' : ''}>
+                    <input
+                      type="radio"
+                      name="delivery-method"
+                      value="pickup"
+                      checked={checkoutForm.delivery_method === 'pickup'}
+                      onChange={() => setCheckoutForm({ ...checkoutForm, delivery_method: 'pickup' })}
+                    />
+                    <MapPin size={20} />
+                    <span><strong>Pickup</strong><small>RNG Plaza, Ronald Ngala Street</small></span>
+                  </label>
+                </fieldset>
+
+                {checkoutForm.delivery_method === 'delivery' ? (
+                  <div className="checkout-delivery-block">
+                    <label>
+                      <span>Delivery area / location</span>
+                      <input
+                        required
+                        value={checkoutForm.delivery_location}
+                        onChange={(event) => setCheckoutForm({ ...checkoutForm, delivery_location: event.target.value })}
+                        placeholder="e.g. Kasarani, Ruiru, Westlands"
+                      />
+                    </label>
+                    <div className="checkout-info-note">
+                      <Truck size={18} />
+                      <span><strong>Do not pay yet.</strong> Submit the order first. Sancity will confirm the delivery fee and final total before payment.</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="checkout-payment-card">
+                    <div className="checkout-payment-title">
+                      <Banknote size={20} />
+                      <span><strong>Pay with M-Pesa via Equity</strong><small>The recipient should reflect Sancity Mall.</small></span>
+                    </div>
+                    <ol>
+                      <li>Open <strong>Lipa na M-Pesa → Paybill</strong></li>
+                      <li>Business No. <strong>247247</strong></li>
+                      <li>Account / Till <strong>0705287264</strong></li>
+                      <li>Amount <strong>KSh {knownCartTotal.toLocaleString('en-KE')}</strong></li>
+                    </ol>
+                    <label>
+                      <span>M-Pesa confirmation code</span>
+                      <input
+                        required
+                        autoCapitalize="characters"
+                        value={checkoutForm.mpesa_code}
+                        onChange={(event) => setCheckoutForm({ ...checkoutForm, mpesa_code: event.target.value.toUpperCase().replace(/\s/g, '') })}
+                        placeholder="e.g. TXX123ABCD"
+                        maxLength="16"
+                      />
+                      <small>Payment is marked pending until Sancity verifies the transaction.</small>
+                    </label>
+                  </div>
+                )}
+
+                <label className="checkout-notes">
+                  <span>Order notes <small>optional</small></span>
+                  <textarea
+                    rows="3"
+                    value={checkoutForm.delivery_notes}
+                    onChange={(event) => setCheckoutForm({ ...checkoutForm, delivery_notes: event.target.value })}
+                    placeholder="Colour preference, landmark, pickup note…"
+                  />
+                </label>
+
+                {checkoutError && <div className="checkout-error"><CircleHelp size={17} /> {checkoutError}</div>}
+
+                <button className="checkout-submit" disabled={checkoutSubmitting}>
+                  {checkoutSubmitting
+                    ? 'Placing order…'
+                    : checkoutForm.delivery_method === 'pickup'
+                      ? 'Submit paid order'
+                      : 'Request delivery total'}
+                </button>
+                <small className="checkout-privacy">Your details are used only to fulfil this order and contact you about it.</small>
+              </form>
+            )}
+          </section>
         </div>
       )}
 
