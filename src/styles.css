@@ -4914,3 +4914,131 @@ select:focus-visible{
   color:#5f4519;
   font-size:10px;
 }
+
+
+/* === Availability alerts === */
+.stock-alert-panel{
+  margin-top:14px;
+  padding:14px;
+  border:1px solid #ddcfbc;
+  border-radius:15px;
+  background:linear-gradient(180deg,#fffaf2,#f8f0e5);
+  display:grid;
+  gap:11px;
+}
+.stock-alert-copy{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+}
+.stock-alert-icon{
+  width:36px;
+  height:36px;
+  border-radius:11px;
+  background:#f0e2c0;
+  color:#76551d;
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+}
+.stock-alert-copy>div{
+  display:grid;
+  gap:4px;
+}
+.stock-alert-copy strong{
+  color:#2d2722;
+  font-size:10px;
+}
+.stock-alert-copy p{
+  margin:0;
+  color:#786b61;
+  font-size:8.5px;
+  line-height:1.55;
+}
+.stock-alert-form{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  align-items:end;
+}
+.stock-alert-form label{
+  display:grid;
+  gap:5px;
+}
+.stock-alert-form label>span{
+  color:#6e6258;
+  font-size:8px;
+  font-weight:800;
+}
+.stock-alert-form input{
+  width:100%;
+  min-height:41px;
+  border:1px solid #d8cbbb;
+  border-radius:10px;
+  padding:9px 11px;
+  background:#fff;
+  color:#302923;
+  font:inherit;
+  font-size:9px;
+  outline:0;
+}
+.stock-alert-form input:focus{
+  border-color:#b99145;
+  box-shadow:0 0 0 3px rgba(185,145,69,.12);
+}
+.stock-alert-form button{
+  min-height:41px;
+  padding:0 14px;
+  border:0;
+  border-radius:10px;
+  background:#7a2330;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  font-size:9px;
+  font-weight:900;
+  cursor:pointer;
+}
+.stock-alert-form button:disabled{
+  opacity:.6;
+  cursor:wait;
+}
+.stock-alert-success,
+.stock-alert-error{
+  padding:10px 11px;
+  border-radius:10px;
+  font-size:8.5px;
+  line-height:1.5;
+}
+.stock-alert-success{
+  border:1px solid #c8ddd1;
+  background:#edf6f1;
+  color:#28503d;
+  display:flex;
+  gap:7px;
+  align-items:flex-start;
+}
+.stock-alert-error{
+  border:1px solid #e6c5c1;
+  background:#fff0ef;
+  color:#8a322d;
+}
+.stock-alert-panel>small{
+  color:#8b7e72;
+  font-size:7.5px;
+}
+
+@media(max-width:620px){
+  .stock-alert-panel{
+    padding:12px;
+    border-radius:13px;
+  }
+  .stock-alert-form{
+    grid-template-columns:1fr;
+  }
+  .stock-alert-form button{
+    width:100%;
+  }
+}
