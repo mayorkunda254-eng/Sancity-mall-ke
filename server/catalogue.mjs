@@ -209,6 +209,18 @@ export function buildSitemap(products, siteUrl = SITE_URL) {
       loc: `${siteUrl}/`,
       lastmod: null,
     },
+    {
+      loc: `${siteUrl}/shipping-returns`,
+      lastmod: null,
+    },
+    {
+      loc: `${siteUrl}/privacy`,
+      lastmod: null,
+    },
+    {
+      loc: `${siteUrl}/terms`,
+      lastmod: null,
+    },
     ...products
       .map((product) => ({
         loc: `${siteUrl}/products/${productSlug(product)}`,
