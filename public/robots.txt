@@ -1,2 +1,4 @@
 User-agent: *
 Allow: /
+
+Sitemap: https://sancity-mall-ke-v3.vercel.app/sitemap.xml
