@@ -189,15 +189,16 @@ function applyCommonSocialMeta(document, { title, description, canonical, image 
 
 const storefrontHtml = render({ products, path: '/' })
 
-if (!storefrontHtml.includes('SANCITY') || !storefrontHtml.includes('Everything for a Better Home')) {
+if (!storefrontHtml.includes('SANCITY') || !storefrontHtml.includes('Delivered across Kenya')) {
   throw new Error('Prerender failed: storefront HTML is missing expected content')
 }
 
 let storefrontDocument = injectApp(shell, storefrontHtml, products)
 storefrontDocument = applyCommonSocialMeta(storefrontDocument, {
-  title: 'Sancity Mall KE | Household Products, Retail & Wholesale',
-  description: 'Shop household, kitchen, bedroom, storage and lifestyle essentials from Sancity Mall KE in Nairobi, with retail, wholesale, pickup and delivery options.',
+  title: 'Sancity Mall KE | Home Essentials in Nairobi',
+  description: 'Shop bedding, kitchenware, storage and everyday home essentials from Sancity Mall KE in Nairobi, with pickup and delivery options across Kenya.',
   canonical: `${SITE_URL}/`,
+  image: `${SITE_URL}/hero-bedroom-hq.jpeg`,
 })
 storefrontDocument = addJsonLd(storefrontDocument, homepageSchema())
 
@@ -235,6 +236,45 @@ for (const product of products) {
   await writeFile(resolve(outputDirectory, 'index.html'), document, 'utf8')
 }
 
+const staticPages = [
+  {
+    path: '/shipping-returns',
+    title: 'Shipping & Returns | Sancity Mall KE',
+    description: 'Delivery, pickup, damaged-item reports, returns and refunds for Sancity Mall KE orders.',
+  },
+  {
+    path: '/privacy',
+    title: 'Privacy Policy | Sancity Mall KE',
+    description: 'How Sancity Mall KE handles checkout, order, availability-request and first-party analytics information.',
+  },
+  {
+    path: '/terms',
+    title: 'Terms of Service | Sancity Mall KE',
+    description: 'Terms that apply when browsing, ordering, paying for or receiving products from Sancity Mall KE.',
+  },
+]
+
+for (const page of staticPages) {
+  const html = render({ products, path: page.path })
+  let document = injectApp(shell, html, products)
+  document = applyCommonSocialMeta(document, {
+    title: page.title,
+    description: page.description,
+    canonical: `${SITE_URL}${page.path}`,
+    image: `${SITE_URL}/hero-bedroom-hq.jpeg`,
+  })
+
+  const outputDirectory = resolve(root, `dist${page.path}`)
+  await mkdir(outputDirectory, { recursive: true })
+  await writeFile(resolve(outputDirectory, 'index.html'), document, 'utf8')
+}
+
+let notFoundDocument = injectApp(shell, render({ products, path: '/404' }), products)
+notFoundDocument = setTitle(notFoundDocument, 'Page not found | Sancity Mall KE')
+notFoundDocument = setMeta(notFoundDocument, 'name', 'description', 'The page you requested could not be found on Sancity Mall KE.')
+notFoundDocument = setMeta(notFoundDocument, 'name', 'robots', 'noindex,nofollow,noarchive')
+await writeFile(resolve(root, 'dist/404.html'), notFoundDocument, 'utf8')
+
 const adminDirectory = resolve(root, 'dist/admin')
 await mkdir(adminDirectory, { recursive: true })
 let adminDocument = setTitle(shell, 'Sancity Mall KE | Store Admin')
@@ -248,5 +288,6 @@ await rm(resolve(root, 'dist-ssr'), { recursive: true, force: true })
 
 console.log(`Prerendered storefront HTML: ${storefrontHtml.length.toLocaleString()} characters`)
 console.log(`Prerendered ${products.length.toLocaleString()} product page(s)`)
+console.log('Prerendered privacy, terms, shipping/returns and custom 404 pages')
 console.log('Generated sitemap.xml and Merchant Center feed')
 console.log('Kept /admin as a noindex client-rendered shell')
