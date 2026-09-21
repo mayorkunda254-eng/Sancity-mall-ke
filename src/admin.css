@@ -555,3 +555,125 @@
     grid-template-columns:1fr;
   }
 }
+
+
+/* === Delivery zones === */
+.admin-delivery-zones-card{
+  margin-bottom:18px;
+}
+.admin-zone-create{
+  margin-top:12px;
+  display:grid;
+  grid-template-columns:1.25fr .7fr 1fr auto;
+  gap:8px;
+  align-items:end;
+}
+.admin-zone-create label,
+.admin-zone-fields label{
+  display:grid;
+  gap:5px;
+}
+.admin-zone-create label span,
+.admin-zone-fields label span{
+  color:#74685e;
+  font-size:8px;
+  font-weight:800;
+}
+.admin-zone-create input,
+.admin-zone-fields input{
+  width:100%;
+  min-height:38px;
+  border:1px solid #dcd1c5;
+  border-radius:9px;
+  padding:8px 10px;
+  background:#fff;
+  color:#332d28;
+  font-size:9px;
+}
+.admin-zone-create .admin-primary-btn{
+  min-height:38px;
+  width:auto;
+  padding:0 14px;
+}
+.admin-zones-list{
+  margin-top:12px;
+  display:grid;
+  gap:8px;
+}
+.admin-zone-row{
+  border:1px solid #e2d8cd;
+  border-radius:13px;
+  padding:10px;
+  background:#fbf8f3;
+  display:grid;
+  grid-template-columns:minmax(160px,.9fr) minmax(0,1.5fr) auto;
+  align-items:end;
+  gap:10px;
+}
+.admin-zone-title{
+  display:grid;
+  gap:5px;
+}
+.admin-zone-title>span{
+  width:max-content;
+  padding:4px 7px;
+  border-radius:999px;
+  font-size:7px;
+  font-weight:900;
+  border:1px solid #ddd2c6;
+  background:#f2ede7;
+  color:#6f655d;
+}
+.admin-zone-title>span.active{
+  border-color:#c8ddcf;
+  background:#eaf4ee;
+  color:#27503d;
+}
+.admin-zone-title strong{
+  color:#2f2925;
+  font-size:10px;
+}
+.admin-zone-fields{
+  display:grid;
+  grid-template-columns:.7fr 1.3fr auto;
+  gap:8px;
+  align-items:end;
+}
+.admin-zone-fields .admin-secondary-btn{
+  min-height:38px;
+}
+.admin-zone-actions{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.admin-zone-actions .status-pill{
+  min-height:34px;
+}
+@media(max-width:900px){
+  .admin-zone-create{
+    grid-template-columns:1fr 1fr;
+  }
+  .admin-zone-create label:first-child,
+  .admin-zone-create label:nth-child(3){
+    grid-column:span 1;
+  }
+  .admin-zone-row{
+    grid-template-columns:1fr;
+  }
+  .admin-zone-actions{
+    justify-content:flex-end;
+  }
+}
+@media(max-width:620px){
+  .admin-zone-create,
+  .admin-zone-fields{
+    grid-template-columns:1fr;
+  }
+  .admin-zone-create .admin-primary-btn{
+    width:100%;
+  }
+  .admin-zone-actions{
+    justify-content:flex-start;
+  }
+}
