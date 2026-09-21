@@ -1194,7 +1194,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
 
       <header className="store-header">
         <div className="header-main">
-          <a href="#home" className="brand-lockup" aria-label="Sancity Mall home">
+          <a href="/" className="brand-lockup" aria-label="Sancity Mall home">
             <span className="brand-bag">🛍️</span>
             <span className="brand-copy">
               <strong>SANCITY <b>MALL</b></strong>
@@ -1845,7 +1845,51 @@ export default function App({ initialProducts = null, initialPath = null }) {
       )}
 
       <main>
-        {detailSlug ? (
+        {legalPage ? (
+          <section className="legal-page">
+            <div className="legal-shell">
+              <nav className="legal-breadcrumb" aria-label="Breadcrumb">
+                <a href="/">Home</a><ChevronRight size={13} /><span>{legalPage.title}</span>
+              </nav>
+              <header className="legal-hero">
+                <span>{legalPage.eyebrow}</span>
+                <h1>{legalPage.title}</h1>
+                <p>{legalPage.intro}</p>
+                <small>Last updated: 22 September 2026</small>
+              </header>
+              <div className="legal-content">
+                {legalPage.sections.map((section) => (
+                  <section key={section.title}>
+                    <h2>{section.title}</h2>
+                    {(section.paragraphs || []).map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+                    {section.items && (
+                      <ul>{section.items.map((item) => <li key={item}>{item}</li>)}</ul>
+                    )}
+                  </section>
+                ))}
+              </div>
+              <aside className="legal-help">
+                <div>
+                  <strong>Need clarification?</strong>
+                  <span>Contact Sancity before ordering if a policy point affects your purchase.</span>
+                </div>
+                <a href={whatsapp} target="_blank" rel="noreferrer"><MessageCircle size={17} /> Ask on WhatsApp</a>
+              </aside>
+            </div>
+          </section>
+        ) : isNotFoundRoute ? (
+          <section className="site-not-found">
+            <div>
+              <span>404</span>
+              <h1>That page isn’t here.</h1>
+              <p>The link may be outdated, mistyped or no longer part of the Sancity Mall website.</p>
+              <div>
+                <a href="/"><ArrowLeft size={17} /> Return to Sancity Mall</a>
+                <a href="/#products">Browse products <ChevronRight size={17} /></a>
+              </div>
+            </div>
+          </section>
+        ) : detailSlug ? (
           detailProduct ? (
             <section className="product-detail-page" aria-label={detailProduct.name}>
               <div className="product-detail-shell">
@@ -2212,11 +2256,11 @@ export default function App({ initialProducts = null, initialPath = null }) {
           <>
         <section className="reference-hero">
           <div className="hero-left">
-            <span className="hero-pill">🏠 Everyday Home Essentials</span>
-            <h1>Make home feel <em>better,</em> for you.</h1>
+            <span className="hero-pill">🏠 Home Essentials • Nairobi</span>
+            <h1>Home essentials in Nairobi. <em>Delivered across Kenya.</em></h1>
             <p>
-              Quality home and lifestyle products at great prices. Discover real Sancity stock,
-              check availability instantly and order easily on WhatsApp.
+              Shop bedding, kitchenware, storage and everyday household finds from Sancity Mall KE.
+              Check current availability, order online or on WhatsApp, and choose Nairobi pickup or delivery.
             </p>
 
             <div className="hero-cta-row">
@@ -2584,15 +2628,18 @@ export default function App({ initialProducts = null, initialPath = null }) {
           </span>
         </div>
         <div className="footer-links">
-          <a href="#categories">Departments</a>
+          <a href="/#categories">Departments</a>
           <a href="/#products">Products</a>
           <a href="/#wholesale">Wholesale</a>
           <a href="/#contact">Contact</a>
+          <a href="/shipping-returns">Shipping & Returns</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
         </div>
         <small>© 2026 Sancity Mall KE</small>
       </footer>
 
-      {!detailSlug && (
+      {!detailSlug && normalizedRoute === '/' && (
         <>
           <a
             className="mobile-whatsapp-fab"
