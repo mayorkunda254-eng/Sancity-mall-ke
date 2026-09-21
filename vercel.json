@@ -22,8 +22,8 @@
       "destination": "/admin/index.html"
     },
     {
-      "source": "/products/:path*",
-      "destination": "/index.html"
+      "source": "/products/:slug",
+      "destination": "/products/:slug/index.html"
     }
   ]
 }
