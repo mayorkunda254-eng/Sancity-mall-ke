@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import JSZip from 'jszip'
 import {
-  Bell, Boxes, CheckCircle2, ChevronRight, ClipboardCheck, CreditCard, ImagePlus, Loader2, LogOut, MapPin, MessageCircle, PackagePlus,
+  BarChart3, Bell, Boxes, CheckCircle2, ChevronRight, ClipboardCheck, CreditCard, ImagePlus, Loader2, LogOut, MapPin, MessageCircle, PackagePlus,
   Phone, RefreshCw, Search, Settings2, ShieldCheck, Store, Tag, Trash2, Truck, UploadCloud, XCircle
 } from 'lucide-react'
 import { isSupabaseConfigured, PRODUCT_IMAGE_BUCKET, supabase } from './lib/supabase.js'
@@ -103,6 +103,9 @@ export default function AdminPage() {
     expires_at: '',
     max_redemptions: '',
   })
+  const [analytics, setAnalytics] = useState(null)
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
+  const [analyticsDays, setAnalyticsDays] = useState(30)
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -136,6 +139,7 @@ export default function AdminPage() {
       loadDeliveryZones()
       loadStockAlerts()
       loadPromotions()
+      loadAnalytics(30)
     }
   }, [session])
 
@@ -209,6 +213,44 @@ export default function AdminPage() {
     }
     setOrdersLoading(false)
   }
+
+  async function loadAnalytics(days = analyticsDays) {
+    const selectedDays = Number(days) || 30
+    setAnalyticsDays(selectedDays)
+    setAnalyticsLoading(true)
+
+    const { data, error } = await supabase.rpc('get_conversion_analytics', {
+      p_days: selectedDays,
+    })
+
+    if (error) {
+      setNotice({ type: 'error', text: error.message })
+    } else {
+      setAnalytics(data || null)
+    }
+    setAnalyticsLoading(false)
+  }
+
+  const analyticsFunnel = useMemo(() => {
+    const viewed = Number(analytics?.product_view_sessions || 0)
+    const stages = [
+      { key: 'viewed', label: 'Viewed products', value: viewed },
+      { key: 'cart', label: 'Added to cart', value: Number(analytics?.add_to_cart_sessions || 0) },
+      { key: 'checkout', label: 'Opened checkout', value: Number(analytics?.checkout_sessions || 0) },
+      { key: 'orders', label: 'Placed order', value: Number(analytics?.order_sessions || 0) },
+    ]
+
+    return stages.map((stage, index) => ({
+      ...stage,
+      rate: index === 0
+        ? (viewed > 0 ? 100 : 0)
+        : (viewed > 0 ? Math.min(100, (stage.value / viewed) * 100) : 0),
+    }))
+  }, [analytics])
+
+  const checkoutToOrderRate = Number(analytics?.checkout_sessions || 0) > 0
+    ? (Number(analytics?.order_sessions || 0) / Number(analytics.checkout_sessions)) * 100
+    : 0
 
   async function loadPromotions() {
     setPromotionsLoading(true)
@@ -1073,11 +1115,11 @@ export default function AdminPage() {
             <p>Verify customer orders, manage fulfilment and maintain the Sancity catalogue.</p>
           </div>
           <button
-            onClick={() => { loadProducts(); loadOrders(); loadDeliveryZones(); loadStockAlerts(); loadPromotions() }}
+            onClick={() => { loadProducts(); loadOrders(); loadDeliveryZones(); loadStockAlerts(); loadPromotions(); loadAnalytics(analyticsDays) }}
             className="admin-secondary-btn"
-            disabled={listLoading || ordersLoading || zonesLoading || stockAlertsLoading || promotionsLoading}
+            disabled={listLoading || ordersLoading || zonesLoading || stockAlertsLoading || promotionsLoading || analyticsLoading}
           >
-            <RefreshCw size={16} className={listLoading || ordersLoading || zonesLoading || stockAlertsLoading || promotionsLoading ? 'spin' : ''} /> Refresh
+            <RefreshCw size={16} className={listLoading || ordersLoading || zonesLoading || stockAlertsLoading || promotionsLoading || analyticsLoading ? 'spin' : ''} /> Refresh
           </button>
         </section>
 
@@ -1087,6 +1129,110 @@ export default function AdminPage() {
             {notice.text}
           </div>
         )}
+
+        <section className="admin-card admin-analytics-card">
+          <div className="admin-card-heading analytics-heading">
+            <span className="admin-step"><BarChart3 size={16} /></span>
+            <div>
+              <h2>Conversion analytics</h2>
+              <p>First-party shopping funnel. No customer names or phone numbers are stored in analytics.</p>
+            </div>
+            <div className="analytics-periods" aria-label="Analytics period">
+              {[7, 30, 90].map((days) => (
+                <button
+                  key={days}
+                  type="button"
+                  className={analyticsDays === days ? 'active' : ''}
+                  onClick={() => loadAnalytics(days)}
+                  disabled={analyticsLoading}
+                >
+                  {days}d
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {analyticsLoading && !analytics ? (
+            <div className="admin-empty"><Loader2 className="spin" /> Loading analytics…</div>
+          ) : (
+            <>
+              <div className="analytics-kpis">
+                <div>
+                  <span>Tracked sessions</span>
+                  <strong>{Number(analytics?.tracked_sessions || 0).toLocaleString('en-KE')}</strong>
+                  <small>Anonymous sessions with a shopping action.</small>
+                </div>
+                <div>
+                  <span>Orders placed</span>
+                  <strong>{Number(analytics?.order_sessions || 0).toLocaleString('en-KE')}</strong>
+                  <small>{checkoutToOrderRate.toFixed(1)}% of checkout sessions placed an order.</small>
+                </div>
+                <div>
+                  <span>Placed order value</span>
+                  <strong>{money(Number(analytics?.placed_order_value || 0))}</strong>
+                  <small>Known totals only; quote-required orders are excluded.</small>
+                </div>
+                <div>
+                  <span>WhatsApp clicks</span>
+                  <strong>{Number(analytics?.whatsapp_clicks || 0).toLocaleString('en-KE')}</strong>
+                  <small>Product, cart, checkout and floating-support clicks.</small>
+                </div>
+              </div>
+
+              <div className="analytics-detail-grid">
+                <div className="analytics-funnel-panel">
+                  <div className="analytics-panel-heading">
+                    <span>Shopping funnel</span>
+                    <small>Unique sessions • last {analyticsDays} days</small>
+                  </div>
+                  <div className="analytics-funnel">
+                    {analyticsFunnel.map((stage) => (
+                      <div key={stage.key}>
+                        <div className="analytics-funnel-label">
+                          <span>{stage.label}</span>
+                          <strong>{stage.value} <small>{stage.rate.toFixed(1)}%</small></strong>
+                        </div>
+                        <div className="analytics-funnel-track">
+                          <i style={{ width: `${Math.max(stage.rate, stage.value > 0 ? 4 : 0)}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="analytics-secondary-metrics">
+                    <span><b>{Number(analytics?.promo_sessions || 0)}</b> promo users</span>
+                    <span><b>{Number(analytics?.stock_alert_requests || 0)}</b> availability requests</span>
+                  </div>
+                </div>
+
+                <div className="analytics-top-products">
+                  <div className="analytics-panel-heading">
+                    <span>Top product interest</span>
+                    <small>Views, cart adds and WhatsApp intent</small>
+                  </div>
+
+                  {(analytics?.top_products || []).length === 0 ? (
+                    <div className="analytics-no-data">Product activity will appear here after tracking starts.</div>
+                  ) : (
+                    <div className="analytics-product-list">
+                      {(analytics?.top_products || []).map((product, index) => (
+                        <a key={product.product_id} href={`/products/${product.slug}`} target="_blank" rel="noreferrer">
+                          <b>{index + 1}</b>
+                          <span>
+                            <strong>{product.product_name}</strong>
+                            <small>
+                              {Number(product.views || 0)} views • {Number(product.adds || 0)} cart adds • {Number(product.whatsapp_clicks || 0)} WhatsApp
+                            </small>
+                          </span>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </section>
 
         <section className="admin-card admin-seo-card">
           <div className="admin-card-heading">
