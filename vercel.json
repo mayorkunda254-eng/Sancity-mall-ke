@@ -12,6 +12,10 @@
     {
       "source": "/admin/:path*",
       "destination": "/admin/index.html"
+    },
+    {
+      "source": "/products/:path*",
+      "destination": "/index.html"
     }
   ]
 }
