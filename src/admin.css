@@ -677,3 +677,57 @@
     justify-content:flex-start;
   }
 }
+
+
+/* === Google Shopping + SEO panel === */
+.admin-seo-card{
+  margin-bottom:18px;
+}
+.admin-seo-grid{
+  margin-top:12px;
+  display:grid;
+  grid-template-columns:.75fr 1.15fr 1.15fr;
+  gap:9px;
+}
+.admin-seo-grid>div,
+.admin-seo-grid>a{
+  min-width:0;
+  padding:13px;
+  border:1px solid #dfd4c8;
+  border-radius:13px;
+  background:#fbf7f2;
+  display:grid;
+  gap:5px;
+  text-decoration:none;
+}
+.admin-seo-grid>a:hover{
+  border-color:#b99145;
+  background:#fffaf2;
+}
+.admin-seo-grid span{
+  color:#85786e;
+  font-size:7.5px;
+  font-weight:900;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+.admin-seo-grid strong{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  color:#2e2823;
+  font-size:11px;
+}
+.admin-seo-grid>div strong{
+  color:#7a2330;
+  font-size:22px;
+}
+.admin-seo-grid small{
+  color:#7c7168;
+  font-size:8px;
+  line-height:1.5;
+}
+@media(max-width:760px){
+  .admin-seo-grid{
+    grid-template-columns:1fr;
+  }
+}
