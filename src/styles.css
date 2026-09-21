@@ -1273,13 +1273,26 @@ img{max-width:100%}
   height:70px;
   min-height:70px;
   border-radius:20px;
-  background:rgba(255,252,247,.78);
-  border:1px solid rgba(255,255,255,.62);
-  box-shadow:0 10px 22px rgba(37,28,22,.08);
-  font-size:38px;
+  background:rgba(255,252,247,.90);
+  border:1px solid rgba(255,255,255,.72);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.75),
+    0 10px 22px rgba(37,28,22,.09);
   line-height:1;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.65);
 }
+.category-emoji svg{
+  width:31px;
+  height:31px;
+  stroke:currentColor;
+}
+.dept-kitchen .category-emoji{color:#7a2330}
+.dept-bedroom .category-emoji{color:#1f4a39}
+.dept-storage .category-emoji{color:#514b45}
+.dept-utility .category-emoji{color:#8b2e3b}
+.dept-kids .category-emoji{color:#a3535c}
+.dept-nets .category-emoji{color:#24384c}
+.dept-fitness .category-emoji{color:#191918}
+.dept-wholesale .category-emoji{color:#8a6423}
 
 .product-emoji{
   width:94px;
