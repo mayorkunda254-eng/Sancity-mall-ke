@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Baby, BedDouble, Boxes, Check, CircleHelp, CookingPot, Dumbbell, Eye, Heart, HousePlug, LogIn, Menu, MessageCircle, Minus, PackageCheck, Plus, Search, ShieldCheck, ShoppingCart, Tag, UserRound, X } from 'lucide-react'
+import { ArrowLeft, Baby, BedDouble, Boxes, Check, ChevronRight, CircleHelp, CookingPot, Dumbbell, Eye, Heart, HousePlug, LogIn, Menu, MessageCircle, Minus, PackageCheck, Plus, Search, ShieldCheck, ShoppingCart, Tag, Truck, UserRound, X } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './lib/supabase.js'
 
 const departments = [
@@ -79,13 +79,21 @@ const categoryEmoji = (category = '') => {
   return '✨'
 }
 
-const productMainImage = (product) => {
-  const images = [...(product?.product_images || [])]
-    .filter((image) => image?.public_url)
-    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+const productImages = (product) => [...(product?.product_images || [])]
+  .filter((image) => image?.public_url)
+  .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
 
-  return images[0]?.public_url || null
-}
+const productMainImage = (product) => productImages(product)[0]?.public_url || null
+
+const slugify = (value = '') => value
+  .toString()
+  .trim()
+  .toLowerCase()
+  .replace(/&/g, 'and')
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-+|-+$/g, '')
+
+const productSlug = (product) => product?.slug || slugify(product?.name)
 
 function waLink(product) {
   const message = product
@@ -106,6 +114,9 @@ export default function App() {
   const [storageReady, setStorageReady] = useState(false)
   const [products, setProducts] = useState(fallbackProducts)
   const [quickViewProduct, setQuickViewProduct] = useState(null)
+  const [detailSlug, setDetailSlug] = useState('')
+  const [galleryIndex, setGalleryIndex] = useState(0)
+  const [recentlyViewed, setRecentlyViewed] = useState([])
   const [recentlyAddedId, setRecentlyAddedId] = useState(null)
   const [toastProduct, setToastProduct] = useState(null)
   const searchRef = useRef(null)
@@ -148,6 +159,12 @@ export default function App() {
       setCart([])
     }
 
+    try {
+      setRecentlyViewed(JSON.parse(window.localStorage.getItem('sancity-recently-viewed') || '[]'))
+    } catch {
+      setRecentlyViewed([])
+    }
+
     setStorageReady(true)
   }, [])
 
@@ -160,6 +177,23 @@ export default function App() {
     if (!storageReady) return
     window.localStorage.setItem('sancity-cart', JSON.stringify(cart))
   }, [cart, storageReady])
+
+  useEffect(() => {
+    if (!storageReady) return
+    window.localStorage.setItem('sancity-recently-viewed', JSON.stringify(recentlyViewed))
+  }, [recentlyViewed, storageReady])
+
+  useEffect(() => {
+    const syncRoute = () => {
+      const match = window.location.pathname.match(/^\/products\/([^/]+)\/?$/)
+      setDetailSlug(match ? decodeURIComponent(match[1]) : '')
+      setGalleryIndex(0)
+    }
+
+    syncRoute()
+    window.addEventListener('popstate', syncRoute)
+    return () => window.removeEventListener('popstate', syncRoute)
+  }, [])
 
   useEffect(() => () => window.clearTimeout(feedbackTimeoutRef.current), [])
 
@@ -194,6 +228,31 @@ export default function App() {
       return categoryMatch && wishlistMatch && (!q || haystack.includes(q))
     })
   }, [products, query, activeCategory, wishlistOnly, saved])
+
+  const detailProduct = useMemo(
+    () => detailSlug ? products.find((item) => productSlug(item) === detailSlug) || null : null,
+    [products, detailSlug],
+  )
+
+  const detailImages = useMemo(() => detailProduct ? productImages(detailProduct) : [], [detailProduct])
+  const activeDetailImage = detailImages[galleryIndex]?.public_url || productMainImage(detailProduct)
+
+  const relatedProducts = useMemo(() => {
+    if (!detailProduct) return []
+    return products
+      .filter((item) => item.id !== detailProduct.id && item.category === detailProduct.category)
+      .slice(0, 4)
+  }, [products, detailProduct])
+
+  const recentlyViewedProducts = useMemo(() => recentlyViewed
+    .map((id) => products.find((item) => item.id === id))
+    .filter((item) => item && item.id !== detailProduct?.id)
+    .slice(0, 4), [recentlyViewed, products, detailProduct])
+
+  useEffect(() => {
+    if (!detailProduct) return
+    setRecentlyViewed((items) => [detailProduct.id, ...items.filter((id) => id !== detailProduct.id)].slice(0, 8))
+  }, [detailProduct])
 
   const cartItems = useMemo(() => cart
     .map((entry) => {
@@ -280,8 +339,29 @@ export default function App() {
   }
 
   const focusSearch = () => {
+    if (detailSlug) {
+      window.history.pushState({}, '', '/')
+      setDetailSlug('')
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' })
     window.setTimeout(() => searchRef.current?.focus(), 220)
+  }
+
+  const openProductPage = (product) => {
+    const slug = productSlug(product)
+    if (!slug) return
+    window.history.pushState({}, '', `/products/${encodeURIComponent(slug)}`)
+    setDetailSlug(slug)
+    setGalleryIndex(0)
+    setQuickViewProduct(null)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const backToShop = () => {
+    window.history.pushState({}, '', '/')
+    setDetailSlug('')
+    setGalleryIndex(0)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const whatsapp = waLink()
@@ -582,6 +662,9 @@ export default function App() {
                 <a href={waLink(quickViewProduct.name)} target="_blank" rel="noreferrer">
                   <MessageCircle size={17} /> Order on WhatsApp
                 </a>
+                <button className="quick-view-full" onClick={() => openProductPage(quickViewProduct)}>
+                  View full product <ChevronRight size={16} />
+                </button>
               </div>
             </div>
           </section>
@@ -589,6 +672,180 @@ export default function App() {
       )}
 
       <main>
+        {detailSlug ? (
+          detailProduct ? (
+            <section className="product-detail-page" aria-label={detailProduct.name}>
+              <div className="product-detail-shell">
+                <button className="product-back" onClick={backToShop}>
+                  <ArrowLeft size={17} /> Back to shop
+                </button>
+
+                <div className="product-breadcrumbs" aria-label="Breadcrumb">
+                  <button onClick={backToShop}>Home</button>
+                  <ChevronRight size={13} />
+                  <span>{detailProduct.category}</span>
+                  <ChevronRight size={13} />
+                  <strong>{detailProduct.name}</strong>
+                </div>
+
+                <div className="product-detail-grid">
+                  <div className="product-gallery">
+                    <div className={`product-gallery-main ${activeDetailImage ? 'has-photo' : ''}`}>
+                      {activeDetailImage ? (
+                        <img src={activeDetailImage} alt={detailProduct.name} />
+                      ) : (
+                        <span className="product-detail-fallback">{categoryEmoji(detailProduct.category)}</span>
+                      )}
+                      {detailProduct.badge && <small>{detailProduct.badge}</small>}
+                    </div>
+
+                    {detailImages.length > 1 && (
+                      <div className="product-gallery-thumbs" aria-label="Product images">
+                        {detailImages.map((image, index) => (
+                          <button
+                            key={`${image.public_url}-${index}`}
+                            className={galleryIndex === index ? 'active' : ''}
+                            onClick={() => setGalleryIndex(index)}
+                            aria-label={`View image ${index + 1} of ${detailProduct.name}`}
+                          >
+                            <img src={image.public_url} alt="" loading="lazy" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="product-detail-copy">
+                    <span className="product-detail-category">{detailProduct.category}</span>
+                    <h1>{detailProduct.name}</h1>
+                    <p className="product-detail-description">{detailProduct.description}</p>
+
+                    <div className="product-detail-price-row">
+                      <strong>
+                        {detailProduct.price !== null && detailProduct.price !== undefined
+                          ? `KSh ${Number(detailProduct.price).toLocaleString('en-KE')}`
+                          : 'Price on request'}
+                      </strong>
+                      <span className={detailProduct.stock_quantity > 0 ? 'in-stock' : ''}>
+                        {detailProduct.stock_quantity > 0
+                          ? `${detailProduct.stock_quantity} in stock`
+                          : 'Confirm current stock'}
+                      </span>
+                    </div>
+
+                    <div className="product-detail-actions">
+                      <button
+                        className={recentlyAddedId === detailProduct.id ? 'added' : ''}
+                        onClick={() => addToCart(detailProduct)}
+                      >
+                        {recentlyAddedId === detailProduct.id ? <Check size={18} /> : <ShoppingCart size={18} />}
+                        {recentlyAddedId === detailProduct.id ? 'Added to cart' : 'Add to cart'}
+                      </button>
+                      <a href={waLink(detailProduct.name)} target="_blank" rel="noreferrer">
+                        <MessageCircle size={18} /> Order on WhatsApp
+                      </a>
+                      <button
+                        className={`product-detail-save ${saved.includes(detailProduct.id) ? 'active' : ''}`}
+                        onClick={() => toggleSaved(detailProduct.id)}
+                        aria-label={saved.includes(detailProduct.id) ? 'Remove from wishlist' : 'Save to wishlist'}
+                      >
+                        <Heart size={18} fill={saved.includes(detailProduct.id) ? 'currentColor' : 'none'} />
+                      </button>
+                    </div>
+
+                    <div className="product-confidence-grid">
+                      <div>
+                        <Truck size={20} />
+                        <span><strong>Delivery across Kenya</strong><small>Exact fee and arrival timing confirmed before dispatch.</small></span>
+                      </div>
+                      <div>
+                        <ShieldCheck size={20} />
+                        <span><strong>Buy with confidence</strong><small>Confirm availability and product details before payment.</small></span>
+                      </div>
+                      <div>
+                        <PackageCheck size={20} />
+                        <span><strong>Nairobi CBD pickup</strong><small>RNG Plaza, Ronald Ngala Street.</small></span>
+                      </div>
+                    </div>
+
+                    <div className="product-detail-info">
+                      <span>Product details</span>
+                      <p>{detailProduct.description}</p>
+                      <small>Need dimensions, colour confirmation or more photos? Ask us on WhatsApp and we’ll verify the exact item before you order.</small>
+                    </div>
+                  </div>
+                </div>
+
+                {relatedProducts.length > 0 && (
+                  <div className="product-recommendations">
+                    <div>
+                      <span>Complete the room</span>
+                      <h2>More from {detailProduct.category}</h2>
+                    </div>
+                    <div className="product-recommendation-grid">
+                      {relatedProducts.map((product) => (
+                        <button key={product.id} onClick={() => openProductPage(product)}>
+                          <div className={productMainImage(product) ? 'has-photo' : ''}>
+                            {productMainImage(product)
+                              ? <img src={productMainImage(product)} alt={product.name} loading="lazy" />
+                              : <span>{categoryEmoji(product.category)}</span>}
+                          </div>
+                          <small>{product.category}</small>
+                          <strong>{product.name}</strong>
+                          <b>{product.price !== null && product.price !== undefined ? `KSh ${Number(product.price).toLocaleString('en-KE')}` : 'Price on request'}</b>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {recentlyViewedProducts.length > 0 && (
+                  <div className="product-recommendations recently-viewed">
+                    <div>
+                      <span>Recently viewed</span>
+                      <h2>Pick up where you left off</h2>
+                    </div>
+                    <div className="product-recommendation-grid">
+                      {recentlyViewedProducts.map((product) => (
+                        <button key={product.id} onClick={() => openProductPage(product)}>
+                          <div className={productMainImage(product) ? 'has-photo' : ''}>
+                            {productMainImage(product)
+                              ? <img src={productMainImage(product)} alt={product.name} loading="lazy" />
+                              : <span>{categoryEmoji(product.category)}</span>}
+                          </div>
+                          <small>{product.category}</small>
+                          <strong>{product.name}</strong>
+                          <b>{product.price !== null && product.price !== undefined ? `KSh ${Number(product.price).toLocaleString('en-KE')}` : 'Price on request'}</b>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="product-mobile-buybar">
+                  <div>
+                    <small>{detailProduct.name}</small>
+                    <strong>{detailProduct.price !== null && detailProduct.price !== undefined ? `KSh ${Number(detailProduct.price).toLocaleString('en-KE')}` : 'Price on request'}</strong>
+                  </div>
+                  <button onClick={() => addToCart(detailProduct)}>
+                    <ShoppingCart size={17} /> Add
+                  </button>
+                  <a href={waLink(detailProduct.name)} target="_blank" rel="noreferrer" aria-label="Order on WhatsApp">
+                    <MessageCircle size={18} />
+                  </a>
+                </div>
+              </div>
+            </section>
+          ) : (
+            <section className="product-not-found">
+              <span>Product unavailable</span>
+              <h1>We couldn’t find this product.</h1>
+              <p>It may have been renamed, unpublished or removed from the current catalogue.</p>
+              <button onClick={backToShop}><ArrowLeft size={17} /> Return to Sancity Mall</button>
+            </section>
+          )
+        ) : (
+          <>
         <section className="reference-hero">
           <div className="hero-left">
             <span className="hero-pill">🏠 Everyday Home Essentials</span>
@@ -786,6 +1043,9 @@ export default function App() {
                       {isRecentlyAdded ? <Check size={14} /> : <ShoppingCart size={14} />}
                       {isRecentlyAdded ? 'Added' : 'Add to cart'}
                     </button>
+                    <button className="product-card-details" onClick={() => openProductPage(product)} aria-label={`Open full details for ${product.name}`}>
+                      <Eye size={15} />
+                    </button>
                     <a href={waLink(product.name)} target="_blank" rel="noreferrer" aria-label={`Ask about ${product.name} on WhatsApp`}>
                       <MessageCircle size={15} />
                     </a>
@@ -829,6 +1089,8 @@ export default function App() {
             <div><span>📍</span><strong>Store</strong><small>RNG Plaza, Ronald Ngala St</small></div>
           </div>
         </section>
+          </>
+        )}
       </main>
 
       <footer className="store-footer">
