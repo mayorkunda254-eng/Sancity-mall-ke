@@ -6,6 +6,14 @@
   "installCommand": "npm install",
   "rewrites": [
     {
+      "source": "/merchant-feed.xml",
+      "destination": "/api/merchant-feed"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    },
+    {
       "source": "/admin",
       "destination": "/admin/index.html"
     },
