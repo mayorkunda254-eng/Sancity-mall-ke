@@ -892,7 +892,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
   const cartWhatsappLink = () => {
     const lines = cartItems.map((item) => {
       const variantText = item.selectedVariant
-        ? ` — ${item.selectedVariant.label}${item.selectedVariant.size ? ` (${item.selectedVariant.size})` : ''}${item.selectedVariant.colour ? `, ${item.selectedVariant.colour}` : ''}`
+        ? `: ${item.selectedVariant.label}${item.selectedVariant.size ? ` (${item.selectedVariant.size})` : ''}${item.selectedVariant.colour ? `, ${item.selectedVariant.colour}` : ''}`
         : ''
       return `• ${item.name}${variantText} × ${item.qty}`
     })
@@ -1576,7 +1576,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                       {promoPreview.valid ? <Check size={15} /> : <CircleHelp size={15} />}
                       <span>
                         {promoPreview.valid
-                          ? `${promoPreview.message} — save KSh ${Number(promoPreview.discount_amount || 0).toLocaleString('en-KE')}`
+                          ? `${promoPreview.message}. Save KSh ${Number(promoPreview.discount_amount || 0).toLocaleString('en-KE')}`
                           : promoPreview.message}
                       </span>
                     </div>
@@ -1648,7 +1648,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                         <option value="">My area is not listed / request a quote</option>
                         {deliveryZones.map((zone) => (
                           <option key={zone.id} value={zone.id}>
-                            {zone.name}{zone.fee === null || zone.fee === undefined ? ' — quote required' : ` — KSh ${Number(zone.fee).toLocaleString('en-KE')}`}
+                            {zone.name}{zone.fee === null || zone.fee === undefined ? ' (quote required)' : `: KSh ${Number(zone.fee).toLocaleString('en-KE')}`}
                           </option>
                         ))}
                       </select>
@@ -2004,7 +2004,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                           : recentlyAddedId === detailProduct.id ? 'Added to cart' : 'Add to cart'}
                       </button>
                       <a href={waLink(
-                        `${detailProduct.name}${selectedVariant ? ` — ${selectedVariant.label}${selectedVariant.colour ? `, ${selectedVariant.colour}` : ''}` : ''}`,
+                        `${detailProduct.name}${selectedVariant ? `: ${selectedVariant.label}${selectedVariant.colour ? `, ${selectedVariant.colour}` : ''}` : ''}`,
                       )}
                         target="_blank"
                         rel="noreferrer"
@@ -2237,7 +2237,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                     <ShoppingCart size={17} /> {detailVariants.length > 0 && !selectedVariant ? 'Choose' : 'Add'}
                   </button>
                   <a
-                    href={waLink(`${detailProduct.name}${selectedVariant ? ` — ${selectedVariant.label}` : ''}`)}
+                    href={waLink(`${detailProduct.name}${selectedVariant ? `: ${selectedVariant.label}` : ''}`)}
                     target="_blank"
                     rel="noreferrer"
                     aria-label="Order on WhatsApp"
