@@ -5662,3 +5662,77 @@ select:focus-visible{
 .checkout-privacy a:hover{
   color:#5f1925;
 }
+
+
+/* === Live category-card motion === */
+.category-card-grid .category-card{
+  isolation:isolate;
+  will-change:translate;
+  animation:sancityCategoryFloat 11s ease-in-out infinite;
+  transition:transform .2s ease,translate .2s ease,box-shadow .2s ease,border-color .2s ease;
+}
+.category-card-grid .category-card:nth-child(2){animation-delay:-1.4s}
+.category-card-grid .category-card:nth-child(3){animation-delay:-2.8s}
+.category-card-grid .category-card:nth-child(4){animation-delay:-4.2s}
+.category-card-grid .category-card:nth-child(5){animation-delay:-5.6s}
+.category-card-grid .category-card:nth-child(6){animation-delay:-7s}
+.category-card-grid .category-card:nth-child(7){animation-delay:-8.4s}
+.category-card-grid .category-card:nth-child(8){animation-delay:-9.8s}
+.category-card-grid .category-card::before{
+  content:"";
+  position:absolute;
+  z-index:0;
+  left:10%;
+  right:10%;
+  bottom:-34%;
+  height:72%;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(217,187,115,.42) 0%,rgba(185,145,69,.16) 38%,rgba(185,145,69,0) 74%);
+  filter:blur(24px);
+  opacity:.24;
+  pointer-events:none;
+  animation:sancityCategoryGlow 10s ease-in-out infinite;
+}
+.category-card-grid .category-card:nth-child(even)::before{animation-delay:-5s}
+.category-card-grid .category-card>*{
+  position:relative;
+  z-index:1;
+}
+.category-card-grid .category-card:hover{
+  translate:0 -2px;
+  border-color:rgba(185,145,69,.48);
+  box-shadow:0 20px 38px rgba(38,30,24,.16),0 0 0 1px rgba(217,187,115,.12);
+}
+.category-card-grid .category-card:hover::before{opacity:.58}
+@keyframes sancityCategoryFloat{
+  0%,100%{translate:0 0}
+  50%{translate:0 -3px}
+}
+@keyframes sancityCategoryGlow{
+  0%,100%{opacity:.18;transform:scale(.95)}
+  50%{opacity:.34;transform:scale(1.05)}
+}
+@media(max-width:700px){
+  .category-card-grid .category-card{
+    animation:none;
+    will-change:auto;
+  }
+  .category-card-grid .category-card::before{
+    animation:none;
+    opacity:.18;
+  }
+  .category-card-grid .category-card:active{
+    translate:0 -2px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .category-card-grid .category-card,
+  .category-card-grid .category-card::before{
+    animation:none!important;
+    transition:none!important;
+  }
+  .category-card-grid .category-card{
+    translate:none!important;
+    transform:none!important;
+  }
+}
