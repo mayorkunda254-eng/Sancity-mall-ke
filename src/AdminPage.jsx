@@ -475,7 +475,7 @@ export default function AdminPage() {
     await updateDeliveryZone(zone, { fee, eta_text: eta || null })
     setNotice({
       type: 'success',
-      text: `${zone.name} updated — ${fee === null ? 'manual quote required' : money(fee)} delivery.`,
+      text: `${zone.name} updated: ${fee === null ? 'manual quote required' : money(fee)} delivery.`,
     })
   }
 
@@ -530,7 +530,7 @@ export default function AdminPage() {
   function stockAlertWhatsappLink(alert) {
     const productName = alert.products?.name || 'the product you asked about'
     const variant = alert.product_variants
-      ? ` — ${alert.product_variants.label}${alert.product_variants.colour ? `, ${alert.product_variants.colour}` : ''}`
+      ? `: ${alert.product_variants.label}${alert.product_variants.colour ? `, ${alert.product_variants.colour}` : ''}`
       : ''
     const message = `Hello, this is Sancity Mall KE. You asked us to update you about ${productName}${variant}. We are following up on its current availability.`
     return `https://wa.me/${alert.customer_phone}?text=${encodeURIComponent(message)}`
@@ -1895,7 +1895,7 @@ export default function AdminPage() {
 
               <label className="admin-field full">
                 <span>Special delivery note</span>
-                <input value={form.delivery_note} onChange={(e) => setForm({ ...form, delivery_note: e.target.value })} placeholder="Optional — only if this item has special delivery or pickup requirements" />
+                <input value={form.delivery_note} onChange={(e) => setForm({ ...form, delivery_note: e.target.value })} placeholder="Optional: only if this item has special delivery or pickup requirements" />
               </label>
 
               <div className="admin-field full">
