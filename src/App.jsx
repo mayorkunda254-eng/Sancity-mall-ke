@@ -163,6 +163,11 @@ const formatPrice = (product, variant = null) => {
   return product.price_from ? `From ${amount}` : amount
 }
 
+const requiresPriceRequest = (product, variant = null) => {
+  if (activeVariants(product).length > 0 && !variant) return false
+  return effectivePrice(product, variant) === null
+}
+
 const cartEntryKey = (productId, variantId = null) => `${productId}::${variantId || 'base'}`
 
 const emptyCheckoutForm = {
@@ -965,6 +970,12 @@ export default function App({ initialProducts = null, initialPath = null }) {
   }
 
   const addToCart = (product, variant = null) => {
+    if (requiresPriceRequest(product, variant)) {
+      trackWhatsappClick(product, variant, 'price_request')
+      window.open(waLink(product.name), '_blank', 'noopener,noreferrer')
+      return
+    }
+
     const variants = activeVariants(product)
     if (variants.length > 0 && !variant) {
       openProductPage(product)
@@ -1953,10 +1964,14 @@ export default function App({ initialProducts = null, initialPath = null }) {
                   className={recentlyAddedId === quickViewProduct.id ? 'added' : ''}
                   onClick={() => activeVariants(quickViewProduct).length > 0 ? openProductPage(quickViewProduct) : addToCart(quickViewProduct)}
                 >
-                  {recentlyAddedId === quickViewProduct.id ? <Check size={17} /> : <ShoppingCart size={17} />}
+                  {requiresPriceRequest(quickViewProduct)
+                    ? <MessageCircle size={17} />
+                    : recentlyAddedId === quickViewProduct.id ? <Check size={17} /> : <ShoppingCart size={17} />}
                   {activeVariants(quickViewProduct).length > 0
                     ? 'Choose options'
-                    : recentlyAddedId === quickViewProduct.id ? 'Added to cart' : 'Add to cart'}
+                    : requiresPriceRequest(quickViewProduct)
+                      ? 'Request price'
+                      : recentlyAddedId === quickViewProduct.id ? 'Added to cart' : 'Add to cart'}
                 </button>
                 <a
                   href={waLink(quickViewProduct.name)}
@@ -2125,10 +2140,14 @@ export default function App({ initialProducts = null, initialPath = null }) {
                         disabled={detailVariants.length > 0 && !selectedVariant}
                         onClick={() => addToCart(detailProduct, selectedVariant)}
                       >
-                        {recentlyAddedId === detailProduct.id ? <Check size={18} /> : <ShoppingCart size={18} />}
+                        {requiresPriceRequest(detailProduct, selectedVariant)
+                          ? <MessageCircle size={18} />
+                          : recentlyAddedId === detailProduct.id ? <Check size={18} /> : <ShoppingCart size={18} />}
                         {detailVariants.length > 0 && !selectedVariant
                           ? 'Choose an option'
-                          : recentlyAddedId === detailProduct.id ? 'Added to cart' : 'Add to cart'}
+                          : requiresPriceRequest(detailProduct, selectedVariant)
+                            ? 'Request price'
+                            : recentlyAddedId === detailProduct.id ? 'Added to cart' : 'Add to cart'}
                       </button>
                       <a href={waLink(
                         `${detailProduct.name}${selectedVariant ? `: ${selectedVariant.label}${selectedVariant.colour ? `, ${selectedVariant.colour}` : ''}` : ''}`,
@@ -2704,10 +2723,14 @@ export default function App({ initialProducts = null, initialPath = null }) {
                       className={isRecentlyAdded ? 'added' : ''}
                       onClick={() => activeVariants(product).length > 0 ? openProductPage(product) : addToCart(product)}
                     >
-                      {isRecentlyAdded ? <Check size={14} /> : <ShoppingCart size={14} />}
+                      {requiresPriceRequest(product)
+                        ? <MessageCircle size={14} />
+                        : isRecentlyAdded ? <Check size={14} /> : <ShoppingCart size={14} />}
                       {activeVariants(product).length > 0
                         ? 'Choose options'
-                        : isRecentlyAdded ? 'Added' : 'Add to cart'}
+                        : requiresPriceRequest(product)
+                          ? 'Request price'
+                          : isRecentlyAdded ? 'Added' : 'Add to cart'}
                     </button>
                     <button className="product-card-details" onClick={() => openProductPage(product)} aria-label={`Open full details for ${product.name}`}>
                       <Eye size={15} />
