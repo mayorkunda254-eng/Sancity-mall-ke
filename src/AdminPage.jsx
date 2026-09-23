@@ -19,6 +19,49 @@ const categoryOptions = [
   'Other',
 ]
 
+const adminViewMeta = {
+  overview: {
+    kicker: 'Control center',
+    title: 'Store overview',
+    description: 'See store health, urgent tasks and the actions that need attention first.',
+  },
+  orders: {
+    kicker: 'Sales operations',
+    title: 'Orders',
+    description: 'Verify payments, manage fulfilment and keep customer follow-ups moving.',
+  },
+  products: {
+    kicker: 'Catalogue',
+    title: 'Products',
+    description: 'Add products, manage imagery, variants, pricing, stock and publish status.',
+  },
+  availability: {
+    kicker: 'Customer intent',
+    title: 'Availability requests',
+    description: 'Follow up with shoppers who are waiting for stock or variant confirmation.',
+  },
+  promotions: {
+    kicker: 'Growth',
+    title: 'Promotions',
+    description: 'Create and maintain checkout offers, minimum spend rules and coupon limits.',
+  },
+  delivery: {
+    kicker: 'Fulfilment',
+    title: 'Delivery',
+    description: 'Manage Nairobi delivery zones, fees and estimated delivery guidance.',
+  },
+  analytics: {
+    kicker: 'Performance',
+    title: 'Analytics & SEO',
+    description: 'Review the shopping funnel, search demand and catalogue discoverability.',
+  },
+  imports: {
+    kicker: 'Catalogue operations',
+    title: 'Batch imports',
+    description: 'Attach prepared product photography to the catalogue in bulk.',
+  },
+}
+
 const emptyForm = {
   name: '',
   category: 'Kitchen & Dining',
@@ -70,6 +113,7 @@ export default function AdminPage() {
   const [files, setFiles] = useState([])
   const [products, setProducts] = useState([])
   const [query, setQuery] = useState('')
+  const [adminView, setAdminView] = useState('overview')
   const [submitting, setSubmitting] = useState(false)
   const [listLoading, setListLoading] = useState(false)
   const [notice, setNotice] = useState(null)
@@ -191,6 +235,15 @@ export default function AdminPage() {
     () => orders.filter((order) => !['completed', 'cancelled'].includes(order.order_status)).length,
     [orders],
   )
+
+  const currentAdminMeta = adminViewMeta[adminView] || adminViewMeta.overview
+
+  const switchAdminView = (view) => {
+    setAdminView(view)
+    if (typeof window !== 'undefined') {
+      window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
+    }
+  }
 
   async function login(event) {
     event.preventDefault()
@@ -1210,7 +1263,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="admin-shell">
+    <div className="admin-shell" data-admin-view={adminView}>
       <header className="admin-header">
         <a href="/" className="admin-logo"><img src="/sancity-logo.svg" alt="Sancity Mall KE" /></a>
         <div className="admin-header-actions">
@@ -1225,26 +1278,37 @@ export default function AdminPage() {
           <strong>Sancity Mall</strong>
         </div>
         <nav>
-          <a href="#admin-overview"><BarChart3 size={16} /><span>Overview</span></a>
-          <a href="#admin-orders"><ClipboardCheck size={16} /><span>Orders</span></a>
-          <a href="#admin-catalogue"><Boxes size={16} /><span>Products</span></a>
-          <a href="#admin-availability"><Bell size={16} /><span>Availability</span></a>
-          <a href="#admin-promotions"><Tag size={16} /><span>Promotions</span></a>
-          <a href="#admin-delivery"><Truck size={16} /><span>Delivery</span></a>
-          <a href="#admin-analytics"><BarChart3 size={16} /><span>Analytics</span></a>
-          <a href="#admin-import"><UploadCloud size={16} /><span>Imports</span></a>
+          <button type="button" className={adminView === 'overview' ? 'active' : ''} onClick={() => switchAdminView('overview')}><BarChart3 size={16} /><span>Overview</span></button>
+          <button type="button" className={adminView === 'orders' ? 'active' : ''} onClick={() => switchAdminView('orders')}><ClipboardCheck size={16} /><span>Orders</span></button>
+          <button type="button" className={adminView === 'products' ? 'active' : ''} onClick={() => switchAdminView('products')}><Boxes size={16} /><span>Products</span></button>
+          <button type="button" className={adminView === 'availability' ? 'active' : ''} onClick={() => switchAdminView('availability')}><Bell size={16} /><span>Availability</span></button>
+          <button type="button" className={adminView === 'promotions' ? 'active' : ''} onClick={() => switchAdminView('promotions')}><Tag size={16} /><span>Promotions</span></button>
+          <button type="button" className={adminView === 'delivery' ? 'active' : ''} onClick={() => switchAdminView('delivery')}><Truck size={16} /><span>Delivery</span></button>
+          <button type="button" className={adminView === 'analytics' ? 'active' : ''} onClick={() => switchAdminView('analytics')}><BarChart3 size={16} /><span>Analytics</span></button>
+          <button type="button" className={adminView === 'imports' ? 'active' : ''} onClick={() => switchAdminView('imports')}><UploadCloud size={16} /><span>Imports</span></button>
         </nav>
         <div className="admin-nav-foot">
           <a href="/" target="_blank" rel="noreferrer"><Store size={15} /> View storefront</a>
         </div>
       </aside>
 
+      <nav className="admin-mobile-tabs" aria-label="Admin sections">
+        <button type="button" className={adminView === 'overview' ? 'active' : ''} onClick={() => switchAdminView('overview')}><BarChart3 size={15} /><span>Overview</span></button>
+        <button type="button" className={adminView === 'orders' ? 'active' : ''} onClick={() => switchAdminView('orders')}><ClipboardCheck size={15} /><span>Orders</span></button>
+        <button type="button" className={adminView === 'products' ? 'active' : ''} onClick={() => switchAdminView('products')}><Boxes size={15} /><span>Products</span></button>
+        <button type="button" className={adminView === 'availability' ? 'active' : ''} onClick={() => switchAdminView('availability')}><Bell size={15} /><span>Availability</span></button>
+        <button type="button" className={adminView === 'promotions' ? 'active' : ''} onClick={() => switchAdminView('promotions')}><Tag size={15} /><span>Promotions</span></button>
+        <button type="button" className={adminView === 'delivery' ? 'active' : ''} onClick={() => switchAdminView('delivery')}><Truck size={15} /><span>Delivery</span></button>
+        <button type="button" className={adminView === 'analytics' ? 'active' : ''} onClick={() => switchAdminView('analytics')}><BarChart3 size={15} /><span>Analytics</span></button>
+        <button type="button" className={adminView === 'imports' ? 'active' : ''} onClick={() => switchAdminView('imports')}><UploadCloud size={15} /><span>Imports</span></button>
+      </nav>
+
       <main className="admin-main">
         <section className="admin-page-title">
           <div>
-            <span className="admin-kicker"><Boxes size={15} /> Store manager</span>
-            <h1>Orders & products</h1>
-            <p>Verify customer orders, manage fulfilment and maintain the Sancity catalogue.</p>
+            <span className="admin-kicker"><Boxes size={15} /> {currentAdminMeta.kicker}</span>
+            <h1>{currentAdminMeta.title}</h1>
+            <p>{currentAdminMeta.description}</p>
           </div>
           <button
             onClick={() => { loadProducts(); loadOrders(); loadDeliveryZones(); loadStockAlerts(); loadPromotions(); loadAnalytics(analyticsDays); loadSearchQueries(analyticsDays) }}
@@ -1269,7 +1333,7 @@ export default function AdminPage() {
               <h2>Store health at a glance</h2>
               <p>Focus first on orders, product completeness and customer requests that need action.</p>
             </div>
-            <a href="#admin-products-add" className="admin-overview-add"><PackagePlus size={17} /> Add product</a>
+            <button type="button" className="admin-overview-add" onClick={() => switchAdminView('products')}><PackagePlus size={17} /> Add product</button>
           </div>
 
           <div className="admin-overview-kpis">
@@ -1301,26 +1365,26 @@ export default function AdminPage() {
                 <span>Needs attention</span>
                 <small>Highest-priority store tasks</small>
               </div>
-              <a href="#admin-catalogue">
+              <button type="button" onClick={() => switchAdminView('products')}>
                 <span className="attention-dot critical" />
                 <div><strong>{unpricedProductCount} products need pricing</strong><small>Complete confirmed catalogue prices.</small></div>
                 <ChevronRight size={16} />
-              </a>
-              <a href="#admin-orders">
+              </button>
+              <button type="button" onClick={() => switchAdminView('orders')}>
                 <span className="attention-dot warm" />
                 <div><strong>{followUpAttentionCount} order follow-ups</strong><small>Pending or due customer follow-up.</small></div>
                 <ChevronRight size={16} />
-              </a>
-              <a href="#admin-availability">
+              </button>
+              <button type="button" onClick={() => switchAdminView('availability')}>
                 <span className="attention-dot green" />
                 <div><strong>{pendingStockAlertCount} availability requests</strong><small>Customers waiting for an update.</small></div>
                 <ChevronRight size={16} />
-              </a>
-              <a href="#admin-catalogue">
+              </button>
+              <button type="button" onClick={() => switchAdminView('products')}>
                 <span className="attention-dot neutral" />
                 <div><strong>{stockConfirmationCount} stock confirmations</strong><small>Products currently showing confirm stock.</small></div>
                 <ChevronRight size={16} />
-              </a>
+              </button>
             </div>
 
             <div className="admin-quick-actions">
@@ -1328,10 +1392,10 @@ export default function AdminPage() {
                 <span>Quick actions</span>
                 <small>Common store-management tasks</small>
               </div>
-              <a href="#admin-products-add"><PackagePlus size={18} /><span><strong>Add a product</strong><small>Create and publish a catalogue item.</small></span></a>
-              <a href="#admin-orders"><ClipboardCheck size={18} /><span><strong>Review orders</strong><small>Verify payment, delivery and follow-up.</small></span></a>
-              <a href="#admin-import"><UploadCloud size={18} /><span><strong>Import images</strong><small>Attach prepared ZIP photos in bulk.</small></span></a>
-              <a href="#admin-promotions"><Tag size={18} /><span><strong>Create promotion</strong><small>Set an offer or checkout coupon.</small></span></a>
+              <button type="button" onClick={() => switchAdminView('products')}><PackagePlus size={18} /><span><strong>Add a product</strong><small>Create and publish a catalogue item.</small></span></button>
+              <button type="button" onClick={() => switchAdminView('orders')}><ClipboardCheck size={18} /><span><strong>Review orders</strong><small>Verify payment, delivery and follow-up.</small></span></button>
+              <button type="button" onClick={() => switchAdminView('imports')}><UploadCloud size={18} /><span><strong>Import images</strong><small>Attach prepared ZIP photos in bulk.</small></span></button>
+              <button type="button" onClick={() => switchAdminView('promotions')}><Tag size={18} /><span><strong>Create promotion</strong><small>Set an offer or checkout coupon.</small></span></button>
             </div>
           </div>
         </section>

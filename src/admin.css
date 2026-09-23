@@ -2102,3 +2102,237 @@
     display:grid;
   }
 }
+
+
+/* === Admin V3 dedicated views === */
+.admin-nav-rail nav button{
+  width:100%;
+  min-height:39px;
+  padding:0 10px;
+  border:0;
+  border-radius:11px;
+  background:transparent;
+  color:#635950;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  font:inherit;
+  font-size:10px;
+  font-weight:800;
+  text-align:left;
+  cursor:pointer;
+  transition:background .18s ease,color .18s ease,transform .18s ease;
+}
+
+.admin-nav-rail nav button:hover{
+  background:#f5eee5;
+  color:#7e2636;
+  transform:translateX(2px);
+}
+
+.admin-nav-rail nav button.active{
+  background:#173f32;
+  color:#fffaf3;
+}
+
+.admin-mobile-tabs{
+  display:none;
+}
+
+.admin-overview-add{
+  border:0;
+  cursor:pointer;
+}
+
+.admin-attention-card>button{
+  width:100%;
+  min-height:54px;
+  padding:7px 6px;
+  border:0;
+  border-top:1px solid #f0e8df;
+  background:transparent;
+  display:grid;
+  grid-template-columns:9px minmax(0,1fr) auto;
+  gap:10px;
+  align-items:center;
+  text-align:left;
+  cursor:pointer;
+}
+
+.admin-attention-card>button:first-of-type{
+  border-top:0;
+}
+
+.admin-attention-card>button:hover{
+  background:#fbf6f0;
+  border-radius:10px;
+}
+
+.admin-attention-card>button>div{
+  min-width:0;
+  display:grid;
+  gap:2px;
+}
+
+.admin-attention-card>button svg{
+  color:#a29488;
+}
+
+.admin-quick-actions>button{
+  width:100%;
+  min-height:57px;
+  padding:8px 9px;
+  border:0;
+  border-radius:12px;
+  background:transparent;
+  display:grid;
+  grid-template-columns:34px 1fr;
+  gap:10px;
+  align-items:center;
+  text-align:left;
+  cursor:pointer;
+}
+
+.admin-quick-actions>button:hover{
+  background:#f8f2eb;
+}
+
+.admin-quick-actions>button>svg{
+  width:34px;
+  height:34px;
+  padding:8px;
+  border-radius:10px;
+  background:#f0e4d5;
+  color:#7e2636;
+}
+
+.admin-quick-actions>button:nth-of-type(2)>svg{
+  background:#e5eee9;
+  color:#153d32;
+}
+
+.admin-quick-actions>button:nth-of-type(3)>svg{
+  background:#f2ead7;
+  color:#8b6828;
+}
+
+.admin-quick-actions>button:nth-of-type(4)>svg{
+  background:#eee5ea;
+  color:#7e2636;
+}
+
+.admin-quick-actions>button>span{
+  display:grid;
+  gap:2px;
+}
+
+.admin-quick-actions>button strong{
+  color:#342b26;
+  font-size:9.5px;
+}
+
+.admin-quick-actions>button small{
+  color:#8c8076;
+  font-size:7.5px;
+}
+
+/* Hide management modules by default, then reveal the selected workspace. */
+.admin-shell #admin-overview,
+.admin-shell #admin-orders,
+.admin-shell #admin-catalogue,
+.admin-shell #admin-products-add,
+.admin-shell #admin-availability,
+.admin-shell #admin-promotions,
+.admin-shell #admin-delivery,
+.admin-shell #admin-analytics,
+.admin-shell #admin-seo,
+.admin-shell #admin-import{
+  display:none;
+}
+
+.admin-shell[data-admin-view="overview"] #admin-overview{
+  display:block;
+}
+
+.admin-shell[data-admin-view="orders"] #admin-orders{
+  display:block;
+}
+
+.admin-shell[data-admin-view="products"] #admin-products-add,
+.admin-shell[data-admin-view="products"] #admin-catalogue{
+  display:block;
+}
+
+.admin-shell[data-admin-view="availability"] #admin-availability{
+  display:block;
+}
+
+.admin-shell[data-admin-view="promotions"] #admin-promotions{
+  display:block;
+}
+
+.admin-shell[data-admin-view="delivery"] #admin-delivery{
+  display:block;
+}
+
+.admin-shell[data-admin-view="analytics"] #admin-analytics,
+.admin-shell[data-admin-view="analytics"] #admin-seo{
+  display:block;
+}
+
+.admin-shell[data-admin-view="imports"] #admin-import{
+  display:block;
+}
+
+.admin-shell[data-admin-view="products"] .admin-grid{
+  display:grid;
+}
+
+.admin-shell:not([data-admin-view="products"]) .admin-grid{
+  display:none;
+}
+
+@media(max-width:1180px){
+  .admin-mobile-tabs{
+    position:sticky;
+    z-index:19;
+    top:68px;
+    display:flex;
+    gap:6px;
+    overflow-x:auto;
+    padding:8px 12px;
+    background:rgba(250,247,242,.96);
+    border-bottom:1px solid #e5dbcf;
+    backdrop-filter:blur(16px);
+    scrollbar-width:none;
+  }
+
+  .admin-mobile-tabs::-webkit-scrollbar{display:none}
+
+  .admin-mobile-tabs button{
+    flex:0 0 auto;
+    min-height:38px;
+    padding:0 11px;
+    border:1px solid #e1d5c9;
+    border-radius:10px;
+    background:#fffdf9;
+    color:#695e55;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:9px;
+    font-weight:800;
+  }
+
+  .admin-mobile-tabs button.active{
+    border-color:#173f32;
+    background:#173f32;
+    color:#fff;
+  }
+}
+
+@media(max-width:640px){
+  .admin-mobile-tabs{
+    top:64px;
+  }
+}
