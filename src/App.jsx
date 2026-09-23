@@ -820,10 +820,10 @@ export default function App({ initialProducts = null, initialPath = null }) {
   }, [detailProduct])
 
   useEffect(() => {
-    if (!detailProduct || trackedProductViewsRef.current.has(detailProduct.id)) return
+    if (cookieConsent !== 'accepted' || !detailProduct || trackedProductViewsRef.current.has(detailProduct.id)) return
     trackedProductViewsRef.current.add(detailProduct.id)
     trackStoreEvent('product_view', { productId: detailProduct.id })
-  }, [detailProduct?.id])
+  }, [detailProduct?.id, cookieConsent])
 
   const cartItems = useMemo(() => cart
     .map((entry) => {
