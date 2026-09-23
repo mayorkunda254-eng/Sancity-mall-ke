@@ -584,6 +584,51 @@ export default function AdminPage() {
 
   const pendingStockAlertCount = stockAlerts.filter((alert) => alert.status === 'pending').length
 
+  const orderedOrders = useMemo(() => {
+    const now = new Date()
+    const today = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ].join('-')
+
+    const priority = (order) => {
+      if (order.follow_up_status === 'pending') return 0
+      if (order.follow_up_status === 'scheduled' && order.follow_up_date && order.follow_up_date <= today) return 1
+      if (order.follow_up_status === 'scheduled') return 2
+      return 3
+    }
+
+    return [...orders].sort((left, right) => {
+      const priorityDifference = priority(left) - priority(right)
+      if (priorityDifference !== 0) return priorityDifference
+
+      const leftDate = left.follow_up_date || '9999-12-31'
+      const rightDate = right.follow_up_date || '9999-12-31'
+      if (leftDate !== rightDate) return leftDate.localeCompare(rightDate)
+
+      return new Date(right.created_at).getTime() - new Date(left.created_at).getTime()
+    })
+  }, [orders])
+
+  const followUpAttentionCount = useMemo(() => {
+    const now = new Date()
+    const today = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ].join('-')
+
+    return orders.filter((order) => (
+      order.follow_up_status === 'pending'
+      || (
+        order.follow_up_status === 'scheduled'
+        && order.follow_up_date
+        && order.follow_up_date <= today
+      )
+    )).length
+  }, [orders])
+
   async function updateOrder(order, patch, successText = 'Order updated.') {
     setOrderUpdatingId(order.id)
     setNotice(null)
@@ -1700,7 +1745,9 @@ export default function AdminPage() {
             <span className="admin-step"><ClipboardCheck size={16} /></span>
             <div>
               <h2>Orders</h2>
-              <p>{orders.length} recent order{orders.length === 1 ? '' : 's'} • manual M-Pesa verification</p>
+              <p>
+                {orders.length} recent order{orders.length === 1 ? '' : 's'} • {followUpAttentionCount} follow-up{followUpAttentionCount === 1 ? '' : 's'} need attention
+              </p>
             </div>
           </div>
 
@@ -1709,7 +1756,7 @@ export default function AdminPage() {
               <div className="admin-empty"><Loader2 className="spin" /> Loading orders…</div>
             ) : orders.length === 0 ? (
               <div className="admin-empty"><ClipboardCheck /> No customer orders yet.</div>
-            ) : orders.map((order) => {
+            ) : orderedOrders.map((order) => {
               const items = order.store_order_items || []
               const total = order.total_amount === null || order.total_amount === undefined
                 ? null
@@ -1717,7 +1764,10 @@ export default function AdminPage() {
               const busy = orderUpdatingId === order.id
 
               return (
-                <article className="admin-order" key={order.id}>
+                <article
+                  className={`admin-order ${order.follow_up_status === 'pending' || (order.follow_up_status === 'scheduled' && order.follow_up_date) ? 'has-follow-up' : ''}`}
+                  key={order.id}
+                >
                   <div className="admin-order-top">
                     <div>
                       <span>{new Date(order.created_at).toLocaleString('en-KE')}</span>
@@ -1726,6 +1776,15 @@ export default function AdminPage() {
                     <div className="admin-order-badges">
                       <span className={`order-badge payment-${order.payment_status}`}>{orderStatusLabel(order.payment_status)}</span>
                       <span className={`order-badge status-${order.order_status}`}>{orderStatusLabel(order.order_status)}</span>
+                      {order.follow_up_status && order.follow_up_status !== 'not_required' && (
+                        <span className={`order-badge follow-up-${order.follow_up_status}`}>
+                          {order.follow_up_status === 'completed'
+                            ? 'Follow-up complete'
+                            : order.follow_up_date
+                              ? `Follow-up ${new Date(`${order.follow_up_date}T00:00:00`).toLocaleDateString('en-KE', { day: 'numeric', month: 'short' })}`
+                              : 'Follow-up pending'}
+                        </span>
+                      )}
                     </div>
                   </div>
 
