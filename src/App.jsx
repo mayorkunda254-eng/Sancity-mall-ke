@@ -765,27 +765,33 @@ export default function App({ initialProducts = null, initialPath = null }) {
         .filter((category) => category && !productCategories.includes(category)),
     ].filter((category, index, categories) => categories.indexOf(category) === index)
 
-    const categoryQueues = new Map(
-      preferredCategories.map((category) => [
-        category,
-        visibleProducts.filter((product) => product.category === category),
-      ]),
-    )
-
     const mixed = []
-    let addedInRound = true
+    const imagePriorityGroups = [
+      visibleProducts.filter((product) => productImages(product).length > 1),
+      visibleProducts.filter((product) => productImages(product).length <= 1),
+    ]
 
-    while (mixed.length < visibleProducts.length && addedInRound) {
-      addedInRound = false
+    imagePriorityGroups.forEach((productsInGroup) => {
+      const categoryQueues = new Map(
+        preferredCategories.map((category) => [
+          category,
+          productsInGroup.filter((product) => product.category === category),
+        ]),
+      )
+      let addedInRound = true
 
-      preferredCategories.forEach((category) => {
-        const queue = categoryQueues.get(category)
-        if (queue?.length) {
-          mixed.push(queue.shift())
-          addedInRound = true
-        }
-      })
-    }
+      while (addedInRound) {
+        addedInRound = false
+
+        preferredCategories.forEach((category) => {
+          const queue = categoryQueues.get(category)
+          if (queue?.length) {
+            mixed.push(queue.shift())
+            addedInRound = true
+          }
+        })
+      }
+    })
 
     const mixedIds = new Set(mixed.map((product) => product.id))
     const leftovers = visibleProducts.filter((product) => !mixedIds.has(product.id))
