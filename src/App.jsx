@@ -211,7 +211,7 @@ const legalPages = {
         title: 'Shopping and analytics data',
         paragraphs: [
           'The site stores cart, wishlist and recently viewed information in your browser so those shopping features can work.',
-          'We also use first-party anonymous session analytics to understand product views, cart activity, checkout use, WhatsApp clicks and placed orders. These analytics do not include customer names or phone numbers.',
+          'Optional first-party anonymous analytics help us understand product views, searches, cart activity, checkout use, WhatsApp clicks and placed orders. Analytics only runs after you choose Allow analytics, and it does not include customer names or phone numbers.',
         ],
       },
       {
@@ -398,6 +398,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
   const [promoApplying, setPromoApplying] = useState(false)
   const [deliveryZones, setDeliveryZones] = useState([])
   const [storageReady, setStorageReady] = useState(false)
+  const [cookieConsent, setCookieConsent] = useState('unknown')
   const [products, setProducts] = useState(
     Array.isArray(initialProducts) && initialProducts.length > 0 ? initialProducts : fallbackProducts,
   )
@@ -428,7 +429,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
     value = null,
     metadata = {},
   } = {}) => {
-    if (!isSupabaseConfigured || typeof window === 'undefined') return
+    if (!isSupabaseConfigured || typeof window === 'undefined' || cookieConsent !== 'accepted') return
 
     const sessionId = getAnalyticsSessionId()
     if (!sessionId) return
@@ -449,6 +450,33 @@ export default function App({ initialProducts = null, initialPath = null }) {
       variantId: variant?.id || null,
       metadata: { source },
     })
+  }
+
+  const saveCookieConsent = (choice) => {
+    setCookieConsent(choice)
+    if (typeof window === 'undefined') return
+    try {
+      window.localStorage.setItem('sancity_cookie_consent', choice)
+    } catch {
+      // Keep the in-memory choice when browser storage is unavailable.
+    }
+  }
+
+  const trackSearchQuery = (rawQuery) => {
+    if (!isSupabaseConfigured || typeof window === 'undefined' || cookieConsent !== 'accepted') return
+
+    const cleanQuery = String(rawQuery || '').trim().replace(/\s+/g, ' ').slice(0, 120)
+    if (cleanQuery.length < 2) return
+
+    const sessionId = getAnalyticsSessionId()
+    if (!sessionId) return
+
+    supabase.from('search_queries').insert({
+      session_id: sessionId,
+      query: cleanQuery,
+      category: activeCategory === 'All' ? null : activeCategory,
+      results_count: visibleProducts.length,
+    }).then(() => {}).catch(() => {})
   }
 
   useEffect(() => {
@@ -505,6 +533,13 @@ export default function App({ initialProducts = null, initialPath = null }) {
       setRecentlyViewed(JSON.parse(window.localStorage.getItem('sancity-recently-viewed') || '[]'))
     } catch {
       setRecentlyViewed([])
+    }
+
+    try {
+      const storedConsent = window.localStorage.getItem('sancity_cookie_consent')
+      setCookieConsent(storedConsent === 'accepted' || storedConsent === 'essential' ? storedConsent : 'unknown')
+    } catch {
+      setCookieConsent('unknown')
     }
 
     setStorageReady(true)
@@ -1156,6 +1191,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
   }
 
   const submitSearch = () => {
+    trackSearchQuery(query)
     setSearchActive(false)
     if (detailSlug) {
       window.history.pushState({}, '', '/')
@@ -2678,6 +2714,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
           <a href="/#contact">Contact</a>
           <a href="/shipping-returns">Shipping & Returns</a>
           <a href="/privacy">Privacy</a>
+          <button type="button" className="footer-cookie-button" onClick={() => setCookieConsent('unknown')}>Cookie settings</button>
           <a href="/terms">Terms</a>
         </div>
         <small>© 2026 Sancity Mall KE</small>
@@ -2704,6 +2741,22 @@ export default function App({ initialProducts = null, initialPath = null }) {
             <button onClick={() => setCartOpen(true)}><span>🛒</span>Cart{cartCount > 0 ? ` (${cartCount})` : ''}</button>
           </nav>
         </>
+      )}
+
+      {cookieConsent === 'unknown' && (
+        <aside className="cookie-consent" role="dialog" aria-live="polite" aria-label="Cookie and analytics choices">
+          <div>
+            <strong>Your privacy choices</strong>
+            <p>
+              Essential browser storage keeps your cart and wishlist working. Optional anonymous analytics helps Sancity understand searches and shopping activity.
+              <a href="/privacy"> Read our Privacy Policy.</a>
+            </p>
+          </div>
+          <div className="cookie-consent-actions">
+            <button type="button" className="cookie-essential" onClick={() => saveCookieConsent('essential')}>Essential only</button>
+            <button type="button" className="cookie-accept" onClick={() => saveCookieConsent('accepted')}>Allow analytics</button>
+          </div>
+        </aside>
       )}
 
       {toastProduct && (
