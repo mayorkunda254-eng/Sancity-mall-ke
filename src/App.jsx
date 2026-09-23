@@ -744,14 +744,12 @@ export default function App({ initialProducts = null, initialPath = null }) {
       }
       if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '')
 
-      // Default "Newest" order: show products with a richer image gallery first,
+      // Default "Newest" order: show products with multiple images first,
       // then keep newest products first within each image-priority group.
-      const imageCountDifference = productImages(b).length - productImages(a).length
       const aHasVarietyImages = productImages(a).length > 1
       const bHasVarietyImages = productImages(b).length > 1
 
       if (aHasVarietyImages !== bHasVarietyImages) return bHasVarietyImages ? 1 : -1
-      if (aHasVarietyImages && imageCountDifference !== 0) return imageCountDifference
 
       return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
     })
