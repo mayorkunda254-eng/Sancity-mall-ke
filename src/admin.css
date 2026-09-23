@@ -1276,3 +1276,20 @@
 .analytics-query-list span{display:flex;min-width:0;flex-direction:column;gap:2px}
 .analytics-query-list strong{font-size:11px;color:#2d2520}
 .analytics-query-list small{font-size:9px;color:#75695f}
+
+/* === Follow-up priority cues === */
+.admin-order.has-follow-up{
+  border-color:rgba(185,145,69,.42);
+  box-shadow:0 12px 30px rgba(122,35,48,.08);
+}
+.order-badge.follow-up-pending,
+.order-badge.follow-up-scheduled{
+  border-color:#dcc38f;
+  background:#fff6df;
+  color:#72520f;
+}
+.order-badge.follow-up-completed{
+  border-color:#bfe0c9;
+  background:#edf8f0;
+  color:#1e6a3b;
+}
