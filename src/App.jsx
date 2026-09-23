@@ -2404,27 +2404,29 @@ export default function App({ initialProducts = null, initialPath = null }) {
                   </div>
                 )}
 
-                <div className="product-mobile-buybar">
-                  <div>
-                    <small>{selectedVariant ? `${detailProduct.name} • ${selectedVariant.label}` : detailProduct.name}</small>
-                    <strong>{formatPrice(detailProduct, selectedVariant)}</strong>
+                {!cartOpen && !checkoutOpen && (
+                  <div className="product-mobile-buybar">
+                    <div>
+                      <small>{selectedVariant ? `${detailProduct.name} • ${selectedVariant.label}` : detailProduct.name}</small>
+                      <strong>{formatPrice(detailProduct, selectedVariant)}</strong>
+                    </div>
+                    <button
+                      disabled={detailVariants.length > 0 && !selectedVariant}
+                      onClick={() => addToCart(detailProduct, selectedVariant)}
+                    >
+                      <ShoppingCart size={17} /> {detailVariants.length > 0 && !selectedVariant ? 'Choose' : 'Add'}
+                    </button>
+                    <a
+                      href={waLink(`${detailProduct.name}${selectedVariant ? `: ${selectedVariant.label}` : ''}`)}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label="Order on WhatsApp"
+                      onClick={() => trackWhatsappClick(detailProduct, selectedVariant, 'mobile_buybar')}
+                    >
+                      <MessageCircle size={18} />
+                    </a>
                   </div>
-                  <button
-                    disabled={detailVariants.length > 0 && !selectedVariant}
-                    onClick={() => addToCart(detailProduct, selectedVariant)}
-                  >
-                    <ShoppingCart size={17} /> {detailVariants.length > 0 && !selectedVariant ? 'Choose' : 'Add'}
-                  </button>
-                  <a
-                    href={waLink(`${detailProduct.name}${selectedVariant ? `: ${selectedVariant.label}` : ''}`)}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label="Order on WhatsApp"
-                    onClick={() => trackWhatsappClick(detailProduct, selectedVariant, 'mobile_buybar')}
-                  >
-                    <MessageCircle size={18} />
-                  </a>
-                </div>
+                )}
               </div>
             </section>
           ) : (
