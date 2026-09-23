@@ -171,6 +171,27 @@ export default function AdminPage() {
     return count + 1
   }, 0), [products])
 
+  const publishedProductCount = useMemo(
+    () => products.filter((product) => product.status === 'published').length,
+    [products],
+  )
+
+  const unpricedProductCount = useMemo(() => products.filter((product) => {
+    if (product.price !== null && product.price !== undefined) return false
+    const variants = (product.product_variants || []).filter((variant) => variant.is_active !== false)
+    return !variants.some((variant) => variant.price !== null && variant.price !== undefined)
+  }).length, [products])
+
+  const stockConfirmationCount = useMemo(
+    () => products.filter((product) => !(Number(product.stock_quantity) > 0)).length,
+    [products],
+  )
+
+  const openOrderCount = useMemo(
+    () => orders.filter((order) => !['completed', 'cancelled'].includes(order.order_status)).length,
+    [orders],
+  )
+
   async function login(event) {
     event.preventDefault()
     setAuthError('')
@@ -1198,6 +1219,26 @@ export default function AdminPage() {
         </div>
       </header>
 
+      <aside className="admin-nav-rail" aria-label="Admin navigation">
+        <div className="admin-nav-brand">
+          <span>Control center</span>
+          <strong>Sancity Mall</strong>
+        </div>
+        <nav>
+          <a href="#admin-overview"><BarChart3 size={16} /><span>Overview</span></a>
+          <a href="#admin-orders"><ClipboardCheck size={16} /><span>Orders</span></a>
+          <a href="#admin-catalogue"><Boxes size={16} /><span>Products</span></a>
+          <a href="#admin-availability"><Bell size={16} /><span>Availability</span></a>
+          <a href="#admin-promotions"><Tag size={16} /><span>Promotions</span></a>
+          <a href="#admin-delivery"><Truck size={16} /><span>Delivery</span></a>
+          <a href="#admin-analytics"><BarChart3 size={16} /><span>Analytics</span></a>
+          <a href="#admin-import"><UploadCloud size={16} /><span>Imports</span></a>
+        </nav>
+        <div className="admin-nav-foot">
+          <a href="/" target="_blank" rel="noreferrer"><Store size={15} /> View storefront</a>
+        </div>
+      </aside>
+
       <main className="admin-main">
         <section className="admin-page-title">
           <div>
@@ -1221,7 +1262,81 @@ export default function AdminPage() {
           </div>
         )}
 
-        <section className="admin-card admin-analytics-card">
+        <section id="admin-overview" className="admin-overview">
+          <div className="admin-overview-heading">
+            <div>
+              <span>Overview</span>
+              <h2>Store health at a glance</h2>
+              <p>Focus first on orders, product completeness and customer requests that need action.</p>
+            </div>
+            <a href="#admin-products-add" className="admin-overview-add"><PackagePlus size={17} /> Add product</a>
+          </div>
+
+          <div className="admin-overview-kpis">
+            <article>
+              <span>Published products</span>
+              <strong>{publishedProductCount.toLocaleString('en-KE')}</strong>
+              <small>{products.length.toLocaleString('en-KE')} total catalogue records</small>
+            </article>
+            <article>
+              <span>Open orders</span>
+              <strong>{openOrderCount.toLocaleString('en-KE')}</strong>
+              <small>{orders.length.toLocaleString('en-KE')} recent orders loaded</small>
+            </article>
+            <article>
+              <span>Order value</span>
+              <strong>{money(Number(analytics?.placed_order_value || 0))}</strong>
+              <small>Known placed-order value, last {analyticsDays} days</small>
+            </article>
+            <article>
+              <span>WhatsApp intent</span>
+              <strong>{Number(analytics?.whatsapp_clicks || 0).toLocaleString('en-KE')}</strong>
+              <small>Tracked WhatsApp clicks, last {analyticsDays} days</small>
+            </article>
+          </div>
+
+          <div className="admin-overview-grid">
+            <div className="admin-attention-card">
+              <div className="admin-overview-panel-title">
+                <span>Needs attention</span>
+                <small>Highest-priority store tasks</small>
+              </div>
+              <a href="#admin-catalogue">
+                <span className="attention-dot critical" />
+                <div><strong>{unpricedProductCount} products need pricing</strong><small>Complete confirmed catalogue prices.</small></div>
+                <ChevronRight size={16} />
+              </a>
+              <a href="#admin-orders">
+                <span className="attention-dot warm" />
+                <div><strong>{followUpAttentionCount} order follow-ups</strong><small>Pending or due customer follow-up.</small></div>
+                <ChevronRight size={16} />
+              </a>
+              <a href="#admin-availability">
+                <span className="attention-dot green" />
+                <div><strong>{pendingStockAlertCount} availability requests</strong><small>Customers waiting for an update.</small></div>
+                <ChevronRight size={16} />
+              </a>
+              <a href="#admin-catalogue">
+                <span className="attention-dot neutral" />
+                <div><strong>{stockConfirmationCount} stock confirmations</strong><small>Products currently showing confirm stock.</small></div>
+                <ChevronRight size={16} />
+              </a>
+            </div>
+
+            <div className="admin-quick-actions">
+              <div className="admin-overview-panel-title">
+                <span>Quick actions</span>
+                <small>Common store-management tasks</small>
+              </div>
+              <a href="#admin-products-add"><PackagePlus size={18} /><span><strong>Add a product</strong><small>Create and publish a catalogue item.</small></span></a>
+              <a href="#admin-orders"><ClipboardCheck size={18} /><span><strong>Review orders</strong><small>Verify payment, delivery and follow-up.</small></span></a>
+              <a href="#admin-import"><UploadCloud size={18} /><span><strong>Import images</strong><small>Attach prepared ZIP photos in bulk.</small></span></a>
+              <a href="#admin-promotions"><Tag size={18} /><span><strong>Create promotion</strong><small>Set an offer or checkout coupon.</small></span></a>
+            </div>
+          </div>
+        </section>
+
+        <section id="admin-analytics" className="admin-card admin-analytics-card">
           <div className="admin-card-heading analytics-heading">
             <span className="admin-step"><BarChart3 size={16} /></span>
             <div>
@@ -1349,7 +1464,7 @@ export default function AdminPage() {
           )}
         </section>
 
-        <section className="admin-card admin-seo-card">
+        <section id="admin-seo" className="admin-card admin-seo-card">
           <div className="admin-card-heading">
             <span className="admin-step"><Search size={16} /></span>
             <div>
@@ -1377,7 +1492,7 @@ export default function AdminPage() {
           </div>
         </section>
 
-        <section className="admin-card admin-promotions-card">
+        <section id="admin-promotions" className="admin-card admin-promotions-card">
           <div className="admin-card-heading orders-heading">
             <span className="admin-step"><Tag size={16} /></span>
             <div>
@@ -1549,7 +1664,7 @@ export default function AdminPage() {
           </div>
         </section>
 
-        <section className="admin-card admin-delivery-zones-card">
+        <section id="admin-delivery" className="admin-card admin-delivery-zones-card">
           <div className="admin-card-heading orders-heading">
             <span className="admin-step"><Truck size={16} /></span>
             <div>
@@ -1652,7 +1767,7 @@ export default function AdminPage() {
           </div>
         </section>
 
-        <section className="admin-card admin-stock-alerts-card">
+        <section id="admin-availability" className="admin-card admin-stock-alerts-card">
           <div className="admin-card-heading orders-heading">
             <span className="admin-step"><Bell size={16} /></span>
             <div>
@@ -1740,7 +1855,7 @@ export default function AdminPage() {
           </div>
         </section>
 
-        <section className="admin-card admin-orders-card">
+        <section id="admin-orders" className="admin-card admin-orders-card">
           <div className="admin-card-heading orders-heading">
             <span className="admin-step"><ClipboardCheck size={16} /></span>
             <div>
@@ -1926,7 +2041,7 @@ export default function AdminPage() {
           </div>
         </section>
 
-        <section className="admin-card batch-import-card">
+        <section id="admin-import" className="admin-card batch-import-card">
           <div className="admin-card-heading">
             <span className="admin-step">00</span>
             <div>
@@ -1964,7 +2079,7 @@ export default function AdminPage() {
         </section>
 
         <div className="admin-grid">
-          <section className="admin-card upload-card">
+          <section id="admin-products-add" className="admin-card upload-card">
             <div className="admin-card-heading">
               <span className="admin-step">01</span>
               <div><h2>Add product</h2><p>Product details shown to customers.</p></div>
@@ -2087,7 +2202,7 @@ export default function AdminPage() {
             </form>
           </section>
 
-          <section className="admin-card catalogue-card">
+          <section id="admin-catalogue" className="admin-card catalogue-card">
             <div className="admin-card-heading catalogue-heading">
               <span className="admin-step">02</span>
               <div><h2>Catalogue</h2><p>{products.length} uploaded product{products.length === 1 ? '' : 's'}.</p></div>
