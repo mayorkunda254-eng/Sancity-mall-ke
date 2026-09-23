@@ -376,6 +376,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
   const [stockFilter, setStockFilter] = useState('all')
   const [priceFilter, setPriceFilter] = useState('all')
   const [newOnly, setNewOnly] = useState(false)
+  const [catalogueLimit, setCatalogueLimit] = useState(32)
   const [saved, setSaved] = useState([])
   const [wishlistOnly, setWishlistOnly] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
@@ -591,6 +592,15 @@ export default function App({ initialProducts = null, initialPath = null }) {
       return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
     })
   }, [products, query, activeCategory, wishlistOnly, saved, sortBy, stockFilter, priceFilter, newOnly])
+
+  const renderedProducts = useMemo(
+    () => visibleProducts.slice(0, catalogueLimit),
+    [visibleProducts, catalogueLimit],
+  )
+
+  useEffect(() => {
+    setCatalogueLimit(32)
+  }, [query, activeCategory, wishlistOnly, sortBy, stockFilter, priceFilter, newOnly])
 
   const predictiveProducts = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -2493,7 +2503,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
           )}
 
           <div className="emoji-product-grid">
-            {visibleProducts.map((product, index) => {
+            {renderedProducts.map((product, index) => {
               const imageUrl = productMainImage(product)
               const isRecentlyAdded = recentlyAddedId === product.id
 
@@ -2514,9 +2524,11 @@ export default function App({ initialProducts = null, initialPath = null }) {
                         className="product-photo"
                         src={imageUrl}
                         alt={product.name}
-                        loading={index < 6 ? 'eager' : 'lazy'}
-                        fetchPriority={index < 4 ? 'high' : 'auto'}
-                        decoding="async"
+                        loading={index < 12 ? 'eager' : 'lazy'}
+                        fetchPriority={index < 6 ? 'high' : 'auto'}
+                        decoding="auto"
+                        width="640"
+                        height="640"
                         onError={(event) => { event.currentTarget.style.display = 'none' }}
                       />
                     </>
@@ -2585,6 +2597,15 @@ export default function App({ initialProducts = null, initialPath = null }) {
               )
             })}
           </div>
+
+          {renderedProducts.length < visibleProducts.length && (
+            <div className="catalogue-load-more">
+              <button onClick={() => setCatalogueLimit((current) => current + 24)}>
+                Load more products
+              </button>
+              <span>{renderedProducts.length} of {visibleProducts.length} products shown</span>
+            </div>
+          )}
 
           {visibleProducts.length === 0 && (
             <div className="empty-products">
