@@ -184,13 +184,13 @@ function waLink(product) {
   const message = product
     ? `Hello Sancity Mall KE, I would like the current price and availability for ${product}.`
     : 'Hello Sancity Mall KE, I would like to enquire about your household products.'
-  return `https://wa.me/254710900548?text=${encodeURIComponent(message)}`
+  return `https://wa.me/254705287264?text=${encodeURIComponent(message)}`
 }
 
 function conciergeLink(product, request) {
   const productName = product?.name || product || 'this product'
   const message = `Hello Sancity Mall KE, I am interested in ${productName}. ${request}`
-  return `https://wa.me/254710900548?text=${encodeURIComponent(message)}`
+  return `https://wa.me/254705287264?text=${encodeURIComponent(message)}`
 }
 
 const featureLines = (value = '') => value
@@ -1124,7 +1124,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
       '',
       'Please confirm availability, final price and delivery options.'
     ].join('\n')
-    return `https://wa.me/254710900548?text=${encodeURIComponent(message)}`
+    return `https://wa.me/254705287264?text=${encodeURIComponent(message)}`
   }
 
 
@@ -1245,7 +1245,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
     const message = result?.total_amount
       ? `Hello Sancity Mall KE, I have placed order ${reference} and submitted my M-Pesa confirmation code for verification.`
       : `Hello Sancity Mall KE, I have placed order ${reference}. Please confirm my delivery fee and final total.`
-    return `https://wa.me/254710900548?text=${encodeURIComponent(message)}`
+    return `https://wa.me/254705287264?text=${encodeURIComponent(message)}`
   }
 
   const submitCheckout = async (event) => {
@@ -2874,7 +2874,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
           </div>
 
           <div className="contact-grid">
-            <a href={whatsapp} target="_blank" rel="noreferrer"><span>💬</span><strong>WhatsApp</strong><small>0710 900 548</small></a>
+            <a href={whatsapp} target="_blank" rel="noreferrer"><span>💬</span><strong>WhatsApp</strong><small>+254 705 287264</small></a>
             <a href="mailto:Sancitymallke@gmail.com"><span>✉️</span><strong>Email</strong><small>Sancitymallke@gmail.com</small></a>
             <div><span>📍</span><strong>Store</strong><small>RNG Plaza, Ronald Ngala St</small></div>
           </div>
