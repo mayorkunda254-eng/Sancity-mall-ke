@@ -2336,3 +2336,130 @@
     top:64px;
   }
 }
+
+
+/* === Products dedicated workspace === */
+.admin-products-workspace-toolbar{
+  display:none;
+  margin-bottom:12px;
+  padding:12px 14px;
+  border:1px solid #e2d7cb;
+  border-radius:16px;
+  background:rgba(255,253,249,.97);
+  box-shadow:0 10px 30px rgba(58,42,31,.045);
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+}
+
+.admin-shell[data-admin-view="products"] .admin-products-workspace-toolbar{
+  display:flex;
+}
+
+.admin-products-workspace-toolbar>div:first-child{
+  display:grid;
+  gap:2px;
+}
+
+.admin-products-workspace-toolbar>div:first-child span{
+  color:#978a80;
+  font-size:7.5px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.admin-products-workspace-toolbar>div:first-child strong{
+  color:#302722;
+  font-size:11px;
+}
+
+.admin-products-workspace-tabs{
+  display:flex;
+  gap:5px;
+  align-items:center;
+}
+
+.admin-products-workspace-tabs button{
+  min-height:37px;
+  padding:0 10px;
+  border:1px solid #e0d4c8;
+  border-radius:10px;
+  background:#fffdf9;
+  color:#6c6057;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:8.5px;
+  font-weight:900;
+}
+
+.admin-products-workspace-tabs button.active{
+  border-color:#173f32;
+  background:#173f32;
+  color:#fff;
+}
+
+.admin-shell[data-admin-view="products"][data-product-workspace="catalogue"] #admin-catalogue{
+  display:block;
+}
+
+.admin-shell[data-admin-view="products"][data-product-workspace="catalogue"] #admin-products-add{
+  display:none;
+}
+
+.admin-shell[data-admin-view="products"][data-product-workspace="add"] #admin-products-add{
+  display:block;
+}
+
+.admin-shell[data-admin-view="products"][data-product-workspace="add"] #admin-catalogue{
+  display:none;
+}
+
+/* Move to horizontal tabs before the side rail can overlap the portrait workspace. */
+@media(max-width:1340px){
+  .admin-nav-rail{
+    display:none;
+  }
+
+  .admin-mobile-tabs{
+    position:sticky;
+    z-index:19;
+    top:76px;
+    display:flex;
+    gap:6px;
+    overflow-x:auto;
+    padding:8px 12px;
+    background:rgba(250,247,242,.96);
+    border-bottom:1px solid #e5dbcf;
+    backdrop-filter:blur(16px);
+    scrollbar-width:none;
+  }
+}
+
+@media(max-width:760px){
+  .admin-mobile-tabs{
+    top:68px;
+  }
+
+  .admin-products-workspace-toolbar{
+    align-items:stretch;
+    flex-direction:column;
+  }
+
+  .admin-products-workspace-tabs{
+    width:100%;
+    overflow-x:auto;
+  }
+
+  .admin-products-workspace-tabs button{
+    flex:1 0 auto;
+    justify-content:center;
+  }
+}
+
+@media(max-width:640px){
+  .admin-mobile-tabs{
+    top:64px;
+  }
+}
