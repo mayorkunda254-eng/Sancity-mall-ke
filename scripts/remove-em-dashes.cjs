@@ -5,10 +5,15 @@ const root = path.resolve(process.cwd(), 'dist')
 const extensions = new Set(['.html', '.htm', '.js', '.mjs', '.css', '.json', '.xml', '.txt', '.svg', '.webmanifest'])
 const patterns = [
   /\u2014/g,
+  /\u2013/g,
   /&mdash;/gi,
+  /&ndash;/gi,
   /&#8212;/g,
+  /&#8211;/g,
   /&#x2014;/gi,
+  /&#x2013;/gi,
   /\\u2014/gi,
+  /\\u2013/gi,
 ]
 
 let filesChanged = 0
@@ -59,5 +64,5 @@ if (!fs.existsSync(root)) {
 }
 
 walk(root)
-console.log('Replaced ' + replacements + ' em dash' + (replacements === 1 ? '' : 'es') + ' across ' + filesChanged + ' built file' + (filesChanged === 1 ? '' : 's') + '.')
-console.log('Verified: no em dashes remain in built Sancity text assets.')
+console.log('Replaced ' + replacements + ' long dash' + (replacements === 1 ? '' : 'es') + ' across ' + filesChanged + ' built file' + (filesChanged === 1 ? '' : 's') + '.')
+console.log('Verified: no long dashes remain in built Sancity text assets.')
