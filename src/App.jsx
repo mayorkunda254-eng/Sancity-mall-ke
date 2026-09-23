@@ -348,6 +348,9 @@ const legalPages = {
   },
 }
 
+const GA_MEASUREMENT_ID = String(import.meta.env.VITE_GA_MEASUREMENT_ID || '').trim()
+const GA_ENABLED = /^G-[A-Z0-9]+$/i.test(GA_MEASUREMENT_ID)
+
 const createAnalyticsSessionId = () => {
   if (typeof window === 'undefined') return ''
 
@@ -429,19 +432,41 @@ export default function App({ initialProducts = null, initialPath = null }) {
     value = null,
     metadata = {},
   } = {}) => {
-    if (!isSupabaseConfigured || typeof window === 'undefined' || cookieConsent !== 'accepted') return
+    if (typeof window === 'undefined' || cookieConsent !== 'accepted') return
 
     const sessionId = getAnalyticsSessionId()
-    if (!sessionId) return
 
-    supabase.rpc('record_store_event', {
-      p_session_id: sessionId,
-      p_event_type: eventType,
-      p_product_id: productId,
-      p_variant_id: variantId,
-      p_event_value: value,
-      p_metadata: metadata,
-    }).then(() => {}).catch(() => {})
+    if (isSupabaseConfigured && sessionId) {
+      supabase.rpc('record_store_event', {
+        p_session_id: sessionId,
+        p_event_type: eventType,
+        p_product_id: productId,
+        p_variant_id: variantId,
+        p_event_value: value,
+        p_metadata: metadata,
+      }).then(() => {}).catch(() => {})
+    }
+
+    if (GA_ENABLED && typeof window.gtag === 'function') {
+      const gaEventName = {
+        product_view: 'view_item',
+        quick_view: 'view_item',
+        add_to_cart: 'add_to_cart',
+        checkout_open: 'begin_checkout',
+        whatsapp_click: 'generate_lead',
+        stock_alert_request: 'generate_lead',
+        promo_applied: 'select_promotion',
+        order_placed: 'purchase',
+      }[eventType] || eventType
+
+      window.gtag('event', gaEventName, {
+        currency: 'KES',
+        ...(value !== null && value !== undefined ? { value: Number(value) } : {}),
+        ...(productId ? { item_id: productId } : {}),
+        ...(variantId ? { item_variant: variantId } : {}),
+        ...metadata,
+      })
+    }
   }
 
   const trackWhatsappClick = (product = null, variant = null, source = 'general') => {
@@ -455,6 +480,16 @@ export default function App({ initialProducts = null, initialPath = null }) {
   const saveCookieConsent = (choice) => {
     setCookieConsent(choice)
     if (typeof window === 'undefined') return
+
+    if (GA_ENABLED) {
+      window[`ga-disable-${GA_MEASUREMENT_ID}`] = choice !== 'accepted'
+      if (typeof window.gtag === 'function') {
+        window.gtag('consent', 'update', {
+          analytics_storage: choice === 'accepted' ? 'granted' : 'denied',
+        })
+      }
+    }
+
     try {
       window.localStorage.setItem('sancity_cookie_consent', choice)
     } catch {
@@ -463,7 +498,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
   }
 
   const trackSearchQuery = (rawQuery) => {
-    if (!isSupabaseConfigured || typeof window === 'undefined' || cookieConsent !== 'accepted') return
+    if (typeof window === 'undefined' || cookieConsent !== 'accepted') return
 
     const cleanQuery = String(rawQuery || '').trim().replace(/\s+/g, ' ').slice(0, 120)
     if (cleanQuery.length < 2) return
@@ -471,13 +506,53 @@ export default function App({ initialProducts = null, initialPath = null }) {
     const sessionId = getAnalyticsSessionId()
     if (!sessionId) return
 
-    supabase.from('search_queries').insert({
-      session_id: sessionId,
-      query: cleanQuery,
-      category: activeCategory === 'All' ? null : activeCategory,
-      results_count: visibleProducts.length,
-    }).then(() => {}).catch(() => {})
+    if (isSupabaseConfigured && sessionId) {
+      supabase.from('search_queries').insert({
+        session_id: sessionId,
+        query: cleanQuery,
+        category: activeCategory === 'All' ? null : activeCategory,
+        results_count: visibleProducts.length,
+      }).then(() => {}).catch(() => {})
+    }
+
+    if (GA_ENABLED && typeof window.gtag === 'function') {
+      window.gtag('event', 'search', {
+        search_term: cleanQuery,
+        results_count: visibleProducts.length,
+      })
+    }
   }
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || cookieConsent !== 'accepted' || !GA_ENABLED) return undefined
+
+    window[`ga-disable-${GA_MEASUREMENT_ID}`] = false
+    window.dataLayer = window.dataLayer || []
+    window.gtag = window.gtag || function gtag() {
+      window.dataLayer.push(arguments)
+    }
+
+    window.gtag('consent', 'default', { analytics_storage: 'granted' })
+
+    if (!window.__sancityGaInitialized) {
+      window.__sancityGaInitialized = true
+      window.gtag('js', new Date())
+      window.gtag('config', GA_MEASUREMENT_ID, {
+        anonymize_ip: true,
+        send_page_view: true,
+      })
+    }
+
+    if (!document.querySelector(`script[data-sancity-ga="${GA_MEASUREMENT_ID}"]`)) {
+      const script = document.createElement('script')
+      script.async = true
+      script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GA_MEASUREMENT_ID)}`
+      script.dataset.sancityGa = GA_MEASUREMENT_ID
+      document.head.appendChild(script)
+    }
+
+    return undefined
+  }, [cookieConsent])
 
   useEffect(() => {
     if (!isSupabaseConfigured) return
