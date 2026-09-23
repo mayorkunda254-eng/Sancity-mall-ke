@@ -1367,11 +1367,20 @@ export default function App({ initialProducts = null, initialPath = null }) {
   const openProductPage = (product) => {
     const slug = productSlug(product)
     if (!slug) return
+
+    // Reset the catalogue scroll position immediately so the product detail
+    // route renders from the top instead of visibly scrolling up from below.
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
     window.history.pushState({}, '', `/products/${encodeURIComponent(slug)}`)
     setDetailSlug(slug)
     setGalleryIndex(0)
     setQuickViewProduct(null)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    // Run once more after React has rendered the detail view. This covers
+    // mobile browsers that preserve the previous scroll offset during a route swap.
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    })
   }
 
   const submitSearch = () => {
