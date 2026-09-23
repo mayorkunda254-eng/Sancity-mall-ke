@@ -218,6 +218,10 @@ export function buildSitemap(products, siteUrl = SITE_URL) {
       lastmod: null,
     },
     {
+      loc: `${siteUrl}/cookies`,
+      lastmod: null,
+    },
+    {
       loc: `${siteUrl}/terms`,
       lastmod: null,
     },

@@ -1,29 +1,48 @@
 # Sancity Mall KE
 
-Mobile-first storefront starter for Sancity Mall KE.
+Production-oriented React/Vite e-commerce storefront for Sancity Mall KE.
 
-## Current phase
-- Purple tribal storefront direction frozen for the current implementation phase
-- Storefront prerendered at build time for crawlable first-load HTML; React hydrates on the client
-- `/admin` intentionally remains client-rendered for Supabase auth/session handling
-- Brand system applied
-- Responsive homepage
-- Category navigation
-- Featured product grid and search interaction
-- Saved-product interaction
-- Wholesale CTA
-- WhatsApp conversion placeholder
-- Basic SEO metadata
+## Current state
 
-## Next phase
-1. Import and verify the real product catalogue and images in Supabase.
-2. Add product detail routes and category routes with prerender/SSR coverage.
-3. Add analytics, product/schema markup, canonical domain and sitemap URLs.
-4. Re-verify mobile UX, WhatsApp CTA consistency and tap targets against the frozen purple tribal direction.
-5. Add interaction and motion only after the catalogue and route structure are stable.
+- Responsive desktop and mobile storefront
+- 500-product Supabase catalogue with product images and descriptions
+- Search, category navigation, filters and predictive discovery
+- Clickable product cards, scroll-safe quick view and full product routes
+- Cart, checkout, delivery-zone handling and WhatsApp conversion paths
+- Paybill checkout instructions for 247247 / account 0705287264
+- Authenticated admin catalogue management and batch image import
+- Order administration with payment, fulfilment and follow-up date/status controls
+- First-party conversion analytics and internal search-query reporting
+- Consent-aware optional analytics with Essential only / Allow analytics choices
+- Privacy, Cookie Policy, Terms and Shipping & Returns pages
+- Product, breadcrumb and Organization structured data
+- Prerendered product routes, canonical metadata, sitemap and Merchant Center feed
+- Reduced-motion accessibility support
+- Responsive high-resolution homepage hero assets
+
+## Analytics
+
+First-party Supabase analytics and internal search reporting are built into the storefront and run only after analytics consent is granted.
+
+Google Analytics is optional. Set:
+
+```env
+VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+```
+
+When configured, the Google tag is loaded only after the visitor chooses **Allow analytics**.
 
 ## Local development
+
 ```bash
 npm install
 npm run dev
 ```
+
+## Production build
+
+```bash
+npm run build
+```
+
+The build prerenders the homepage, legal pages and product routes, then generates `sitemap.xml` and the Merchant Center feed.

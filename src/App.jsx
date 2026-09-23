@@ -250,6 +250,39 @@ const legalPages = {
       },
     ],
   },
+  '/cookies': {
+    eyebrow: 'Cookie choices',
+    title: 'Cookie Policy',
+    description: 'How Sancity Mall KE uses essential browser storage and optional analytics.',
+    intro: 'This page explains the browser storage and analytics choices used by the Sancity Mall KE website.',
+    sections: [
+      {
+        title: 'Essential browser storage',
+        paragraphs: [
+          'The storefront uses browser storage for shopping features such as the cart, wishlist, recently viewed products and your saved cookie preference. These functions are treated as essential because they are needed to provide the shopping experience you request.',
+        ],
+      },
+      {
+        title: 'Optional analytics',
+        paragraphs: [
+          'Anonymous analytics is optional and only starts after you choose Allow analytics. It can record product views, searches, cart activity, checkout use, WhatsApp clicks and placed orders so Sancity can understand demand and improve the store.',
+          'Where a Google Analytics measurement ID is configured, Google Analytics is also loaded only after analytics consent is granted.',
+        ],
+      },
+      {
+        title: 'Changing your choice',
+        paragraphs: [
+          'You can reopen the consent controls at any time using Cookie settings in the website footer. Choosing Essential only stops optional analytics from being recorded by the storefront.',
+        ],
+      },
+      {
+        title: 'Privacy',
+        paragraphs: [
+          'For information about customer, order and payment-verification data, read the Sancity Mall KE Privacy Policy. Privacy questions can be sent to Sancitymallke@gmail.com or through the store WhatsApp contact.',
+        ],
+      },
+    ],
+  },
   '/terms': {
     eyebrow: 'Store terms',
     title: 'Terms of Service',
@@ -2812,6 +2845,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
           <a href="/#contact">Contact</a>
           <a href="/shipping-returns">Shipping & Returns</a>
           <a href="/privacy">Privacy</a>
+          <a href="/cookies">Cookie Policy</a>
           <button type="button" className="footer-cookie-button" onClick={() => setCookieConsent('unknown')}>Cookie settings</button>
           <a href="/terms">Terms</a>
         </div>
@@ -2847,7 +2881,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
             <strong>Your privacy choices</strong>
             <p>
               Essential browser storage keeps your cart and wishlist working. Optional anonymous analytics helps Sancity understand searches and shopping activity.
-              <a href="/privacy"> Read our Privacy Policy.</a>
+              <a href="/cookies"> Read our Cookie Policy.</a>
             </p>
           </div>
           <div className="cookie-consent-actions">

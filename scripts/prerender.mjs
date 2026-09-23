@@ -248,6 +248,11 @@ const staticPages = [
     description: 'How Sancity Mall KE handles checkout, order, availability-request and first-party analytics information.',
   },
   {
+    path: '/cookies',
+    title: 'Cookie Policy | Sancity Mall KE',
+    description: 'Essential browser storage and optional analytics choices used by Sancity Mall KE.',
+  },
+  {
     path: '/terms',
     title: 'Terms of Service | Sancity Mall KE',
     description: 'Terms that apply when browsing, ordering, paying for or receiving products from Sancity Mall KE.',
@@ -288,6 +293,6 @@ await rm(resolve(root, 'dist-ssr'), { recursive: true, force: true })
 
 console.log(`Prerendered storefront HTML: ${storefrontHtml.length.toLocaleString()} characters`)
 console.log(`Prerendered ${products.length.toLocaleString()} product page(s)`)
-console.log('Prerendered privacy, terms, shipping/returns and custom 404 pages')
+console.log('Prerendered privacy, cookie policy, terms, shipping/returns and custom 404 pages')
 console.log('Generated sitemap.xml and Merchant Center feed')
 console.log('Kept /admin as a noindex client-rendered shell')
