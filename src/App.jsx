@@ -747,10 +747,61 @@ export default function App({ initialProducts = null, initialPath = null }) {
     })
   }, [products, query, activeCategory, wishlistOnly, saved, sortBy, stockFilter, priceFilter, newOnly])
 
-  const renderedProducts = useMemo(
-    () => visibleProducts.slice(0, catalogueLimit),
-    [visibleProducts, catalogueLimit],
-  )
+  const renderedProducts = useMemo(() => {
+    const useCategoryMix = activeCategory === 'All'
+      && !query.trim()
+      && !wishlistOnly
+      && sortBy === 'newest'
+      && stockFilter === 'all'
+      && priceFilter === 'all'
+      && !newOnly
+
+    if (!useCategoryMix) return visibleProducts.slice(0, catalogueLimit)
+
+    const preferredCategories = [
+      ...productCategories,
+      ...visibleProducts
+        .map((product) => product.category)
+        .filter((category) => category && !productCategories.includes(category)),
+    ].filter((category, index, categories) => categories.indexOf(category) === index)
+
+    const categoryQueues = new Map(
+      preferredCategories.map((category) => [
+        category,
+        visibleProducts.filter((product) => product.category === category),
+      ]),
+    )
+
+    const mixed = []
+    let addedInRound = true
+
+    while (mixed.length < visibleProducts.length && addedInRound) {
+      addedInRound = false
+
+      preferredCategories.forEach((category) => {
+        const queue = categoryQueues.get(category)
+        if (queue?.length) {
+          mixed.push(queue.shift())
+          addedInRound = true
+        }
+      })
+    }
+
+    const mixedIds = new Set(mixed.map((product) => product.id))
+    const leftovers = visibleProducts.filter((product) => !mixedIds.has(product.id))
+
+    return [...mixed, ...leftovers].slice(0, catalogueLimit)
+  }, [
+    visibleProducts,
+    catalogueLimit,
+    activeCategory,
+    query,
+    wishlistOnly,
+    sortBy,
+    stockFilter,
+    priceFilter,
+    newOnly,
+  ])
 
   useEffect(() => {
     setCatalogueLimit(16)
