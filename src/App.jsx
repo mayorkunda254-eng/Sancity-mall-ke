@@ -732,7 +732,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
         : `${siteUrl}/`
     const image = detailProduct
       ? productMainImage(detailProduct)
-      : `${siteUrl}/hero-bedroom-premium.webp`
+      : `${siteUrl}/hero-bedroom-desktop.webp`
 
     document.title = title
 
@@ -2298,18 +2298,24 @@ export default function App({ initialProducts = null, initialPath = null }) {
           </div>
 
           <div className="hero-stage hero-photo-stage" aria-label="Chocolate brown bedroom collection">
-            <img
-              className="hero-bedroom-photo"
-              src="/hero-bedroom-premium.webp"
-              alt="Chocolate brown plush bedding styled in a bright modern bedroom"
-              loading="eager"
-              fetchPriority="high"
-              decoding="async"
-              onError={(event) => {
-                event.currentTarget.onerror = null
-                event.currentTarget.src = '/hero-bedroom-hq.jpeg'
-              }}
-            />
+            <picture className="hero-bedroom-picture">
+              <source media="(max-width: 700px)" srcSet="/hero-bedroom-mobile.webp" />
+              <source media="(max-width: 1100px)" srcSet="/hero-bedroom-tablet.webp" />
+              <img
+                className="hero-bedroom-photo"
+                src="/hero-bedroom-desktop.webp"
+                alt="Chocolate brown plush bedding styled in a bright modern bedroom"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                width="1800"
+                height="1469"
+                onError={(event) => {
+                  event.currentTarget.onerror = null
+                  event.currentTarget.src = '/hero-bedroom-hq.jpeg'
+                }}
+              />
+            </picture>
             <div className="hero-photo-scrim" aria-hidden="true" />
             <div className="tribal tribal-left" aria-hidden="true" />
             <div className="tribal tribal-right" aria-hidden="true" />
