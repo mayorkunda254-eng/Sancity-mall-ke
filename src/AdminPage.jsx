@@ -1470,7 +1470,7 @@ export default function AdminPage() {
               <input
                 value={newZone.eta_text}
                 onChange={(event) => setNewZone({ ...newZone, eta_text: event.target.value })}
-                placeholder="e.g. Same day / 1–2 days"
+                placeholder="e.g. Same day / 1 to 2 days"
                 disabled={zoneSavingId === 'new'}
               />
             </label>
@@ -2000,7 +2000,7 @@ export default function AdminPage() {
                 value={variantText}
                 disabled={variantSaving}
                 onChange={(event) => setVariantText(event.target.value)}
-                placeholder={'1 Seater | 90–140 cm | Grey | 1499 | 4\n2 Seater | 145–185 cm | Grey | 1999 | 2\n3 Seater | 190–230 cm | Burgundy | 2499 |'}
+                placeholder={'1 Seater | 90 to 140 cm | Grey | 1499 | 4\n2 Seater | 145 to 185 cm | Grey | 1999 | 2\n3 Seater | 190 to 230 cm | Burgundy | 2499 |'}
               />
 
               <div className="variant-editor-example">
