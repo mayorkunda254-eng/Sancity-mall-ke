@@ -1230,3 +1230,49 @@
     text-align:left;
   }
 }
+
+/* === Order follow-up and search reporting === */
+.admin-order-controls input{
+  width:100%;
+  min-height:40px;
+  border:1px solid #ddd2c6;
+  border-radius:9px;
+  padding:0 10px;
+  background:#fff;
+  color:#302820;
+  font:inherit;
+}
+.analytics-search-queries{
+  margin-top:16px;
+  padding:16px;
+  border:1px solid #e6ddd3;
+  border-radius:16px;
+  background:#fffdf9;
+}
+.analytics-query-list{
+  display:grid;
+  gap:7px;
+  margin-top:10px;
+}
+.analytics-query-list>div{
+  display:grid;
+  grid-template-columns:28px 1fr;
+  gap:10px;
+  align-items:center;
+  padding:9px 10px;
+  border-radius:10px;
+  background:#f8f3ed;
+}
+.analytics-query-list>div>b{
+  display:grid;
+  place-items:center;
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  background:#efe0c8;
+  color:#7a2330;
+  font-size:10px;
+}
+.analytics-query-list span{display:flex;min-width:0;flex-direction:column;gap:2px}
+.analytics-query-list strong{font-size:11px;color:#2d2520}
+.analytics-query-list small{font-size:9px;color:#75695f}
