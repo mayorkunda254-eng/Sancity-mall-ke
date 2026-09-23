@@ -106,6 +106,8 @@ export default function AdminPage() {
   const [analytics, setAnalytics] = useState(null)
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
   const [analyticsDays, setAnalyticsDays] = useState(30)
+  const [searchQueries, setSearchQueries] = useState([])
+  const [searchQueriesLoading, setSearchQueriesLoading] = useState(false)
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -140,6 +142,7 @@ export default function AdminPage() {
       loadStockAlerts()
       loadPromotions()
       loadAnalytics(30)
+      loadSearchQueries(30)
     }
   }, [session])
 
@@ -202,7 +205,7 @@ export default function AdminPage() {
     setOrdersLoading(true)
     const { data, error } = await supabase
       .from('store_orders')
-      .select('id,order_number,customer_name,customer_phone,delivery_method,delivery_zone_id,delivery_zone_name,delivery_location,delivery_notes,subtotal,discount_amount,promotion_code,delivery_fee,total_amount,payment_method,payment_paybill,payment_account,mpesa_code,payment_status,order_status,created_at,store_order_items(id,product_name,variant_label,variant_size,variant_colour,unit_price,quantity,line_total)')
+      .select('id,order_number,customer_name,customer_phone,delivery_method,delivery_zone_id,delivery_zone_name,delivery_location,delivery_notes,subtotal,discount_amount,promotion_code,delivery_fee,total_amount,payment_method,payment_paybill,payment_account,mpesa_code,payment_status,order_status,follow_up_date,follow_up_status,created_at,store_order_items(id,product_name,variant_label,variant_size,variant_colour,unit_price,quantity,line_total)')
       .order('created_at', { ascending: false })
       .limit(60)
 
@@ -230,6 +233,49 @@ export default function AdminPage() {
     }
     setAnalyticsLoading(false)
   }
+
+  async function loadSearchQueries(days = analyticsDays) {
+    const selectedDays = Number(days) || 30
+    setSearchQueriesLoading(true)
+    const since = new Date(Date.now() - selectedDays * 24 * 60 * 60 * 1000).toISOString()
+
+    const { data, error } = await supabase
+      .from('search_queries')
+      .select('query,category,results_count,created_at')
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
+      .limit(1000)
+
+    if (error) {
+      setNotice({ type: 'error', text: error.message })
+    } else {
+      setSearchQueries(data || [])
+    }
+    setSearchQueriesLoading(false)
+  }
+
+  const topSearchQueries = useMemo(() => {
+    const grouped = new Map()
+
+    for (const item of searchQueries) {
+      const key = String(item.query || '').trim().toLowerCase()
+      if (!key) continue
+      const current = grouped.get(key) || {
+        query: String(item.query || '').trim(),
+        searches: 0,
+        zero_results: 0,
+        total_results: 0,
+      }
+      current.searches += 1
+      current.total_results += Number(item.results_count || 0)
+      if (Number(item.results_count || 0) === 0) current.zero_results += 1
+      grouped.set(key, current)
+    }
+
+    return [...grouped.values()]
+      .sort((a, b) => b.searches - a.searches || b.zero_results - a.zero_results || a.query.localeCompare(b.query))
+      .slice(0, 12)
+  }, [searchQueries])
 
   const analyticsFunnel = useMemo(() => {
     const viewed = Number(analytics?.product_view_sessions || 0)
@@ -1115,7 +1161,7 @@ export default function AdminPage() {
             <p>Verify customer orders, manage fulfilment and maintain the Sancity catalogue.</p>
           </div>
           <button
-            onClick={() => { loadProducts(); loadOrders(); loadDeliveryZones(); loadStockAlerts(); loadPromotions(); loadAnalytics(analyticsDays) }}
+            onClick={() => { loadProducts(); loadOrders(); loadDeliveryZones(); loadStockAlerts(); loadPromotions(); loadAnalytics(analyticsDays); loadSearchQueries(analyticsDays) }}
             className="admin-secondary-btn"
             disabled={listLoading || ordersLoading || zonesLoading || stockAlertsLoading || promotionsLoading || analyticsLoading}
           >
@@ -1143,7 +1189,7 @@ export default function AdminPage() {
                   key={days}
                   type="button"
                   className={analyticsDays === days ? 'active' : ''}
-                  onClick={() => loadAnalytics(days)}
+                  onClick={() => { loadAnalytics(days); loadSearchQueries(days) }}
                   disabled={analyticsLoading}
                 >
                   {days}d
@@ -1229,6 +1275,30 @@ export default function AdminPage() {
                     </div>
                   )}
                 </div>
+              </div>
+
+              <div className="analytics-search-queries">
+                <div className="analytics-panel-heading">
+                  <span>Customer search queries</span>
+                  <small>Consented on-site searches • last {analyticsDays} days</small>
+                </div>
+                {searchQueriesLoading ? (
+                  <div className="analytics-no-data">Loading search queries…</div>
+                ) : topSearchQueries.length === 0 ? (
+                  <div className="analytics-no-data">Search demand will appear here after visitors allow analytics and use site search.</div>
+                ) : (
+                  <div className="analytics-query-list">
+                    {topSearchQueries.map((item, index) => (
+                      <div key={item.query}>
+                        <b>{index + 1}</b>
+                        <span>
+                          <strong>{item.query}</strong>
+                          <small>{item.searches} search{item.searches === 1 ? '' : 'es'} • {item.zero_results} zero-result • avg {Math.round(item.total_results / item.searches)} matches</small>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -1756,6 +1826,39 @@ export default function AdminPage() {
                         <option value="delivered">Delivered</option>
                         <option value="cancelled">Cancelled</option>
                       </select>
+                    </label>
+
+                    <label>
+                      <span>Follow-up status</span>
+                      <select
+                        value={order.follow_up_status || 'not_required'}
+                        disabled={busy}
+                        onChange={(event) => updateOrder(order, { follow_up_status: event.target.value }, `Follow-up status updated for ${order.order_number}.`)}
+                      >
+                        <option value="not_required">Not required</option>
+                        <option value="pending">Pending</option>
+                        <option value="scheduled">Scheduled</option>
+                        <option value="completed">Completed</option>
+                      </select>
+                    </label>
+
+                    <label>
+                      <span>Follow-up date</span>
+                      <input
+                        type="date"
+                        value={order.follow_up_date || ''}
+                        disabled={busy}
+                        onChange={(event) => updateOrder(
+                          order,
+                          {
+                            follow_up_date: event.target.value || null,
+                            follow_up_status: event.target.value && order.follow_up_status === 'not_required'
+                              ? 'scheduled'
+                              : order.follow_up_status,
+                          },
+                          `Follow-up date updated for ${order.order_number}.`,
+                        )}
+                      />
                     </label>
                   </div>
                 </article>
