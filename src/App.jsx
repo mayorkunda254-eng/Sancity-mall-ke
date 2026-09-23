@@ -732,7 +732,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
         : `${siteUrl}/`
     const image = detailProduct
       ? productMainImage(detailProduct)
-      : `${siteUrl}/hero-bedroom-hq.jpeg`
+      : `${siteUrl}/hero-bedroom-premium.webp`
 
     document.title = title
 
@@ -2300,14 +2300,14 @@ export default function App({ initialProducts = null, initialPath = null }) {
           <div className="hero-stage hero-photo-stage" aria-label="Chocolate brown bedroom collection">
             <img
               className="hero-bedroom-photo"
-              src="/hero-bedroom-hq.jpeg"
+              src="/hero-bedroom-premium.webp"
               alt="Chocolate brown plush bedding styled in a bright modern bedroom"
               loading="eager"
               fetchPriority="high"
               decoding="async"
               onError={(event) => {
                 event.currentTarget.onerror = null
-                event.currentTarget.src = '/hero-bedroom.webp'
+                event.currentTarget.src = '/hero-bedroom-hq.jpeg'
               }}
             />
             <div className="hero-photo-scrim" aria-hidden="true" />
