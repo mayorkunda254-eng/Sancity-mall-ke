@@ -128,6 +128,9 @@ export default function AdminPage() {
   const [orders, setOrders] = useState([])
   const [ordersLoading, setOrdersLoading] = useState(false)
   const [orderUpdatingId, setOrderUpdatingId] = useState(null)
+  const [orderQuery, setOrderQuery] = useState('')
+  const [orderFilter, setOrderFilter] = useState('active')
+  const [expandedOrderId, setExpandedOrderId] = useState(null)
   const [deliveryZones, setDeliveryZones] = useState([])
   const [zonesLoading, setZonesLoading] = useState(false)
   const [zoneSavingId, setZoneSavingId] = useState(null)
@@ -233,7 +236,7 @@ export default function AdminPage() {
   )
 
   const openOrderCount = useMemo(
-    () => orders.filter((order) => !['completed', 'cancelled'].includes(order.order_status)).length,
+    () => orders.filter((order) => !['delivered', 'cancelled'].includes(order.order_status)).length,
     [orders],
   )
 
@@ -708,6 +711,51 @@ export default function AdminPage() {
       )
     )).length
   }, [orders])
+
+  const orderOperationalStats = useMemo(() => ({
+    total: orders.length,
+    active: orders.filter((order) => !['delivered', 'cancelled'].includes(order.order_status)).length,
+    payment: orders.filter((order) => order.payment_status !== 'verified').length,
+    delivered: orders.filter((order) => order.order_status === 'delivered').length,
+  }), [orders])
+
+  const filteredOrders = useMemo(() => {
+    const q = orderQuery.trim().toLowerCase()
+    const now = new Date()
+    const today = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ].join('-')
+
+    return orderedOrders.filter((order) => {
+      const items = order.store_order_items || []
+      const haystack = [
+        order.order_number,
+        order.customer_name,
+        order.customer_phone,
+        order.delivery_zone_name,
+        order.delivery_location,
+        ...items.map((item) => item.product_name),
+      ].filter(Boolean).join(' ').toLowerCase()
+
+      const searchMatch = !q || haystack.includes(q)
+      const filterMatch = orderFilter === 'all'
+        || (orderFilter === 'active' && !['delivered', 'cancelled'].includes(order.order_status))
+        || (orderFilter === 'payment' && order.payment_status !== 'verified')
+        || (orderFilter === 'followup' && (
+          order.follow_up_status === 'pending'
+          || (
+            order.follow_up_status === 'scheduled'
+            && order.follow_up_date
+            && order.follow_up_date <= today
+          )
+        ))
+        || (orderFilter === 'delivered' && order.order_status === 'delivered')
+
+      return searchMatch && filterMatch
+    })
+  }, [orderedOrders, orderQuery, orderFilter])
 
   async function updateOrder(order, patch, successText = 'Order updated.') {
     setOrderUpdatingId(order.id)
@@ -1929,11 +1977,69 @@ export default function AdminPage() {
           <div className="admin-card-heading orders-heading">
             <span className="admin-step"><ClipboardCheck size={16} /></span>
             <div>
-              <h2>Orders</h2>
-              <p>
-                {orders.length} recent order{orders.length === 1 ? '' : 's'} • {followUpAttentionCount} follow-up{followUpAttentionCount === 1 ? '' : 's'} need attention
-              </p>
+              <h2>Order operations</h2>
+              <p>Scan the queue first, then open only the order you need to manage.</p>
             </div>
+          </div>
+
+          <div className="admin-orders-kpis">
+            <article>
+              <span>Active</span>
+              <strong>{orderOperationalStats.active}</strong>
+              <small>Not delivered or cancelled</small>
+            </article>
+            <article>
+              <span>Payment pending</span>
+              <strong>{orderOperationalStats.payment}</strong>
+              <small>Awaiting or needing verification</small>
+            </article>
+            <article>
+              <span>Follow-up due</span>
+              <strong>{followUpAttentionCount}</strong>
+              <small>Pending or scheduled for action</small>
+            </article>
+            <article>
+              <span>Delivered</span>
+              <strong>{orderOperationalStats.delivered}</strong>
+              <small>Completed deliveries in this list</small>
+            </article>
+          </div>
+
+          <div className="admin-orders-toolbar">
+            <label className="admin-orders-search">
+              <Search size={16} />
+              <input
+                value={orderQuery}
+                onChange={(event) => setOrderQuery(event.target.value)}
+                placeholder="Search order, customer, phone or product"
+              />
+            </label>
+
+            <div className="admin-order-filters" aria-label="Order filters">
+              {[
+                ['active', 'Active', orderOperationalStats.active],
+                ['followup', 'Follow-up', followUpAttentionCount],
+                ['payment', 'Payment', orderOperationalStats.payment],
+                ['delivered', 'Delivered', orderOperationalStats.delivered],
+                ['all', 'All', orderOperationalStats.total],
+              ].map(([value, label, count]) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={orderFilter === value ? 'active' : ''}
+                  onClick={() => setOrderFilter(value)}
+                >
+                  {label} <span>{count}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="admin-orders-result-meta">
+            <span>{filteredOrders.length} order{filteredOrders.length === 1 ? '' : 's'} shown</span>
+            {(orderQuery || orderFilter !== 'active') && (
+              <button type="button" onClick={() => { setOrderQuery(''); setOrderFilter('active') }}>Reset view</button>
+            )}
           </div>
 
           <div className="admin-orders-list">
@@ -1941,16 +2047,19 @@ export default function AdminPage() {
               <div className="admin-empty"><Loader2 className="spin" /> Loading orders…</div>
             ) : orders.length === 0 ? (
               <div className="admin-empty"><ClipboardCheck /> No customer orders yet.</div>
-            ) : orderedOrders.map((order) => {
+            ) : filteredOrders.length === 0 ? (
+              <div className="admin-empty"><Search /> No orders match this view.</div>
+            ) : filteredOrders.map((order) => {
               const items = order.store_order_items || []
               const total = order.total_amount === null || order.total_amount === undefined
                 ? null
                 : Number(order.total_amount)
               const busy = orderUpdatingId === order.id
+              const expanded = expandedOrderId === order.id
 
               return (
                 <article
-                  className={`admin-order ${order.follow_up_status === 'pending' || (order.follow_up_status === 'scheduled' && order.follow_up_date) ? 'has-follow-up' : ''}`}
+                  className={`admin-order ${expanded ? 'expanded' : ''} ${order.follow_up_status === 'pending' || (order.follow_up_status === 'scheduled' && order.follow_up_date) ? 'has-follow-up' : ''}`}
                   key={order.id}
                 >
                   <div className="admin-order-top">
@@ -1973,137 +2082,162 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  <div className="admin-order-grid">
-                    <div className="admin-order-customer">
-                      <span><strong>{order.customer_name}</strong></span>
-                      <a href={`tel:${order.customer_phone}`}><Phone size={14} /> {order.customer_phone}</a>
-                      <span>
-                        {order.delivery_method === 'delivery' ? <Truck size={14} /> : <MapPin size={14} />}
-                        {order.delivery_method === 'delivery'
-                          ? [order.delivery_zone_name, order.delivery_location].filter(Boolean).join(' • ') || 'Delivery location pending'
-                          : 'Pickup • RNG Plaza, Ronald Ngala Street'}
-                      </span>
-                      {order.delivery_notes && <small>Note: {order.delivery_notes}</small>}
+                  <div className="admin-order-summary">
+                    <div className="admin-order-summary-person">
+                      <span>{order.customer_name}</span>
+                      <small>{order.customer_phone}</small>
                     </div>
-
-                    <div className="admin-order-money">
-                      <span>Products <b>{money(order.subtotal)}</b></span>
-                      {Number(order.discount_amount || 0) > 0 && (
-                        <span className="order-discount">
-                          {order.promotion_code ? `Promo ${order.promotion_code}` : 'Discount'}
-                          <b>− {money(order.discount_amount)}</b>
-                        </span>
-                      )}
-                      <span>Delivery <b>{order.delivery_fee === null ? 'Pending' : money(order.delivery_fee)}</b></span>
-                      <strong>Total <b>{total === null ? 'Pending quote' : money(total)}</b></strong>
+                    <div>
+                      <span>{items.reduce((sum, item) => sum + Number(item.quantity || 0), 0)} item{items.reduce((sum, item) => sum + Number(item.quantity || 0), 0) === 1 ? '' : 's'}</span>
+                      <small>{order.delivery_method === 'delivery' ? 'Delivery' : 'Pickup'}</small>
                     </div>
+                    <div>
+                      <strong>{total === null ? 'Pending quote' : money(total)}</strong>
+                      <small>Order total</small>
+                    </div>
+                    <button
+                      type="button"
+                      className={expanded ? 'active' : ''}
+                      onClick={() => setExpandedOrderId(expanded ? null : order.id)}
+                      aria-expanded={expanded}
+                    >
+                      {expanded ? 'Close details' : 'Manage order'} <ChevronRight size={15} />
+                    </button>
                   </div>
 
-                  <div className="admin-order-items">
-                    {items.map((item) => (
-                      <div key={item.id}>
+                  <div className="admin-order-detail">
+                    <div className="admin-order-grid">
+                      <div className="admin-order-customer">
+                        <span><strong>{order.customer_name}</strong></span>
+                        <a href={`tel:${order.customer_phone}`}><Phone size={14} /> {order.customer_phone}</a>
                         <span>
-                          <strong>{item.product_name}</strong>
-                          {item.variant_label && <small>{item.variant_label}{item.variant_size ? ` • ${item.variant_size}` : ''}{item.variant_colour ? ` • ${item.variant_colour}` : ''}</small>}
+                          {order.delivery_method === 'delivery' ? <Truck size={14} /> : <MapPin size={14} />}
+                          {order.delivery_method === 'delivery'
+                            ? [order.delivery_zone_name, order.delivery_location].filter(Boolean).join(' • ') || 'Delivery location pending'
+                            : 'Pickup • RNG Plaza, Ronald Ngala Street'}
                         </span>
-                        <b>{item.quantity} × {money(item.unit_price)}</b>
+                        {order.delivery_notes && <small>Note: {order.delivery_notes}</small>}
                       </div>
-                    ))}
-                  </div>
 
-                  <div className="admin-order-payment">
-                    <CreditCard size={16} />
-                    <span>
-                      <small>M-Pesa via Equity • Paybill {order.payment_paybill} • Till {order.payment_account}</small>
-                      <strong>{order.mpesa_code || 'No confirmation code submitted yet'}</strong>
-                    </span>
-                  </div>
-
-                  {order.delivery_method === 'delivery' && order.delivery_fee === null && (
-                    <form className="admin-order-inline-form" onSubmit={(event) => saveDeliveryFee(event, order)}>
-                      <label>
-                        <span>Delivery fee (KSh)</span>
-                        <input name="delivery_fee" type="number" min="0" step="1" placeholder="e.g. 350" disabled={busy} />
-                      </label>
-                      <button className="admin-secondary-btn" disabled={busy}>{busy ? 'Saving…' : 'Set delivery total'}</button>
-                    </form>
-                  )}
-
-                  {!order.mpesa_code && order.total_amount !== null && (
-                    <form className="admin-order-inline-form" onSubmit={(event) => attachPaymentCode(event, order)}>
-                      <label>
-                        <span>Confirmation code received from customer</span>
-                        <input name="mpesa_code" placeholder="e.g. TXX123ABCD" maxLength="16" disabled={busy} />
-                      </label>
-                      <button className="admin-secondary-btn" disabled={busy}>{busy ? 'Saving…' : 'Attach code'}</button>
-                    </form>
-                  )}
-
-                  <div className="admin-order-controls">
-                    <label>
-                      <span>Payment</span>
-                      <select
-                        value={order.payment_status}
-                        disabled={busy}
-                        onChange={(event) => updateOrder(order, { payment_status: event.target.value }, `Payment status updated for ${order.order_number}.`)}
-                      >
-                        <option value="awaiting_payment">Awaiting payment</option>
-                        <option value="pending_verification">Pending verification</option>
-                        <option value="verified">Verified</option>
-                        <option value="rejected">Rejected</option>
-                      </select>
-                    </label>
-
-                    <label>
-                      <span>Fulfilment</span>
-                      <select
-                        value={order.order_status}
-                        disabled={busy}
-                        onChange={(event) => updateOrder(order, { order_status: event.target.value }, `Order status updated for ${order.order_number}.`)}
-                      >
-                        <option value="awaiting_delivery_quote">Awaiting delivery quote</option>
-                        <option value="new">New</option>
-                        <option value="confirmed">Confirmed</option>
-                        <option value="preparing">Preparing</option>
-                        <option value="dispatched">Dispatched</option>
-                        <option value="ready_for_pickup">Ready for pickup</option>
-                        <option value="delivered">Delivered</option>
-                        <option value="cancelled">Cancelled</option>
-                      </select>
-                    </label>
-
-                    <label>
-                      <span>Follow-up status</span>
-                      <select
-                        value={order.follow_up_status || 'not_required'}
-                        disabled={busy}
-                        onChange={(event) => updateOrder(order, { follow_up_status: event.target.value }, `Follow-up status updated for ${order.order_number}.`)}
-                      >
-                        <option value="not_required">Not required</option>
-                        <option value="pending">Pending</option>
-                        <option value="scheduled">Scheduled</option>
-                        <option value="completed">Completed</option>
-                      </select>
-                    </label>
-
-                    <label>
-                      <span>Follow-up date</span>
-                      <input
-                        type="date"
-                        value={order.follow_up_date || ''}
-                        disabled={busy}
-                        onChange={(event) => updateOrder(
-                          order,
-                          {
-                            follow_up_date: event.target.value || null,
-                            follow_up_status: event.target.value && order.follow_up_status === 'not_required'
-                              ? 'scheduled'
-                              : order.follow_up_status,
-                          },
-                          `Follow-up date updated for ${order.order_number}.`,
+                      <div className="admin-order-money">
+                        <span>Products <b>{money(order.subtotal)}</b></span>
+                        {Number(order.discount_amount || 0) > 0 && (
+                          <span className="order-discount">
+                            {order.promotion_code ? `Promo ${order.promotion_code}` : 'Discount'}
+                            <b>− {money(order.discount_amount)}</b>
+                          </span>
                         )}
-                      />
-                    </label>
+                        <span>Delivery <b>{order.delivery_fee === null ? 'Pending' : money(order.delivery_fee)}</b></span>
+                        <strong>Total <b>{total === null ? 'Pending quote' : money(total)}</b></strong>
+                      </div>
+                    </div>
+
+                    <div className="admin-order-items">
+                      {items.map((item) => (
+                        <div key={item.id}>
+                          <span>
+                            <strong>{item.product_name}</strong>
+                            {item.variant_label && <small>{item.variant_label}{item.variant_size ? ` • ${item.variant_size}` : ''}{item.variant_colour ? ` • ${item.variant_colour}` : ''}</small>}
+                          </span>
+                          <b>{item.quantity} × {money(item.unit_price)}</b>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="admin-order-payment">
+                      <CreditCard size={16} />
+                      <span>
+                        <small>M-Pesa via Equity • Paybill {order.payment_paybill} • Till {order.payment_account}</small>
+                        <strong>{order.mpesa_code || 'No confirmation code submitted yet'}</strong>
+                      </span>
+                    </div>
+
+                    {order.delivery_method === 'delivery' && order.delivery_fee === null && (
+                      <form className="admin-order-inline-form" onSubmit={(event) => saveDeliveryFee(event, order)}>
+                        <label>
+                          <span>Delivery fee (KSh)</span>
+                          <input name="delivery_fee" type="number" min="0" step="1" placeholder="e.g. 350" disabled={busy} />
+                        </label>
+                        <button className="admin-secondary-btn" disabled={busy}>{busy ? 'Saving…' : 'Set delivery total'}</button>
+                      </form>
+                    )}
+
+                    {!order.mpesa_code && order.total_amount !== null && (
+                      <form className="admin-order-inline-form" onSubmit={(event) => attachPaymentCode(event, order)}>
+                        <label>
+                          <span>Confirmation code received from customer</span>
+                          <input name="mpesa_code" placeholder="e.g. TXX123ABCD" maxLength="16" disabled={busy} />
+                        </label>
+                        <button className="admin-secondary-btn" disabled={busy}>{busy ? 'Saving…' : 'Attach code'}</button>
+                      </form>
+                    )}
+
+                    <div className="admin-order-controls">
+                      <label>
+                        <span>Payment</span>
+                        <select
+                          value={order.payment_status}
+                          disabled={busy}
+                          onChange={(event) => updateOrder(order, { payment_status: event.target.value }, `Payment status updated for ${order.order_number}.`)}
+                        >
+                          <option value="awaiting_payment">Awaiting payment</option>
+                          <option value="pending_verification">Pending verification</option>
+                          <option value="verified">Verified</option>
+                          <option value="rejected">Rejected</option>
+                        </select>
+                      </label>
+
+                      <label>
+                        <span>Fulfilment</span>
+                        <select
+                          value={order.order_status}
+                          disabled={busy}
+                          onChange={(event) => updateOrder(order, { order_status: event.target.value }, `Order status updated for ${order.order_number}.`)}
+                        >
+                          <option value="awaiting_delivery_quote">Awaiting delivery quote</option>
+                          <option value="new">New</option>
+                          <option value="confirmed">Confirmed</option>
+                          <option value="preparing">Preparing</option>
+                          <option value="dispatched">Dispatched</option>
+                          <option value="ready_for_pickup">Ready for pickup</option>
+                          <option value="delivered">Delivered</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </label>
+
+                      <label>
+                        <span>Follow-up status</span>
+                        <select
+                          value={order.follow_up_status || 'not_required'}
+                          disabled={busy}
+                          onChange={(event) => updateOrder(order, { follow_up_status: event.target.value }, `Follow-up status updated for ${order.order_number}.`)}
+                        >
+                          <option value="not_required">Not required</option>
+                          <option value="pending">Pending</option>
+                          <option value="scheduled">Scheduled</option>
+                          <option value="completed">Completed</option>
+                        </select>
+                      </label>
+
+                      <label>
+                        <span>Follow-up date</span>
+                        <input
+                          type="date"
+                          value={order.follow_up_date || ''}
+                          disabled={busy}
+                          onChange={(event) => updateOrder(
+                            order,
+                            {
+                              follow_up_date: event.target.value || null,
+                              follow_up_status: event.target.value && order.follow_up_status === 'not_required'
+                                ? 'scheduled'
+                                : order.follow_up_status,
+                            },
+                            `Follow-up date updated for ${order.order_number}.`,
+                          )}
+                        />
+                      </label>
+                    </div>
                   </div>
                 </article>
               )
