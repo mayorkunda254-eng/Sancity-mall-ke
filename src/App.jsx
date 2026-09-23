@@ -2452,7 +2452,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                 <option value="newest">Newest first</option>
                 <option value="price-low">Price: low to high</option>
                 <option value="price-high">Price: high to low</option>
-                <option value="name">Name A–Z</option>
+                <option value="name">Name A-Z</option>
               </select>
             </div>
           </div>
@@ -2481,7 +2481,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
               )}
               {sortBy !== 'newest' && (
                 <button onClick={() => setSortBy('newest')}>
-                  {sortBy === 'price-low' ? 'Price ↑' : sortBy === 'price-high' ? 'Price ↓' : 'Name A–Z'} <X size={12} />
+                  {sortBy === 'price-low' ? 'Price ↑' : sortBy === 'price-high' ? 'Price ↓' : 'Name A-Z'} <X size={12} />
                 </button>
               )}
               {activeFilterCount > 1 && (
