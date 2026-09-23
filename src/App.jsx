@@ -376,7 +376,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
   const [stockFilter, setStockFilter] = useState('all')
   const [priceFilter, setPriceFilter] = useState('all')
   const [newOnly, setNewOnly] = useState(false)
-  const [catalogueLimit, setCatalogueLimit] = useState(32)
+  const [catalogueLimit, setCatalogueLimit] = useState(16)
   const [saved, setSaved] = useState([])
   const [wishlistOnly, setWishlistOnly] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
@@ -599,7 +599,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
   )
 
   useEffect(() => {
-    setCatalogueLimit(32)
+    setCatalogueLimit(16)
   }, [query, activeCategory, wishlistOnly, sortBy, stockFilter, priceFilter, newOnly])
 
   const predictiveProducts = useMemo(() => {
@@ -2524,9 +2524,9 @@ export default function App({ initialProducts = null, initialPath = null }) {
                         className="product-photo"
                         src={imageUrl}
                         alt={product.name}
-                        loading={index < 12 ? 'eager' : 'lazy'}
-                        fetchPriority={index < 6 ? 'high' : 'auto'}
-                        decoding="auto"
+                        loading={index < 4 ? 'eager' : 'lazy'}
+                        fetchPriority={index < 2 ? 'high' : 'auto'}
+                        decoding="sync"
                         width="640"
                         height="640"
                         onError={(event) => { event.currentTarget.style.display = 'none' }}
@@ -2600,7 +2600,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
 
           {renderedProducts.length < visibleProducts.length && (
             <div className="catalogue-load-more">
-              <button onClick={() => setCatalogueLimit((current) => current + 24)}>
+              <button onClick={() => setCatalogueLimit((current) => current + 16)}>
                 Load more products
               </button>
               <span>{renderedProducts.length} of {visibleProducts.length} products shown</span>
