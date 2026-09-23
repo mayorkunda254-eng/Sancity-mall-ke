@@ -32,6 +32,8 @@ const roomCollections = [
     description: 'Everyday pieces selected to make prep, storage and serving feel cleaner and easier.',
     category: 'Kitchen & Dining',
     className: 'room-kitchen',
+    image: '/collections/sancity-kitchen-edit.webp',
+    imageAlt: 'Curated kitchenware styled on a bright marble counter',
   },
   {
     key: 'calm-bedroom',
@@ -40,6 +42,8 @@ const roomCollections = [
     description: 'Bedroom essentials chosen around rest, softness and a more considered sleeping space.',
     category: 'Bedroom & Sleep',
     className: 'room-bedroom',
+    image: '/collections/sancity-calm-bedroom.webp',
+    imageAlt: 'Calm bedroom with layered cream and sage bedding',
   },
   {
     key: 'smart-storage',
@@ -48,6 +52,8 @@ const roomCollections = [
     description: 'Useful organisation pieces for bedrooms, wardrobes and everyday small-space living.',
     category: 'Storage & Organisation',
     className: 'room-storage',
+    image: '/collections/sancity-smart-storage.webp',
+    imageAlt: 'Smart home storage racks with neatly organised produce and essentials',
   },
 ]
 
@@ -2383,9 +2389,16 @@ export default function App({ initialProducts = null, initialPath = null }) {
             {collectionCards.map((collection) => (
               <article key={collection.key} className={`room-collection-card ${collection.className}`}>
                 <button className="room-card-hitarea" onClick={() => openCollection(collection)} aria-label={`Shop ${collection.eyebrow}`} />
-                <div className={`room-collection-media ${collection.featured && productMainImage(collection.featured) ? 'has-photo' : ''}`}>
-                  {collection.featured && productMainImage(collection.featured) ? (
-                    <img src={productMainImage(collection.featured)} alt={collection.featured.name} loading="lazy" />
+                <div className={`room-collection-media ${collection.image || (collection.featured && productMainImage(collection.featured)) ? 'has-photo' : ''}`}>
+                  {collection.image || (collection.featured && productMainImage(collection.featured)) ? (
+                    <img
+                      src={collection.image || productMainImage(collection.featured)}
+                      alt={collection.imageAlt || collection.featured?.name || collection.eyebrow}
+                      loading="lazy"
+                      width="900"
+                      height="675"
+                      decoding="async"
+                    />
                   ) : (
                     <span>{categoryEmoji(collection.category)}</span>
                   )}
