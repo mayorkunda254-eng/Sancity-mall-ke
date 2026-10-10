@@ -6,18 +6,9 @@ import {
 } from 'lucide-react'
 import { isSupabaseConfigured, PRODUCT_IMAGE_BUCKET, supabase } from './lib/supabase.js'
 import './admin.css'
+import { productCategories, categoryFor, subcategoryFor } from './lib/categories.js'
 
-const categoryOptions = [
-  'Kitchen & Dining',
-  'Bedroom & Sleep',
-  'Storage & Organisation',
-  'Everyday Home Utility',
-  'Kids & Baby',
-  'Mosquito Nets',
-  'Home Fitness',
-  'Home Essentials',
-  'Other',
-]
+const categoryOptions = [...productCategories, 'Other']
 
 const adminViewMeta = {
   overview: {
@@ -65,6 +56,7 @@ const adminViewMeta = {
 const emptyForm = {
   name: '',
   category: 'Kitchen & Dining',
+  subcategory: '',
   description: '',
   dimensions: '',
   material: '',
@@ -109,6 +101,7 @@ export default function AdminPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState('')
+  const [subcategorySavingId, setSubcategorySavingId] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [files, setFiles] = useState([])
   const [products, setProducts] = useState([])
@@ -273,7 +266,7 @@ export default function AdminPage() {
     setListLoading(true)
     const { data, error } = await supabase
       .from('products')
-      .select('id,name,slug,category,description,dimensions,material,colour,key_features,care_instructions,delivery_note,price,compare_at_price,price_from,stock_quantity,badge,status,created_at,product_images(id,public_url,storage_path,sort_order),product_variants(id,label,size,colour,price,stock_quantity,is_active,sort_order)')
+      .select('id,name,slug,category,subcategory,description,dimensions,material,colour,key_features,care_instructions,delivery_note,price,compare_at_price,price_from,stock_quantity,badge,status,created_at,product_images(id,public_url,storage_path,sort_order),product_variants(id,label,size,colour,price,stock_quantity,is_active,sort_order)')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -1143,6 +1136,19 @@ export default function AdminPage() {
     }
   }
 
+  async function saveProductSubcategory(product, value) {
+    setSubcategorySavingId(product.id)
+    setNotice(null)
+    try {
+      const { error } = await supabase.from('products').update({ subcategory: value || null }).eq('id', product.id)
+      if (error) throw error
+      setProducts(current => current.map(item => item.id === product.id ? { ...item, subcategory: value || null } : item))
+      setNotice({ type: 'success', text: 'Product subcategory saved.' })
+    } catch (error) {
+      setNotice({ type: 'error', text: error.message || 'Could not save the subcategory.' })
+    } finally { setSubcategorySavingId(null) }
+  }
+
   async function createProduct(event) {
     event.preventDefault()
     setNotice(null)
@@ -1165,6 +1171,7 @@ export default function AdminPage() {
         name: form.name.trim(),
         slug: slugify(form.name),
         category: form.category,
+        subcategory: form.subcategory || null,
         description: form.description.trim() || null,
         dimensions: form.dimensions.trim() || null,
         material: form.material.trim() || null,
@@ -2327,8 +2334,17 @@ export default function AdminPage() {
 
               <label className="admin-field">
                 <span>Category *</span>
-                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
+                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value, subcategory: '' })}>
                   {categoryOptions.map((option) => <option key={option}>{option}</option>)}
+                </select>
+              </label>
+
+              <label className="admin-field">
+                <span>Subcategory</span>
+                <select value={form.subcategory} onChange={e => setForm({ ...form, subcategory: e.target.value })}>
+                  <option value="">Automatically group by product name</option>
+                  {(categoryFor(form.category)?.children || []).map(child => <option key={child.slug} value={child.slug}>{child.name}</option>)}
+                  <option value="other">More in this department</option>
                 </select>
               </label>
 
@@ -2460,11 +2476,19 @@ export default function AdminPage() {
                       {images[0]?.public_url ? <img src={images[0].public_url} alt="" /> : <Boxes />}
                     </div>
                     <div className="admin-product-copy">
-                      <span>{product.category}</span>
+                      <span>{product.category}{subcategoryFor(product) ? ` / ${subcategoryFor(product).name}` : ''}</span>
                       <strong>{product.name}</strong>
                       <small>{product.price_from && product.price !== null ? 'From ' : ''}{money(product.price)} • Stock: {product.stock_quantity} • {images.length} photo{images.length === 1 ? '' : 's'} • {(product.product_variants || []).length} variant{(product.product_variants || []).length === 1 ? '' : 's'}</small>
                     </div>
                     <div className="admin-product-actions">
+                      {categoryFor(product.category) && <label className="admin-subcategory-field">
+                        <span>Subcategory</span>
+                        <select aria-label={`Subcategory for ${product.name}`} value={product.subcategory || ''} disabled={subcategorySavingId === product.id} onChange={event => saveProductSubcategory(product, event.target.value)}>
+                          <option value="">Automatic grouping</option>
+                          {categoryFor(product.category).children.map(child => <option key={child.slug} value={child.slug}>{child.name}</option>)}
+                          <option value="other">More in this department</option>
+                        </select>
+                      </label>}
                       <button className="admin-variants-btn" onClick={() => openVariantEditor(product)} type="button">
                         <Settings2 size={15} /> Variants
                       </button>

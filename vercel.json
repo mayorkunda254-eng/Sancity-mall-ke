@@ -14,6 +14,14 @@
       "destination": "/api/sitemap"
     },
     {
+      "source": "/categories/:department/:subcategory",
+      "destination": "/categories/:department/:subcategory/index.html"
+    },
+    {
+      "source": "/categories/:department",
+      "destination": "/categories/:department/index.html"
+    },
+    {
       "source": "/privacy",
       "destination": "/privacy/index.html"
     },

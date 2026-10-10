@@ -1,3 +1,4 @@
+import { populatedCategories, categoryPath } from '../src/lib/categories.js'
 const defaultSiteUrl = 'https://sancity-mall-ke-v3.vercel.app'
 const defaultSupabaseUrl = 'https://aetxzqugccixmxygzmtn.supabase.co'
 const defaultPublishableKey = 'sb_publishable_1vl9pWJnjXiseJJdHTPReQ_hXr6H0ta'
@@ -15,6 +16,7 @@ const productSelect = [
   'name',
   'slug',
   'category',
+  'subcategory',
   'badge',
   'description',
   'dimensions',
@@ -225,6 +227,10 @@ export function buildSitemap(products, siteUrl = SITE_URL) {
       loc: `${siteUrl}/terms`,
       lastmod: null,
     },
+    ...populatedCategories(products).flatMap(group => [
+      { loc: `${siteUrl}${categoryPath(group)}`, lastmod: null },
+      ...group.children.map(child => ({ loc: `${siteUrl}${categoryPath(group, child)}`, lastmod: null })),
+    ]),
     ...products
       .map((product) => ({
         loc: `${siteUrl}/products/${productSlug(product)}`,

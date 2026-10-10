@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, ArrowUpDown, Baby, Banknote, BedDouble, Bell, Boxes, Check, ChevronRight, CircleHelp, CookingPot, Dumbbell, Eye, Heart, HousePlug, LogIn, MapPin, Menu, MessageCircle, Minus, PackageCheck, Plus, RotateCcw, Search, ShieldCheck, ShoppingCart, SlidersHorizontal, Sparkles, Tag, Truck, UserRound, X } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './lib/supabase.js'
+import ScrollRail from './ScrollRail.jsx'
+import DepartmentMenu, { DepartmentLinks } from './DepartmentMenu.jsx'
+import { productCategories, normalizeCategory, populatedCategories, categoryFor, categoryPath, resolveCategoryRoute, matchesSubcategory } from './lib/categories.js'
 
 const departments = [
   { name: 'Kitchen & Dining', short: 'Kitchen', emoji: '🍲', icon: CookingPot, className: 'dept-kitchen' },
@@ -11,17 +14,6 @@ const departments = [
   { name: 'Mosquito Nets', short: 'Mosquito Nets', emoji: '🦟', icon: ShieldCheck, className: 'dept-nets' },
   { name: 'Home Fitness', short: 'Fitness', emoji: '🏋️', icon: Dumbbell, className: 'dept-fitness' },
   { name: 'Wholesale', short: 'Wholesale', emoji: '📦', icon: PackageCheck, className: 'dept-wholesale', wholesale: true },
-]
-
-const productCategories = [
-  'Kitchen & Dining',
-  'Bedroom & Sleep',
-  'Storage & Organisation',
-  'Everyday Home Utility',
-  'Kids & Baby',
-  'Mosquito Nets',
-  'Home Fitness',
-  'Home Essentials',
 ]
 
 const roomCollections = [
@@ -180,17 +172,19 @@ const emptyCheckoutForm = {
   mpesa_code: '',
 }
 
-function waLink(product) {
+const productLink = (product) => `${(import.meta.env.VITE_SITE_URL || 'https://sancity-mall-ke-v3.vercel.app').replace(/\/$/, '')}/products/${encodeURIComponent(productSlug(product))}`
+
+function waLink(product, label) {
   const message = product
-    ? `Hello Sancity Mall KE, I would like the current price and availability for ${product}.`
+    ? `Hello Sancity Mall KE, I would like the current price and availability for ${label || product?.name || product}.${typeof product === 'object' ? `\n${productLink(product)}` : ''}`
     : 'Hello Sancity Mall KE, I would like to enquire about your household products.'
-  return `https://wa.me/254705287264?text=${encodeURIComponent(message)}`
+  return `https://wa.me/254791606862?text=${encodeURIComponent(message)}`
 }
 
 function conciergeLink(product, request) {
   const productName = product?.name || product || 'this product'
-  const message = `Hello Sancity Mall KE, I am interested in ${productName}. ${request}`
-  return `https://wa.me/254705287264?text=${encodeURIComponent(message)}`
+  const message = `Hello Sancity Mall KE, I am interested in ${productName}. ${request}${typeof product === 'object' ? `\n${productLink(product)}` : ''}`
+  return `https://wa.me/254791606862?text=${encodeURIComponent(message)}`
 }
 
 const featureLines = (value = '') => value
@@ -408,17 +402,20 @@ const createAnalyticsSessionId = () => {
 }
 
 export default function App({ initialProducts = null, initialPath = null }) {
-  const routePath = initialPath || (typeof window !== 'undefined' ? window.location.pathname : '/')
+  const [routePath, setRoutePath] = useState(initialPath || (typeof window !== 'undefined' ? window.location.pathname : '/'))
   const normalizedRoute = routePath === '/' ? '/' : routePath.replace(/\/+$/, '')
   const routeMatch = normalizedRoute.match(/^\/products\/([^/]+)$/)
   const initialDetailSlug = routeMatch ? decodeURIComponent(routeMatch[1]) : ''
+  const categoryRoute = resolveCategoryRoute(normalizedRoute)
   const legalPage = legalPages[normalizedRoute] || null
-  const isNotFoundRoute = !legalPage && normalizedRoute !== '/' && !routeMatch
+  const isNotFoundRoute = !legalPage && normalizedRoute !== '/' && !routeMatch && !categoryRoute
 
   const [menuOpen, setMenuOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [searchActive, setSearchActive] = useState(false)
-  const [activeCategory, setActiveCategory] = useState('All')
+  const [activeCategory, setActiveCategory] = useState(categoryRoute?.group.name || 'All')
+  const [checkoutProductLinks, setCheckoutProductLinks] = useState([])
+  const [activeSubcategory, setActiveSubcategory] = useState(categoryRoute?.child?.slug || '')
   const [sortBy, setSortBy] = useState('newest')
   const [stockFilter, setStockFilter] = useState('all')
   const [priceFilter, setPriceFilter] = useState('all')
@@ -443,6 +440,8 @@ export default function App({ initialProducts = null, initialPath = null }) {
   const [products, setProducts] = useState(
     Array.isArray(initialProducts) && initialProducts.length > 0 ? initialProducts : fallbackProducts,
   )
+  const categoryDirectory = useMemo(() => populatedCategories(products), [products])
+  const activeGroup = categoryDirectory.find(group => group.name === activeCategory)
   const [quickViewProduct, setQuickViewProduct] = useState(null)
   const [detailSlug, setDetailSlug] = useState(initialDetailSlug)
   const [galleryIndex, setGalleryIndex] = useState(0)
@@ -452,6 +451,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
   const [recentlyViewed, setRecentlyViewed] = useState([])
   const [recentlyAddedId, setRecentlyAddedId] = useState(null)
   const [toastProduct, setToastProduct] = useState(null)
+  const drawerRef = useRef(null)
   const searchRef = useRef(null)
   const feedbackTimeoutRef = useRef(null)
   const analyticsSessionRef = useRef('')
@@ -600,7 +600,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
     async function loadPublishedProducts() {
       const { data, error } = await supabase
         .from('products')
-        .select('id,name,slug,category,badge,description,dimensions,material,colour,key_features,care_instructions,delivery_note,price,compare_at_price,price_from,stock_quantity,created_at,product_images(public_url,sort_order),product_variants(id,label,size,colour,price,stock_quantity,is_active,sort_order)')
+        .select('id,name,slug,category,subcategory,badge,description,dimensions,material,colour,key_features,care_instructions,delivery_note,price,compare_at_price,price_from,stock_quantity,created_at,product_images(public_url,sort_order),product_variants(id,label,size,colour,price,stock_quantity,is_active,sort_order)')
         .eq('status', 'published')
         .order('created_at', { ascending: false })
 
@@ -675,6 +675,10 @@ export default function App({ initialProducts = null, initialPath = null }) {
 
   useEffect(() => {
     const syncRoute = () => {
+      setRoutePath(window.location.pathname)
+      const category = resolveCategoryRoute(window.location.pathname)
+      setActiveCategory(category?.group.name || 'All')
+      setActiveSubcategory(category?.child?.slug || '')
       const match = window.location.pathname.match(/^\/products\/([^/]+)\/?$/)
       setDetailSlug(match ? decodeURIComponent(match[1]) : '')
       setGalleryIndex(0)
@@ -709,12 +713,30 @@ export default function App({ initialProducts = null, initialPath = null }) {
     }
   }, [cartOpen, checkoutOpen, menuOpen, quickViewProduct])
 
+  useEffect(() => {
+    if (!menuOpen) return
+    const previousFocus = document.activeElement
+    const drawer = drawerRef.current
+    drawer?.querySelector('button')?.focus()
+    const trapFocus = event => {
+      if (event.key !== 'Tab' || !drawer) return
+      const controls = [...drawer.querySelectorAll('a[href],button,summary')].filter(element => element.getClientRects().length > 0)
+      const first = controls[0]
+      const last = controls[controls.length - 1]
+      if (!first || !last) return
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
+    }
+    window.addEventListener('keydown', trapFocus)
+    return () => { window.removeEventListener('keydown', trapFocus); previousFocus?.focus() }
+  }, [menuOpen])
+
   const visibleProducts = useMemo(() => {
     const q = query.trim().toLowerCase()
     const newCutoff = Date.now() - (1000 * 60 * 60 * 24 * 45)
 
     const filtered = products.filter((item) => {
-      const categoryMatch = activeCategory === 'All' || item.category === activeCategory
+      const categoryMatch = activeCategory === 'All' || normalizeCategory(item.category) === activeCategory
       const wishlistMatch = !wishlistOnly || saved.includes(item.id)
       const haystack = `${item.name || ''} ${item.category || ''} ${item.description || ''}`.toLowerCase()
       const searchMatch = !q || haystack.includes(q)
@@ -728,7 +750,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
       const badgeLooksNew = /new|fresh|arrival/i.test(item.badge || '')
       const freshnessMatch = !newOnly || createdAt >= newCutoff || badgeLooksNew
 
-      return categoryMatch && wishlistMatch && searchMatch && stockMatch && priceMatch && freshnessMatch
+      return categoryMatch && matchesSubcategory(item, activeSubcategory) && wishlistMatch && searchMatch && stockMatch && priceMatch && freshnessMatch
     })
 
     return filtered.sort((a, b) => {
@@ -753,7 +775,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
 
       return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
     })
-  }, [products, query, activeCategory, wishlistOnly, saved, sortBy, stockFilter, priceFilter, newOnly])
+  }, [products, query, activeCategory, activeSubcategory, wishlistOnly, saved, sortBy, stockFilter, priceFilter, newOnly])
 
   const renderedProducts = useMemo(() => {
     const useCategoryMix = activeCategory === 'All'
@@ -819,7 +841,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
 
   useEffect(() => {
     setCatalogueLimit(16)
-  }, [query, activeCategory, wishlistOnly, sortBy, stockFilter, priceFilter, newOnly])
+  }, [query, activeCategory, activeSubcategory, wishlistOnly, sortBy, stockFilter, priceFilter, newOnly])
 
   const predictiveProducts = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -827,7 +849,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
 
     return products
       .filter((item) => {
-        const categoryMatch = activeCategory === 'All' || item.category === activeCategory
+        const categoryMatch = activeCategory === 'All' || normalizeCategory(item.category) === activeCategory
         const haystack = `${item.name || ''} ${item.category || ''} ${item.description || ''}`.toLowerCase()
         return categoryMatch && haystack.includes(q)
       })
@@ -1057,8 +1079,10 @@ export default function App({ initialProducts = null, initialPath = null }) {
   const openWishlist = () => {
     if (detailSlug) {
       window.history.pushState({}, '', '/')
+      setRoutePath('/')
       setDetailSlug('')
     }
+    setActiveSubcategory('')
     setWishlistOnly(true)
     setActiveCategory('All')
     setQuery('')
@@ -1070,7 +1094,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
   const addToCart = (product, variant = null) => {
     if (requiresPriceRequest(product, variant)) {
       trackWhatsappClick(product, variant, 'price_request')
-      window.open(waLink(product.name), '_blank', 'noopener,noreferrer')
+      window.open(waLink(product), '_blank', 'noopener,noreferrer')
       return
     }
 
@@ -1129,7 +1153,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
       const variantText = item.selectedVariant
         ? `: ${item.selectedVariant.label}${item.selectedVariant.size ? ` (${item.selectedVariant.size})` : ''}${item.selectedVariant.colour ? `, ${item.selectedVariant.colour}` : ''}`
         : ''
-      return `• ${item.name}${variantText} × ${item.qty}`
+      return `• ${item.name}${variantText} × ${item.qty}\n${productLink(item)}`
     })
     const message = [
       'Hello Sancity Mall KE, I would like to place this order:',
@@ -1138,7 +1162,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
       '',
       'Please confirm availability, final price and delivery options.'
     ].join('\n')
-    return `https://wa.me/254705287264?text=${encodeURIComponent(message)}`
+    return `https://wa.me/254791606862?text=${encodeURIComponent(message)}`
   }
 
 
@@ -1259,7 +1283,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
     const message = result?.total_amount
       ? `Hello Sancity Mall KE, I have placed order ${reference} and submitted my M-Pesa confirmation code for verification.`
       : `Hello Sancity Mall KE, I have placed order ${reference}. Please confirm my delivery fee and final total.`
-    return `https://wa.me/254705287264?text=${encodeURIComponent(message)}`
+    return `https://wa.me/254791606862?text=${encodeURIComponent([message, ...checkoutProductLinks].join('\n'))}`
   }
 
   const submitCheckout = async (event) => {
@@ -1314,6 +1338,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
       const result = Array.isArray(data) ? data[0] : data
       if (!result?.order_number) throw new Error('The order was not created. Please try again.')
 
+      setCheckoutProductLinks(cartItems.map(item => `${item.name}: ${productLink(item)}`))
       setCheckoutResult(result)
       setCart([])
     } catch (error) {
@@ -1324,8 +1349,13 @@ export default function App({ initialProducts = null, initialPath = null }) {
   }
 
   const jumpToProducts = (category = 'All') => {
+    const group = categoryFor(category)
+    if (group) { window.location.assign(categoryPath(group)); return }
+    if (categoryRoute) { window.location.assign('/#products'); return }
+    setActiveSubcategory('')
     if (detailSlug) {
       window.history.pushState({}, '', '/')
+      setRoutePath('/')
       setDetailSlug('')
     }
     setWishlistOnly(false)
@@ -1339,6 +1369,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
     if (department.wholesale) {
       if (detailSlug) {
         window.history.pushState({}, '', '/')
+        setRoutePath('/')
         setDetailSlug('')
       }
       window.setTimeout(() => {
@@ -1353,6 +1384,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
   const focusSearch = () => {
     if (detailSlug) {
       window.history.pushState({}, '', '/')
+      setRoutePath('/')
       setDetailSlug('')
     }
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -1372,6 +1404,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
     // route renders from the top instead of visibly scrolling up from below.
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
     window.history.pushState({}, '', `/products/${encodeURIComponent(slug)}`)
+    setRoutePath(`/products/${encodeURIComponent(slug)}`)
     setDetailSlug(slug)
     setGalleryIndex(0)
     setQuickViewProduct(null)
@@ -1388,6 +1421,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
     setSearchActive(false)
     if (detailSlug) {
       window.history.pushState({}, '', '/')
+      setRoutePath('/')
       setDetailSlug('')
     }
     window.setTimeout(() => {
@@ -1409,6 +1443,9 @@ export default function App({ initialProducts = null, initialPath = null }) {
 
   const backToShop = () => {
     window.history.pushState({}, '', '/')
+    setRoutePath('/')
+    setActiveSubcategory('')
+    setActiveCategory('All')
     setDetailSlug('')
     setGalleryIndex(0)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -1471,6 +1508,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
               value={activeCategory}
               onChange={(e) => {
                 setActiveCategory(e.target.value)
+                setActiveSubcategory('')
                 setSearchActive(true)
               }}
               aria-label="Choose search category"
@@ -1614,9 +1652,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
         </div>
 
         <nav className="department-nav" aria-label="Shopping departments">
-          <button className="all-departments" onClick={() => jumpToProducts('All')}>
-            <Menu size={18} strokeWidth={2} /> All Departments
-          </button>
+          <DepartmentMenu groups={categoryDirectory} />
 
           <div className="department-links">
             {departments.map((department) => (
@@ -1995,7 +2031,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
 
       {menuOpen && (
         <div className="mobile-drawer-overlay" onClick={() => setMenuOpen(false)}>
-          <aside className="mobile-drawer" onClick={(e) => e.stopPropagation()}>
+          <aside ref={drawerRef} className="mobile-drawer" role="dialog" aria-modal="true" aria-label="Browse departments" onClick={(e) => e.stopPropagation()}>
             <div className="mobile-drawer-top">
               <div className="brand-lockup compact">
                 <span className="brand-bag">🛍️</span>
@@ -2003,21 +2039,9 @@ export default function App({ initialProducts = null, initialPath = null }) {
               </div>
               <button onClick={() => setMenuOpen(false)} aria-label="Close menu"><X /></button>
             </div>
-            {departments.map((department) => (
-              <button
-                key={department.short}
-                className={department.className}
-                onClick={() => {
-                  setMenuOpen(false)
-                  handleDepartment(department)
-                }}
-              >
-                <span className="drawer-department-icon" aria-hidden="true">
-                  <department.icon strokeWidth={1.9} />
-                </span>
-                {department.short}
-              </button>
-            ))}
+            <DepartmentLinks groups={categoryDirectory} collapsible />
+            <a className="department-browse-all" href="/#products">Browse all products</a>
+            <a className="department-browse-all" href="/#wholesale">Wholesale enquiries</a>
             <a href={whatsapp} target="_blank" rel="noreferrer" className="drawer-whatsapp">
               <MessageCircle size={18} /> Ask on WhatsApp
             </a>
@@ -2081,7 +2105,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                       : recentlyAddedId === quickViewProduct.id ? 'Added to cart' : 'Add to cart'}
                 </button>
                 <a
-                  href={waLink(quickViewProduct.name)}
+                  href={waLink(quickViewProduct)}
                   target="_blank"
                   rel="noreferrer"
                   onClick={() => trackWhatsappClick(quickViewProduct, null, 'quick_view')}
@@ -2153,7 +2177,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                 <div className="product-breadcrumbs" aria-label="Breadcrumb">
                   <button onClick={backToShop}>Home</button>
                   <ChevronRight size={13} />
-                  <span>{detailProduct.category}</span>
+                  {categoryFor(detailProduct.category) ? <a href={categoryPath(categoryFor(detailProduct.category))}>{normalizeCategory(detailProduct.category)}</a> : <span>{detailProduct.category}</span>}
                   <ChevronRight size={13} />
                   <strong>{detailProduct.name}</strong>
                 </div>
@@ -2256,7 +2280,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                             ? 'Request price'
                             : recentlyAddedId === detailProduct.id ? 'Added to cart' : 'Add to cart'}
                       </button>
-                      <a href={waLink(
+                      <a href={waLink(detailProduct,
                         `${detailProduct.name}${selectedVariant ? `: ${selectedVariant.label}${selectedVariant.colour ? `, ${selectedVariant.colour}` : ''}` : ''}`,
                       )}
                         target="_blank"
@@ -2491,7 +2515,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                       <ShoppingCart size={17} /> {detailVariants.length > 0 && !selectedVariant ? 'Choose' : 'Add'}
                     </button>
                     <a
-                      href={waLink(`${detailProduct.name}${selectedVariant ? `: ${selectedVariant.label}` : ''}`)}
+                      href={waLink(detailProduct, `${detailProduct.name}${selectedVariant ? `: ${selectedVariant.label}` : ''}`)}
                       target="_blank"
                       rel="noreferrer"
                       aria-label="Order on WhatsApp"
@@ -2513,6 +2537,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
           )
         ) : (
           <>
+        {!categoryRoute && <>
         <section className="reference-hero">
           <div className="hero-left">
             <span className="hero-pill">🏠 Home Essentials • Nairobi</span>
@@ -2599,25 +2624,15 @@ export default function App({ initialProducts = null, initialPath = null }) {
               <span>Shop by category</span>
               <h2>Everything for a Better Home</h2>
             </div>
-            <button onClick={() => jumpToProducts('All')}>View all categories</button>
+            <button onClick={() => setMenuOpen(true)}>View all categories</button>
           </div>
 
-          <div className="category-card-grid">
-            {departments.map((department) => (
-              <button
-                key={department.short}
-                className={`category-card ${department.className}`}
-                onClick={() => handleDepartment(department)}
-              >
-                <span className="category-emoji" aria-hidden="true">
-                  <department.icon strokeWidth={1.8} />
-                </span>
-                <div>
-                  <strong>{department.short}</strong>
-                </div>
-              </button>
-            ))}
-          </div>
+          <ScrollRail label="Home departments" className="category-photo-grid" cards>
+            {categoryDirectory.map(group => <a key={group.slug} href={categoryPath(group)} className="category-photo-card">
+              <div>{group.image && <img src={group.image} alt={group.short} loading="lazy" width="400" height="300"/>}</div>
+              <strong>{group.short}<ChevronRight size={16}/></strong><small>{group.count} products</small>
+            </a>)}
+          </ScrollRail>
         </section>
 
         <section className="room-collections" id="collections">
@@ -2661,21 +2676,28 @@ export default function App({ initialProducts = null, initialPath = null }) {
           </div>
         </section>
 
+        </>}
+        {categoryRoute && <section className="category-page-intro">
+          <nav aria-label="Breadcrumb"><a href="/">Home</a><ChevronRight size={14}/><a href={categoryPath(categoryRoute.group)}>{categoryRoute.group.name}</a>{categoryRoute.child && <><ChevronRight size={14}/><span>{categoryRoute.child.name}</span></>}</nav>
+          <span>Shop by category</span>
+          <h1>{categoryRoute.child?.name || categoryRoute.group.name}</h1>
+          <p>{categoryRoute.group.description}</p>
+        </section>}
         <section className="catalogue-section" id="products">
           <div className="catalogue-heading">
             <div>
               <span>Shop Sancity</span>
-              <h2>{wishlistOnly ? 'Your wishlist' : activeCategory === 'All' ? 'Popular home finds' : activeCategory}</h2>
+              <h2>{wishlistOnly ? 'Your wishlist' : activeCategory === 'All' ? 'Popular home finds' : activeGroup?.children.find(child => child.slug === activeSubcategory)?.name || activeCategory}</h2>
               <p>{visibleProducts.length} product{visibleProducts.length === 1 ? '' : 's'} in this view.</p>
             </div>
             <div className="catalogue-filter">
-              <button className={!wishlistOnly && activeCategory === 'All' ? 'active' : ''} onClick={() => { setWishlistOnly(false); setActiveCategory('All') }}>All</button>
+              <button className={!wishlistOnly && activeCategory === 'All' ? 'active' : ''} onClick={() => jumpToProducts('All')}>All</button>
               <button className={wishlistOnly ? 'active' : ''} onClick={openWishlist}>Wishlist</button>
               {productCategories.map((category) => (
                 <button
                   key={category}
                   className={!wishlistOnly && activeCategory === category ? 'active' : ''}
-                  onClick={() => { setWishlistOnly(false); setActiveCategory(category) }}
+                  onClick={() => jumpToProducts(category)}
                 >
                   {category.replace(' & Dining', '').replace(' & Sleep', '').replace(' & Organisation', '')}
                 </button>
@@ -2683,6 +2705,10 @@ export default function App({ initialProducts = null, initialPath = null }) {
             </div>
           </div>
 
+          {activeGroup && <ScrollRail className="subcategory-chips" label={`${activeGroup.short} subcategories`}>
+            <a href={categoryPath(activeGroup)} aria-current={!activeSubcategory ? 'page' : undefined}>All {activeGroup.short} <span>{activeGroup.count}</span></a>
+            {activeGroup.children.map(child => <a key={child.slug} href={categoryPath(activeGroup, child)} aria-current={activeSubcategory === child.slug ? 'page' : undefined}>{child.name}<span>{child.count}</span></a>)}
+          </ScrollRail>}
           <div className="catalogue-controls">
             <div className="catalogue-control-group">
               <span className="catalogue-control-label"><SlidersHorizontal size={15} /> Refine</span>
@@ -2845,7 +2871,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                       <Eye size={15} />
                     </button>
                     <a
-                      href={waLink(product.name)}
+                      href={waLink(product)}
                       target="_blank"
                       rel="noreferrer"
                       aria-label={`Ask about ${product.name} on WhatsApp`}
@@ -2873,7 +2899,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
             <div className="empty-products">
               <span>✨</span>
               <strong>No products match this view yet.</strong>
-              <button onClick={() => { setQuery(''); setWishlistOnly(false); setActiveCategory('All') }}>Show all products</button>
+              <button onClick={() => { setQuery(''); jumpToProducts('All') }}>Show all products</button>
             </div>
           )}
         </section>
@@ -2897,7 +2923,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
           </div>
 
           <div className="contact-grid">
-            <a href={whatsapp} target="_blank" rel="noreferrer"><span>💬</span><strong>WhatsApp</strong><small>+254 705 287264</small></a>
+            <a href={whatsapp} target="_blank" rel="noreferrer"><span>💬</span><strong>WhatsApp</strong><small>0791 606 862</small></a>
             <a href="mailto:Sancitymallke@gmail.com"><span>✉️</span><strong>Email</strong><small>Sancitymallke@gmail.com</small></a>
             <div><span>📍</span><strong>Store</strong><small>RNG Plaza, Ronald Ngala St</small></div>
           </div>

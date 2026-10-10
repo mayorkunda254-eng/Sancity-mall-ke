@@ -1,3 +1,4 @@
+import { categoryGroups, populatedCategories, categoryPath } from '../src/lib/categories.js'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -159,7 +160,7 @@ function homepageSchema() {
     name: 'Sancity Mall KE',
     url: SITE_URL,
     logo: `${SITE_URL}/sancity-logo.svg`,
-    telephone: '+254705287264',
+    telephone: '+254791606862',
     address: {
       '@type': 'PostalAddress',
       streetAddress: 'RNG Plaza, Ronald Ngala Street',
@@ -235,6 +236,41 @@ for (const product of products) {
   await mkdir(outputDirectory, { recursive: true })
   await writeFile(resolve(outputDirectory, 'index.html'), document, 'utf8')
 }
+
+// Prebuild all known routes so future admin assignments have a destination.
+// Empty groups are noindex and excluded from navigation and the sitemap.
+const populatedGroups = populatedCategories(products)
+const categoryPages = categoryGroups.flatMap(group => {
+  const live = populatedGroups.find(item => item.slug === group.slug)
+  return [
+    { group: { ...group, image: live?.image }, child: null, count: live?.count || 0 },
+    ...[...group.children, { slug: 'other', name: `More ${group.short}` }].map(child => ({ group: { ...group, image: live?.image }, child, count: live?.children.find(item => item.slug === child.slug)?.count || 0 })),
+  ]
+})
+for (const { group, child, count } of categoryPages) {
+  const route = categoryPath(group, child)
+  const canonical = `${SITE_URL}${route}`
+  const heading = child?.name || group.name
+  let document = injectApp(shell, render({ products, path: route }), products)
+  document = applyCommonSocialMeta(document, {
+    title: `${heading} in Kenya | Sancity Mall KE`,
+    description: `Shop ${heading.toLowerCase()} at Sancity Mall KE in Nairobi. ${group.description}`.slice(0, 160),
+    canonical,
+    image: group.image,
+  })
+  if (!count) document = setMeta(document, 'name', 'robots', 'noindex,follow')
+  document = addJsonLd(document, {
+    '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE_URL}/` },
+      { '@type': 'ListItem', position: 2, name: group.name, item: `${SITE_URL}${categoryPath(group)}` },
+      ...(child ? [{ '@type': 'ListItem', position: 3, name: child.name, item: canonical }] : []),
+    ],
+  })
+  const outputDirectory = resolve(root, `dist${route}`)
+  await mkdir(outputDirectory, { recursive: true })
+  await writeFile(resolve(outputDirectory, 'index.html'), document, 'utf8')
+}
+console.log(`Prerendered ${categoryPages.length} category page(s)`)
 
 const staticPages = [
   {
