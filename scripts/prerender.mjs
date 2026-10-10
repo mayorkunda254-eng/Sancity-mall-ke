@@ -160,7 +160,7 @@ function homepageSchema() {
     name: 'Sancity Mall KE',
     url: SITE_URL,
     logo: `${SITE_URL}/sancity-logo.svg`,
-    telephone: '+254705287264',
+    telephone: '+254791606862',
     address: {
       '@type': 'PostalAddress',
       streetAddress: 'RNG Plaza, Ronald Ngala Street',

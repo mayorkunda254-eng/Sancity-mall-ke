@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, ArrowUpDown, Baby, Banknote, BedDouble, Bell, Boxes, Check, ChevronRight, CircleHelp, CookingPot, Dumbbell, Eye, Heart, HousePlug, LogIn, MapPin, Menu, MessageCircle, Minus, PackageCheck, Plus, RotateCcw, Search, ShieldCheck, ShoppingCart, SlidersHorizontal, Sparkles, Tag, Truck, UserRound, X } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './lib/supabase.js'
+import ScrollRail from './ScrollRail.jsx'
 import DepartmentMenu, { DepartmentLinks } from './DepartmentMenu.jsx'
 import { productCategories, normalizeCategory, populatedCategories, categoryFor, categoryPath, resolveCategoryRoute, matchesSubcategory } from './lib/categories.js'
 
@@ -171,17 +172,19 @@ const emptyCheckoutForm = {
   mpesa_code: '',
 }
 
-function waLink(product) {
+const productLink = (product) => `${(import.meta.env.VITE_SITE_URL || 'https://sancity-mall-ke-v3.vercel.app').replace(/\/$/, '')}/products/${encodeURIComponent(productSlug(product))}`
+
+function waLink(product, label) {
   const message = product
-    ? `Hello Sancity Mall KE, I would like the current price and availability for ${product}.`
+    ? `Hello Sancity Mall KE, I would like the current price and availability for ${label || product?.name || product}.${typeof product === 'object' ? `\n${productLink(product)}` : ''}`
     : 'Hello Sancity Mall KE, I would like to enquire about your household products.'
-  return `https://wa.me/254705287264?text=${encodeURIComponent(message)}`
+  return `https://wa.me/254791606862?text=${encodeURIComponent(message)}`
 }
 
 function conciergeLink(product, request) {
   const productName = product?.name || product || 'this product'
-  const message = `Hello Sancity Mall KE, I am interested in ${productName}. ${request}`
-  return `https://wa.me/254705287264?text=${encodeURIComponent(message)}`
+  const message = `Hello Sancity Mall KE, I am interested in ${productName}. ${request}${typeof product === 'object' ? `\n${productLink(product)}` : ''}`
+  return `https://wa.me/254791606862?text=${encodeURIComponent(message)}`
 }
 
 const featureLines = (value = '') => value
@@ -411,6 +414,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
   const [query, setQuery] = useState('')
   const [searchActive, setSearchActive] = useState(false)
   const [activeCategory, setActiveCategory] = useState(categoryRoute?.group.name || 'All')
+  const [checkoutProductLinks, setCheckoutProductLinks] = useState([])
   const [activeSubcategory, setActiveSubcategory] = useState(categoryRoute?.child?.slug || '')
   const [sortBy, setSortBy] = useState('newest')
   const [stockFilter, setStockFilter] = useState('all')
@@ -1090,7 +1094,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
   const addToCart = (product, variant = null) => {
     if (requiresPriceRequest(product, variant)) {
       trackWhatsappClick(product, variant, 'price_request')
-      window.open(waLink(product.name), '_blank', 'noopener,noreferrer')
+      window.open(waLink(product), '_blank', 'noopener,noreferrer')
       return
     }
 
@@ -1149,7 +1153,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
       const variantText = item.selectedVariant
         ? `: ${item.selectedVariant.label}${item.selectedVariant.size ? ` (${item.selectedVariant.size})` : ''}${item.selectedVariant.colour ? `, ${item.selectedVariant.colour}` : ''}`
         : ''
-      return `• ${item.name}${variantText} × ${item.qty}`
+      return `• ${item.name}${variantText} × ${item.qty}\n${productLink(item)}`
     })
     const message = [
       'Hello Sancity Mall KE, I would like to place this order:',
@@ -1158,7 +1162,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
       '',
       'Please confirm availability, final price and delivery options.'
     ].join('\n')
-    return `https://wa.me/254705287264?text=${encodeURIComponent(message)}`
+    return `https://wa.me/254791606862?text=${encodeURIComponent(message)}`
   }
 
 
@@ -1279,7 +1283,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
     const message = result?.total_amount
       ? `Hello Sancity Mall KE, I have placed order ${reference} and submitted my M-Pesa confirmation code for verification.`
       : `Hello Sancity Mall KE, I have placed order ${reference}. Please confirm my delivery fee and final total.`
-    return `https://wa.me/254705287264?text=${encodeURIComponent(message)}`
+    return `https://wa.me/254791606862?text=${encodeURIComponent([message, ...checkoutProductLinks].join('\n'))}`
   }
 
   const submitCheckout = async (event) => {
@@ -1334,6 +1338,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
       const result = Array.isArray(data) ? data[0] : data
       if (!result?.order_number) throw new Error('The order was not created. Please try again.')
 
+      setCheckoutProductLinks(cartItems.map(item => `${item.name}: ${productLink(item)}`))
       setCheckoutResult(result)
       setCart([])
     } catch (error) {
@@ -2100,7 +2105,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                       : recentlyAddedId === quickViewProduct.id ? 'Added to cart' : 'Add to cart'}
                 </button>
                 <a
-                  href={waLink(quickViewProduct.name)}
+                  href={waLink(quickViewProduct)}
                   target="_blank"
                   rel="noreferrer"
                   onClick={() => trackWhatsappClick(quickViewProduct, null, 'quick_view')}
@@ -2275,7 +2280,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                             ? 'Request price'
                             : recentlyAddedId === detailProduct.id ? 'Added to cart' : 'Add to cart'}
                       </button>
-                      <a href={waLink(
+                      <a href={waLink(detailProduct,
                         `${detailProduct.name}${selectedVariant ? `: ${selectedVariant.label}${selectedVariant.colour ? `, ${selectedVariant.colour}` : ''}` : ''}`,
                       )}
                         target="_blank"
@@ -2510,7 +2515,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                       <ShoppingCart size={17} /> {detailVariants.length > 0 && !selectedVariant ? 'Choose' : 'Add'}
                     </button>
                     <a
-                      href={waLink(`${detailProduct.name}${selectedVariant ? `: ${selectedVariant.label}` : ''}`)}
+                      href={waLink(detailProduct, `${detailProduct.name}${selectedVariant ? `: ${selectedVariant.label}` : ''}`)}
                       target="_blank"
                       rel="noreferrer"
                       aria-label="Order on WhatsApp"
@@ -2622,12 +2627,12 @@ export default function App({ initialProducts = null, initialPath = null }) {
             <button onClick={() => setMenuOpen(true)}>View all categories</button>
           </div>
 
-          <div className="category-card-grid category-photo-grid">
+          <ScrollRail label="Home departments" className="category-photo-grid" cards>
             {categoryDirectory.map(group => <a key={group.slug} href={categoryPath(group)} className="category-photo-card">
               <div>{group.image && <img src={group.image} alt={group.short} loading="lazy" width="400" height="300"/>}</div>
               <strong>{group.short}<ChevronRight size={16}/></strong><small>{group.count} products</small>
             </a>)}
-          </div>
+          </ScrollRail>
         </section>
 
         <section className="room-collections" id="collections">
@@ -2700,10 +2705,10 @@ export default function App({ initialProducts = null, initialPath = null }) {
             </div>
           </div>
 
-          {activeGroup && <nav className="subcategory-chips" aria-label={`${activeGroup.short} subcategories`}>
+          {activeGroup && <ScrollRail className="subcategory-chips" label={`${activeGroup.short} subcategories`}>
             <a href={categoryPath(activeGroup)} aria-current={!activeSubcategory ? 'page' : undefined}>All {activeGroup.short} <span>{activeGroup.count}</span></a>
             {activeGroup.children.map(child => <a key={child.slug} href={categoryPath(activeGroup, child)} aria-current={activeSubcategory === child.slug ? 'page' : undefined}>{child.name}<span>{child.count}</span></a>)}
-          </nav>}
+          </ScrollRail>}
           <div className="catalogue-controls">
             <div className="catalogue-control-group">
               <span className="catalogue-control-label"><SlidersHorizontal size={15} /> Refine</span>
@@ -2866,7 +2871,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                       <Eye size={15} />
                     </button>
                     <a
-                      href={waLink(product.name)}
+                      href={waLink(product)}
                       target="_blank"
                       rel="noreferrer"
                       aria-label={`Ask about ${product.name} on WhatsApp`}
@@ -2918,7 +2923,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
           </div>
 
           <div className="contact-grid">
-            <a href={whatsapp} target="_blank" rel="noreferrer"><span>💬</span><strong>WhatsApp</strong><small>+254 705 287264</small></a>
+            <a href={whatsapp} target="_blank" rel="noreferrer"><span>💬</span><strong>WhatsApp</strong><small>0791 606 862</small></a>
             <a href="mailto:Sancitymallke@gmail.com"><span>✉️</span><strong>Email</strong><small>Sancitymallke@gmail.com</small></a>
             <div><span>📍</span><strong>Store</strong><small>RNG Plaza, Ronald Ngala St</small></div>
           </div>
