@@ -199,7 +199,7 @@ storefrontDocument = applyCommonSocialMeta(storefrontDocument, {
   title: 'Sancity Mall KE | Home Essentials in Nairobi',
   description: 'Shop bedding, kitchenware, storage and everyday home essentials from Sancity Mall KE in Nairobi, with pickup and delivery options across Kenya.',
   canonical: `${SITE_URL}/`,
-  image: `${SITE_URL}/hero-bedroom-desktop.webp`,
+  image: `${SITE_URL}/hero-products-desktop.webp`,
 })
 storefrontDocument = addJsonLd(storefrontDocument, homepageSchema())
 
@@ -302,7 +302,7 @@ for (const page of staticPages) {
     title: page.title,
     description: page.description,
     canonical: `${SITE_URL}${page.path}`,
-    image: `${SITE_URL}/hero-bedroom-desktop.webp`,
+    image: `${SITE_URL}/hero-products-desktop.webp`,
   })
 
   const outputDirectory = resolve(root, `dist${page.path}`)

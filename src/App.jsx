@@ -967,7 +967,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
         : `${siteUrl}/`
     const image = detailProduct
       ? productMainImage(detailProduct)
-      : `${siteUrl}/hero-bedroom-desktop.webp`
+      : `${siteUrl}/hero-products-desktop.webp`
 
     document.title = title
 
@@ -2561,22 +2561,22 @@ export default function App({ initialProducts = null, initialPath = null }) {
             </div>
           </div>
 
-          <div className="hero-stage hero-photo-stage" aria-label="Chocolate brown bedroom collection">
+          <div className="hero-stage hero-photo-stage" aria-label="Kitchenware, bedding and storage collection">
             <picture className="hero-bedroom-picture">
-              <source media="(max-width: 700px)" srcSet="/hero-bedroom-mobile.webp" />
-              <source media="(max-width: 1100px)" srcSet="/hero-bedroom-tablet.webp" />
+              <source media="(max-width: 700px)" srcSet="/hero-products-mobile.webp" />
+              <source media="(max-width: 1100px)" srcSet="/hero-products-tablet.webp" />
               <img
                 className="hero-bedroom-photo"
-                src="/hero-bedroom-desktop.webp"
-                alt="Chocolate brown plush bedding styled in a bright modern bedroom"
+                src="/hero-products-desktop.webp"
+                alt="Household essentials including hotpots, cookware, bedding, drinkware and kitchen storage"
                 loading="eager"
                 fetchPriority="high"
                 decoding="async"
-                width="1800"
-                height="1469"
+                width="1536"
+                height="1024"
                 onError={(event) => {
                   event.currentTarget.onerror = null
-                  event.currentTarget.src = '/hero-bedroom-hq.jpeg'
+                  event.currentTarget.src = '/hero-products-desktop.webp'
                 }}
               />
             </picture>
@@ -2585,8 +2585,8 @@ export default function App({ initialProducts = null, initialPath = null }) {
             <div className="tribal tribal-right" aria-hidden="true" />
 
             <div className="stage-copy hero-photo-copy">
-              <strong>Beautiful<br />Spaces</strong>
-              <span>Happier<br />Days</span>
+              <strong>Everyday<br />Essentials</strong>
+              <span>Made for<br />Your Home</span>
               <i />
             </div>
 
@@ -2630,7 +2630,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
           <ScrollRail label="Home departments" className="category-photo-grid" cards>
             {categoryDirectory.map(group => <a key={group.slug} href={categoryPath(group)} className="category-photo-card">
               <div>{group.image && <img src={group.image} alt={group.short} loading="lazy" width="400" height="300"/>}</div>
-              <strong>{group.short}<ChevronRight size={16}/></strong><small>{group.count} products</small>
+              <strong>{group.short}<ChevronRight size={16}/></strong>
             </a>)}
           </ScrollRail>
         </section>
