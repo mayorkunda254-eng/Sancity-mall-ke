@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, Pause, Play } from 'lucide-react'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
 
 export default function ScrollRail({ label, className, cards = false, children }) {
   const rail = useRef(null)
@@ -38,7 +38,6 @@ export default function ScrollRail({ label, className, cards = false, children }
   const slide = (direction) => rail.current.scrollBy({ left: direction * rail.current.clientWidth * .8, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
   return <div className={`scroll-rail ${cards ? 'department-carousel' : 'chip-carousel'}`} onMouseEnter={() => setInteracting(true)} onMouseLeave={() => setInteracting(false)} onFocusCapture={() => setInteracting(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setInteracting(false) }} onTouchStart={() => setPaused(true)}>
     <div className="rail-toolbar"><span>{cards ? 'Discover your next home favourite' : 'Explore this department'}</span><div>
-      {!reducedMotion && <button type="button" onClick={() => setPaused(value => !value)} aria-label={`${paused ? 'Play' : 'Pause'} ${label} slideshow`} aria-pressed={paused}>{paused ? <Play size={16}/> : <Pause size={16}/>}</button>}
       <button type="button" disabled={edges.start} onClick={() => slide(-1)} aria-label={`Previous ${label}`}><ArrowLeft size={18}/></button>
       <button type="button" disabled={edges.end} onClick={() => slide(1)} aria-label={`Next ${label}`}><ArrowRight size={18}/></button>
     </div></div>
