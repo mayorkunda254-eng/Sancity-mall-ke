@@ -2706,8 +2706,8 @@ export default function App({ initialProducts = null, initialPath = null }) {
           </div>
 
           {activeGroup && <ScrollRail className="subcategory-chips" label={`${activeGroup.short} subcategories`}>
-            <a href={categoryPath(activeGroup)} aria-current={!activeSubcategory ? 'page' : undefined}>All {activeGroup.short} <span>{activeGroup.count}</span></a>
-            {activeGroup.children.map(child => <a key={child.slug} href={categoryPath(activeGroup, child)} aria-current={activeSubcategory === child.slug ? 'page' : undefined}>{child.name}<span>{child.count}</span></a>)}
+            <a href={categoryPath(activeGroup)} aria-current={!activeSubcategory ? 'page' : undefined}>All {activeGroup.short}</a>
+            {activeGroup.children.map(child => <a key={child.slug} href={categoryPath(activeGroup, child)} aria-current={activeSubcategory === child.slug ? 'page' : undefined}>{child.name}</a>)}
           </ScrollRail>}
           <div className="catalogue-controls">
             <div className="catalogue-control-group">
