@@ -2630,7 +2630,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
           <ScrollRail label="Home departments" className="category-photo-grid" cards>
             {categoryDirectory.map(group => <a key={group.slug} href={categoryPath(group)} className="category-photo-card">
               <div>{group.image && <img src={group.image} alt={group.short} loading="lazy" width="400" height="300"/>}</div>
-              <strong>{group.short}<ChevronRight size={16}/></strong>
+              <div className="category-card-copy"><small>Explore the collection</small><strong>{group.short}<span><ChevronRight size={18}/></span></strong></div>
             </a>)}
           </ScrollRail>
         </section>
@@ -2663,7 +2663,6 @@ export default function App({ initialProducts = null, initialPath = null }) {
                     <span>{categoryEmoji(collection.category)}</span>
                   )}
                   <div className="room-collection-scrim" />
-                  <small>{collection.count > 0 ? `${collection.count} products` : 'Collection building'}</small>
                 </div>
                 <div className="room-collection-copy">
                   <span>{collection.eyebrow}</span>
@@ -2688,7 +2687,6 @@ export default function App({ initialProducts = null, initialPath = null }) {
             <div>
               <span>Shop Sancity</span>
               <h2>{wishlistOnly ? 'Your wishlist' : activeCategory === 'All' ? 'Popular home finds' : activeGroup?.children.find(child => child.slug === activeSubcategory)?.name || activeCategory}</h2>
-              <p>{visibleProducts.length} product{visibleProducts.length === 1 ? '' : 's'} in this view.</p>
             </div>
             <div className="catalogue-filter">
               <button className={!wishlistOnly && activeCategory === 'All' ? 'active' : ''} onClick={() => jumpToProducts('All')}>All</button>
