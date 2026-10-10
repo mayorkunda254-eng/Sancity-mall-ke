@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && vite build --ssr src/entry-server.jsx --outDir dist-ssr && node scripts/prerender.mjs && node scripts/remove-em-dashes.cjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:categories": "node scripts/test-categories.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
