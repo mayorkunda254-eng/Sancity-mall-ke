@@ -1,0 +1,69 @@
+{
+  "date": "2026-10-20",
+  "source": "User-supplied Luxe Home screenshot and 64.87-second screen recording",
+  "scope": "Five visual and named matches. Other products require clearer matching evidence. No source code changes.",
+  "changes": [
+    {
+      "id": "a1e528ee-132e-4930-9447-46d21a2c9f5f",
+      "name": "3-Column Plastic Wardrobe 110x165x37cm",
+      "price": "3700.00",
+      "compare_at_price": "4000.00",
+      "price_from": false,
+      "variants": null,
+      "image": "https://aetxzqugccixmxygzmtn.supabase.co/storage/v1/object/public/product-images/a1e528ee-132e-4930-9447-46d21a2c9f5f/1790144179517-batch-0-01.jpg",
+      "new_price": 4500,
+      "new_compare_at_price": null
+    },
+    {
+      "id": "bfbbfc4a-7645-44d6-90b1-d2c4a6ddb0a2",
+      "name": "4-Column Plastic Wardrobe 165x151x45cm",
+      "price": "5000.00",
+      "compare_at_price": null,
+      "price_from": false,
+      "variants": null,
+      "image": "https://aetxzqugccixmxygzmtn.supabase.co/storage/v1/object/public/product-images/bfbbfc4a-7645-44d6-90b1-d2c4a6ddb0a2/1790144185876-batch-0-01.jpg",
+      "new_price": 5500,
+      "new_compare_at_price": null
+    },
+    {
+      "id": "d68b1b58-d3e7-4551-b965-3a6e2501ae83",
+      "name": "5-Tier Foldable Kitchen Rack with Wheels 71x34x160cm",
+      "price": "4500.00",
+      "compare_at_price": null,
+      "price_from": false,
+      "variants": null,
+      "image": "https://aetxzqugccixmxygzmtn.supabase.co/storage/v1/object/public/product-images/d68b1b58-d3e7-4551-b965-3a6e2501ae83/1790150569418-batch-0-img-20260905-wa0012.jpg",
+      "new_price": 7500,
+      "new_compare_at_price": null
+    },
+    {
+      "id": "74a81ec6-4459-490f-9a32-1ebc9b056ee9",
+      "name": "Desire 4-Piece Hotpot Set",
+      "price": "4200.00",
+      "compare_at_price": null,
+      "price_from": false,
+      "variants": null,
+      "image": "https://aetxzqugccixmxygzmtn.supabase.co/storage/v1/object/public/product-images/74a81ec6-4459-490f-9a32-1ebc9b056ee9/1790153538702-batch-0-00003758-photo-2026-09-23-07-54-48.jpg",
+      "new_price": 5000,
+      "new_compare_at_price": null
+    },
+    {
+      "id": "56e298b1-1e43-4a87-be95-9ce08a05cf19",
+      "name": "Rebune 4-Slice Sandwich Maker",
+      "price": "3400.00",
+      "compare_at_price": null,
+      "price_from": false,
+      "variants": null,
+      "image": "https://aetxzqugccixmxygzmtn.supabase.co/storage/v1/object/public/product-images/56e298b1-1e43-4a87-be95-9ce08a05cf19/1790089702841-batch-0-01.jpg",
+      "new_price": 4000,
+      "new_compare_at_price": null
+    }
+  ],
+  "held": [
+    "Ailyons glass kettle: capacity mismatch",
+    "Velvet duvets: set contents and size uncertain",
+    "Stanley: flowered 1200ml versus plain 1.183L",
+    "Sofa covers: seating variants unspecified"
+  ],
+  "rollback": "Restore each recorded price and compare_at_price by id only if its current price equals new_price; preserve unrelated edits."
+}
