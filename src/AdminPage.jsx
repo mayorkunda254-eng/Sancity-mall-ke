@@ -101,6 +101,11 @@ export default function AdminPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState('')
+  const [passwordMode, setPasswordMode] = useState(() => window.location.pathname === '/admin/reset-password' || new URLSearchParams(window.location.hash.slice(1)).get('type') === 'recovery')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordBusy, setPasswordBusy] = useState(false)
+  const [passwordNotice, setPasswordNotice] = useState('')
   const [subcategorySavingId, setSubcategorySavingId] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [files, setFiles] = useState([])
@@ -164,7 +169,11 @@ export default function AdminPage() {
       }
     })
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setPasswordMode(true)
+        window.history.replaceState({}, '', '/admin/reset-password')
+      }
       setSession(nextSession)
       setAuthLoading(false)
     })
@@ -176,7 +185,7 @@ export default function AdminPage() {
   }, [])
 
   useEffect(() => {
-    if (session) {
+    if (session && !passwordMode) {
       loadProducts()
       loadOrders()
       loadDeliveryZones()
@@ -185,7 +194,7 @@ export default function AdminPage() {
       loadAnalytics(30)
       loadSearchQueries(30)
     }
-  }, [session])
+  }, [session, passwordMode])
 
   const filteredProducts = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -255,6 +264,52 @@ export default function AdminPage() {
     if (error) {
       setAuthError(error.message)
       setAuthLoading(false)
+    }
+  }
+
+  async function requestPasswordReset() {
+    setAuthError('')
+    setPasswordNotice('')
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setAuthError('Enter your admin email address first.')
+      return
+    }
+    setPasswordBusy(true)
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/admin/reset-password`,
+      })
+      if (error) throw error
+      setPasswordNotice('If this email has an account, a password recovery link has been sent. Open the latest email to continue.')
+    } catch (error) {
+      setAuthError(error.message || 'Could not send the recovery email. Please try again.')
+    } finally {
+      setPasswordBusy(false)
+    }
+  }
+
+  async function savePassword(event) {
+    event.preventDefault()
+    setAuthError('')
+    if (newPassword.length < 12) return setAuthError('Use at least 12 characters.')
+    if (newPassword !== confirmPassword) return setAuthError('The passwords do not match.')
+    setPasswordBusy(true)
+    try {
+      const { data, error: userError } = await supabase.auth.getUser()
+      if (userError || !data.user) throw new Error('Your session has expired. Request a new recovery link or sign in again.')
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
+      if (error) throw error
+      setNewPassword('')
+      setConfirmPassword('')
+      await supabase.auth.signOut({ scope: 'local' })
+      setSession(null)
+      setPasswordMode(false)
+      window.history.replaceState({}, '', '/admin')
+      setPasswordNotice('Password updated. Sign in with your existing email and new password.')
+    } catch (error) {
+      setAuthError(error.message || 'Could not update the password. Please try again.')
+    } finally {
+      setPasswordBusy(false)
     }
   }
 
@@ -1295,6 +1350,30 @@ export default function AdminPage() {
     return <div className="admin-loading"><Loader2 className="spin" /> Loading admin…</div>
   }
 
+  if (passwordMode) {
+    const linkError = new URLSearchParams(window.location.hash.slice(1)).get('error_description')
+      || new URLSearchParams(window.location.search).get('error_description')
+    return (
+      <div className="admin-login-shell">
+        <section className="admin-login-panel">
+          <a href="/" className="admin-logo"><img src="/sancity-logo.svg" alt="Sancity Mall KE" /></a>
+          <span className="admin-kicker"><ShieldCheck size={15} /> Account security</span>
+          <h1>Set your new password.</h1>
+          {session && !linkError ? (
+            <form onSubmit={savePassword} className="admin-login-form">
+              <p>Updating the password for {session.user.email}. Use at least 12 characters.</p>
+              <label>New password<input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} minLength={12} required autoComplete="new-password" disabled={passwordBusy} /></label>
+              <label>Confirm new password<input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} minLength={12} required autoComplete="new-password" disabled={passwordBusy} /></label>
+              {authError && <div className="admin-alert error" role="alert">{authError}</div>}
+              <button className="admin-primary-btn" disabled={passwordBusy}>{passwordBusy ? 'Saving…' : 'Save new password'}</button>
+            </form>
+          ) : <div className="admin-alert error" role="alert">{linkError || 'Open the latest password recovery email to set a password. If the link has expired, request a new one from the sign-in page.'}</div>}
+          <a href="/admin" className="admin-back-link">Back to admin sign-in</a>
+        </section>
+      </div>
+    )
+  }
+
   if (!session) {
     return (
       <div className="admin-login-shell">
@@ -1303,6 +1382,7 @@ export default function AdminPage() {
           <span className="admin-kicker"><ShieldCheck size={15} /> Secure staff access</span>
           <h1>Manage the Sancity catalogue.</h1>
           <p>Upload products, set prices and stock, then publish them directly to the storefront.</p>
+          {passwordNotice && <div className="admin-alert success" role="status">{passwordNotice}</div>}
           <form onSubmit={login} className="admin-login-form">
             <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" /></label>
             <label>Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" /></label>
@@ -1312,6 +1392,7 @@ export default function AdminPage() {
               Sign in
             </button>
           </form>
+          <button type="button" className="admin-secondary-btn" onClick={requestPasswordReset} disabled={passwordBusy}>{passwordBusy ? 'Sending…' : 'Forgot password?'}</button>
           <a href="/" className="admin-back-link">← Back to Sancity Mall</a>
         </section>
         <aside className="admin-login-art">
@@ -1328,6 +1409,7 @@ export default function AdminPage() {
       <header className="admin-header">
         <a href="/" className="admin-logo"><img src="/sancity-logo.svg" alt="Sancity Mall KE" /></a>
         <div className="admin-header-actions">
+          <button type="button" className="admin-secondary-btn" onClick={() => { setAuthError(''); setPasswordMode(true) }}><ShieldCheck size={16} /> Change password</button>
           <a href="/" target="_blank" rel="noreferrer" className="admin-secondary-btn"><Store size={16} /> View store</a>
           <button onClick={logout} className="admin-icon-btn" title="Sign out"><LogOut size={18} /></button>
         </div>

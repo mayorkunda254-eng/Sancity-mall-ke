@@ -4,7 +4,8 @@ import App from './App.jsx'
 import AdminPage from './AdminPage.jsx'
 import './styles.css'
 
-const isAdminRoute = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/')
+const recoveryParams = new URLSearchParams(window.location.hash.slice(1))
+const isAdminRoute = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/') || recoveryParams.get('type') === 'recovery'
 const root = document.getElementById('root')
 
 let preloadedProducts = null
