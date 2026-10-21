@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import JSZip from 'jszip'
+import ServiceRequests from './ServiceRequests.jsx'
 import {
   BarChart3, Bell, Boxes, CheckCircle2, ChevronRight, ClipboardCheck, CreditCard, ImagePlus, Loader2, LogOut, MapPin, MessageCircle, PackagePlus,
   Phone, RefreshCw, Search, Settings2, ShieldCheck, Store, Tag, Trash2, Truck, UploadCloud, XCircle
@@ -11,6 +12,7 @@ import { productCategories, categoryFor, subcategoryFor } from './lib/categories
 const categoryOptions = [...productCategories, 'Other']
 
 const adminViewMeta = {
+  services: { kicker: 'Store support', title: 'Request a Service', description: 'Request creative work, advertising or website updates at clear starting rates.' },
   overview: {
     kicker: 'Control center',
     title: 'Store overview',
@@ -1421,6 +1423,7 @@ export default function AdminPage() {
           <strong>Sancity Mall</strong>
         </div>
         <nav>
+          <button type="button" className={adminView === 'services' ? 'active' : ''} onClick={() => switchAdminView('services')}><MessageCircle size={16} /><span>Request a Service</span></button>
           <button type="button" className={adminView === 'overview' ? 'active' : ''} onClick={() => switchAdminView('overview')}><BarChart3 size={16} /><span>Overview</span></button>
           <button type="button" className={adminView === 'orders' ? 'active' : ''} onClick={() => switchAdminView('orders')}><ClipboardCheck size={16} /><span>Orders</span></button>
           <button type="button" className={adminView === 'products' ? 'active' : ''} onClick={() => openProducts('catalogue')}><Boxes size={16} /><span>Products</span></button>
@@ -1436,6 +1439,7 @@ export default function AdminPage() {
       </aside>
 
       <nav className="admin-mobile-tabs" aria-label="Admin sections">
+        <button type="button" className={adminView === 'services' ? 'active' : ''} onClick={() => switchAdminView('services')}><MessageCircle size={15} /><span>Services</span></button>
         <button type="button" className={adminView === 'overview' ? 'active' : ''} onClick={() => switchAdminView('overview')}><BarChart3 size={15} /><span>Overview</span></button>
         <button type="button" className={adminView === 'orders' ? 'active' : ''} onClick={() => switchAdminView('orders')}><ClipboardCheck size={15} /><span>Orders</span></button>
         <button type="button" className={adminView === 'products' ? 'active' : ''} onClick={() => openProducts('catalogue')}><Boxes size={15} /><span>Products</span></button>
@@ -1468,6 +1472,8 @@ export default function AdminPage() {
             {notice.text}
           </div>
         )}
+
+        {adminView === 'services' && <ServiceRequests userId={session.user.id} />}
 
         <section id="admin-overview" className="admin-overview">
           <div className="admin-overview-heading">
