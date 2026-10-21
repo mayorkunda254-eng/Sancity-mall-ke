@@ -110,6 +110,7 @@ export default function AdminPage() {
   const [passwordNotice, setPasswordNotice] = useState('')
   const [subcategorySavingId, setSubcategorySavingId] = useState(null)
   const [form, setForm] = useState(emptyForm)
+  const [editingProduct, setEditingProduct] = useState(null)
   const [files, setFiles] = useState([])
   const [products, setProducts] = useState([])
   const [query, setQuery] = useState('')
@@ -254,6 +255,7 @@ export default function AdminPage() {
   }
 
   const openProducts = (workspace = 'catalogue') => {
+    if (workspace === 'add') { setEditingProduct(null); setForm(emptyForm); setFiles([]) }
     setProductWorkspace(workspace)
     switchAdminView('products')
   }
@@ -323,7 +325,7 @@ export default function AdminPage() {
     setListLoading(true)
     const { data, error } = await supabase
       .from('products')
-      .select('id,name,slug,category,subcategory,description,dimensions,material,colour,key_features,care_instructions,delivery_note,price,compare_at_price,price_from,stock_quantity,badge,status,created_at,product_images(id,public_url,storage_path,sort_order),product_variants(id,label,size,colour,price,stock_quantity,is_active,sort_order)')
+      .select('id,name,slug,category,subcategory,description,dimensions,material,colour,key_features,care_instructions,delivery_note,price,compare_at_price,price_from,stock_quantity,badge,status,created_at,updated_at,product_images(id,public_url,storage_path,sort_order),product_variants(id,label,size,colour,price,stock_quantity,is_active,sort_order)')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -1204,6 +1206,56 @@ export default function AdminPage() {
     } catch (error) {
       setNotice({ type: 'error', text: error.message || 'Could not save the subcategory.' })
     } finally { setSubcategorySavingId(null) }
+  }
+
+  function editProduct(product) {
+    const values = {}
+    for (const key of Object.keys(emptyForm)) values[key] = product[key] ?? emptyForm[key]
+    setForm(values)
+    setEditingProduct(product)
+    setFiles([])
+    setNotice(null)
+    setProductWorkspace('add')
+    switchAdminView('products')
+  }
+
+  function cancelProductEdit() {
+    setEditingProduct(null)
+    setForm(emptyForm)
+    setFiles([])
+    setProductWorkspace('catalogue')
+    setNotice(null)
+  }
+
+  async function saveProductEdit(event) {
+    event.preventDefault()
+    setNotice(null)
+    if (!editingProduct || submitting) return
+    if (!form.name.trim() || !form.category) {
+      setNotice({ type: 'error', text: 'Product name and category are required.' }); return
+    }
+    const price = form.price === '' ? null : Number(form.price)
+    const comparePrice = form.compare_at_price === '' ? null : Number(form.compare_at_price)
+    const stock = Number(form.stock_quantity)
+    if ([price, comparePrice].some(value => value !== null && (!Number.isFinite(value) || value < 0)) || !Number.isInteger(stock) || stock < 0) {
+      setNotice({ type: 'error', text: 'Prices must be zero or greater, and stock must be a whole number zero or greater.' }); return
+    }
+    setSubmitting(true)
+    try {
+      const payload = { name: form.name.trim(), category: form.category, subcategory: form.subcategory || null,
+        price, compare_at_price: comparePrice, stock_quantity: stock, price_from: Boolean(form.price_from),
+        status: form.status, updated_at: new Date().toISOString() }
+      for (const key of ['description', 'dimensions', 'material', 'colour', 'key_features', 'care_instructions', 'delivery_note', 'badge']) payload[key] = String(form[key]).trim() || null
+      let request = supabase.from('products').update(payload).eq('id', editingProduct.id)
+      if (editingProduct.updated_at) request = request.eq('updated_at', editingProduct.updated_at)
+      const { data, error } = await request.select('id').single()
+      if (error || !data) throw new Error(error?.code === 'PGRST116' ? 'This product changed or is no longer available. Return to the catalogue, refresh and reopen it before saving.' : error?.message || 'Product was not updated.')
+      setEditingProduct(null); setForm(emptyForm); setFiles([]); setProductWorkspace('catalogue')
+      setNotice({ type: 'success', text: `${payload.name} updated successfully.` })
+      await loadProducts()
+    } catch (error) {
+      setNotice({ type: 'error', text: error.message || 'Could not save changes. Your edits have been kept.' })
+    } finally { setSubmitting(false) }
   }
 
   async function createProduct(event) {
@@ -2380,7 +2432,7 @@ export default function AdminPage() {
         <div className="admin-products-workspace-toolbar" role="tablist" aria-label="Products workspace">
           <div>
             <span>Product workspace</span>
-            <strong>{productWorkspace === 'catalogue' ? 'Catalogue manager' : 'Create product'}</strong>
+            <strong>{productWorkspace === 'catalogue' ? 'Catalogue manager' : editingProduct ? 'Edit product' : 'Create product'}</strong>
           </div>
           <div className="admin-products-workspace-tabs">
             <button
@@ -2395,7 +2447,7 @@ export default function AdminPage() {
             <button
               type="button"
               className={productWorkspace === 'add' ? 'active' : ''}
-              onClick={() => setProductWorkspace('add')}
+              onClick={() => openProducts('add')}
               role="tab"
               aria-selected={productWorkspace === 'add'}
             >
@@ -2411,10 +2463,10 @@ export default function AdminPage() {
           <section id="admin-products-add" className="admin-card upload-card">
             <div className="admin-card-heading">
               <span className="admin-step">01</span>
-              <div><h2>Add product</h2><p>Product details shown to customers.</p></div>
+              <div><h2>{editingProduct ? 'Edit product' : 'Add product'}</h2><p>{editingProduct ? `Editing ${editingProduct.name}. Existing product links, photos and variants are preserved.` : 'Product details shown to customers.'}</p></div>
             </div>
 
-            <form onSubmit={createProduct} className="product-upload-form">
+            <form onSubmit={editingProduct ? saveProductEdit : createProduct} className="product-upload-form">
               <label className="admin-field full">
                 <span>Product name *</span>
                 <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. 3-Tier Dish Rack" />
@@ -2513,6 +2565,11 @@ export default function AdminPage() {
                 <input value={form.delivery_note} onChange={(e) => setForm({ ...form, delivery_note: e.target.value })} placeholder="Optional: only if this item has special delivery or pickup requirements" />
               </label>
 
+              {editingProduct ? <div className="admin-field full">
+                <span>Current photos</span>
+                <div className="image-preview-grid">{[...(editingProduct.product_images || [])].sort((a,b) => a.sort_order - b.sort_order).map(image => <figure key={image.id}><img src={image.public_url} alt="Current product" /></figure>)}</div>
+                <small>Use Add photos or Variants in the catalogue to manage those separately.</small>
+              </div> : <>
               <div className="admin-field full">
                 <span>Product images * <small>Up to 6 images on initial creation; add more later up to 10</small></span>
                 <label className="image-dropzone" htmlFor="product-images">
@@ -2533,10 +2590,13 @@ export default function AdminPage() {
                 )}
               </div>
 
+              </>}
+
               <button className="admin-primary-btn full" disabled={submitting}>
                 {submitting ? <Loader2 className="spin" size={18} /> : <UploadCloud size={18} />}
-                {submitting ? 'Uploading product…' : form.status === 'published' ? 'Upload & publish product' : 'Upload as draft'}
+                {submitting ? (editingProduct ? 'Saving changes…' : 'Uploading product…') : editingProduct ? 'Save changes' : form.status === 'published' ? 'Upload & publish product' : 'Upload as draft'}
               </button>
+              {editingProduct && <button type="button" className="admin-secondary-btn full" onClick={cancelProductEdit} disabled={submitting}>Cancel editing</button>}
             </form>
           </section>
 
@@ -2569,6 +2629,7 @@ export default function AdminPage() {
                       <small>{product.price_from && product.price !== null ? 'From ' : ''}{money(product.price)} • Stock: {product.stock_quantity} • {images.length} photo{images.length === 1 ? '' : 's'} • {(product.product_variants || []).length} variant{(product.product_variants || []).length === 1 ? '' : 's'}</small>
                     </div>
                     <div className="admin-product-actions">
+                      <button type="button" className="admin-secondary-btn" onClick={() => editProduct(product)} aria-label={`Edit ${product.name}`}>Edit product</button>
                       {categoryFor(product.category) && <label className="admin-subcategory-field">
                         <span>Subcategory</span>
                         <select aria-label={`Subcategory for ${product.name}`} value={product.subcategory || ''} disabled={subcategorySavingId === product.id} onChange={event => saveProductSubcategory(product, event.target.value)}>
