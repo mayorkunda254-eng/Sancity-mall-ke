@@ -1,0 +1,16 @@
+const assert = require('node:assert/strict');
+const { buildSync } = require('esbuild');
+const Module = require('node:module');
+const path = require('node:path');
+const result = buildSync({stdin:{contents:"export {default,services} from './src/ServiceRequests.jsx'",resolveDir:process.cwd(),loader:'jsx'},bundle:true,write:false,platform:'node',format:'cjs',jsx:'automatic',external:['react','react-dom','@supabase/supabase-js'],loader:{'.css':'empty'},define:{'import.meta.env':'{}'},logLevel:'silent'});
+const mod = new Module(path.resolve('service-requests-test.cjs'),module);mod.filename=path.resolve('service-requests-test.cjs');mod.paths=module.paths;mod._compile(result.outputFiles[0].text,mod.filename);
+const React=require('react');const {renderToString}=require('react-dom/server');
+const {default:Component,services}=mod.exports;
+assert.deepEqual(services.map(s=>s.rate),[999,499,50,100,499]);
+assert.equal(new Set(services.map(s=>s.code)).size,5);
+const html=renderToString(React.createElement(Component,{userId:'test-user'}));
+for(const service of services) assert.ok(html.includes(service.name));
+assert.ok(html.includes('Advertising budget paid separately'));
+assert.ok(html.includes('Send request for review'));
+assert.ok(html.includes('Task details'));
+console.log('PASS: five unique services, exact rates, server render, advertising budget disclosure and request form.');
