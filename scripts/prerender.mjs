@@ -1,4 +1,4 @@
-import { categoryGroups, populatedCategories, categoryPath } from '../src/lib/categories.js'
+import { categoryGroups, populatedCategories, categoryPath, categoryFor } from '../src/lib/categories.js'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -121,6 +121,7 @@ function productSchema(product, canonical) {
   return {
     '@context': 'https://schema.org',
     '@type': 'Product',
+    url: canonical,
     name: product.name,
     description: product.description || `${product.name} from Sancity Mall KE.`,
     sku: product.id,
@@ -133,22 +134,14 @@ function productSchema(product, canonical) {
 }
 
 function breadcrumbSchema(product, canonical) {
+  const group = categoryFor(product.category)
   return {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: 'Sancity Mall KE',
-        item: `${SITE_URL}/`,
-      },
-      {
-        '@type': 'ListItem',
-        position: 2,
-        name: product.name,
-        item: canonical,
-      },
+      { '@type': 'ListItem', position: 1, name: 'Sancity Mall KE', item: `${SITE_URL}/` },
+      ...(group ? [{ '@type': 'ListItem', position: 2, name: group.name, item: `${SITE_URL}${categoryPath(group)}` }] : []),
+      { '@type': 'ListItem', position: group ? 3 : 2, name: product.name, item: canonical },
     ],
   }
 }
