@@ -117,6 +117,14 @@ function productOffer(product, canonical) {
 function productSchema(product, canonical) {
   const images = productImages(product).map((image) => image.public_url)
   const offer = productOffer(product, canonical)
+  // The catalogue's "dimensions" field also contains capacities and set counts.
+  // Keep its verified text as a labelled property instead of claiming physical dimensions.
+  const details = [
+    ['Size, capacity or configuration', product.dimensions],
+    ['Key features', product.key_features],
+    ['Care instructions', product.care_instructions],
+  ].filter(([, value]) => typeof value === 'string' && value.trim())
+    .map(([name, value]) => ({ '@type': 'PropertyValue', name, value: value.trim() }))
 
   return {
     '@context': 'https://schema.org',
@@ -129,6 +137,7 @@ function productSchema(product, canonical) {
     image: images.length > 0 ? images : undefined,
     color: product.colour || undefined,
     material: product.material || undefined,
+    ...(details.length ? { additionalProperty: details } : {}),
     ...(offer ? { offers: offer } : {}),
   }
 }
