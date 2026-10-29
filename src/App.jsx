@@ -172,7 +172,7 @@ const emptyCheckoutForm = {
   mpesa_code: '',
 }
 
-const productLink = (product) => `${(import.meta.env.VITE_SITE_URL || 'https://sancity-mall-ke-v3.vercel.app').replace(/\/$/, '')}/products/${encodeURIComponent(productSlug(product))}`
+const productLink = (product) => `${(import.meta.env.VITE_SITE_URL || 'https://www.sancitymall.co.ke').replace(/\/$/, '')}/products/${encodeURIComponent(productSlug(product))}`
 
 function waLink(product, label) {
   const message = product
@@ -945,7 +945,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
   useEffect(() => {
     if (typeof document === 'undefined') return
 
-    const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://sancity-mall-ke-v3.vercel.app').replace(/\/$/, '')
+    const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://www.sancitymall.co.ke').replace(/\/$/, '')
     const isMissingProduct = Boolean(detailSlug && !detailProduct)
     const title = detailProduct
       ? `${detailProduct.name} | Sancity Mall KE`

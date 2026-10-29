@@ -1,5 +1,5 @@
 import { populatedCategories, categoryPath } from '../src/lib/categories.js'
-const defaultSiteUrl = 'https://sancity-mall-ke-v3.vercel.app'
+const defaultSiteUrl = 'https://www.sancitymall.co.ke'
 const defaultSupabaseUrl = 'https://aetxzqugccixmxygzmtn.supabase.co'
 const defaultPublishableKey = 'sb_publishable_1vl9pWJnjXiseJJdHTPReQ_hXr6H0ta'
 
