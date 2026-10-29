@@ -3251,8 +3251,11 @@ select:focus-visible{
   grid-template-columns:repeat(4,minmax(0,1fr));
   gap:12px;
 }
-.product-recommendation-grid>button{
+.product-recommendation-grid>a{
+  display:block;
   min-width:0;
+  text-decoration:none;
+  color:inherit;
   border:1px solid rgba(67,53,43,.10);
   border-radius:18px;
   padding:9px;
@@ -3261,12 +3264,12 @@ select:focus-visible{
   box-shadow:0 8px 24px rgba(38,30,24,.05);
   transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
 }
-.product-recommendation-grid>button:hover{
+.product-recommendation-grid>a:hover{
   transform:translateY(-3px);
   border-color:rgba(185,145,69,.34);
   box-shadow:0 14px 30px rgba(38,30,24,.10);
 }
-.product-recommendation-grid>button>div{
+.product-recommendation-grid>a>div{
   height:175px;
   border-radius:13px;
   display:grid;
@@ -3274,13 +3277,13 @@ select:focus-visible{
   overflow:hidden;
   background:#eee6dc;
 }
-.product-recommendation-grid>button>div.has-photo{background:#f0ebe4}
+.product-recommendation-grid>a>div.has-photo{background:#f0ebe4}
 .product-recommendation-grid img{
   width:100%;
   height:100%;
   object-fit:cover;
 }
-.product-recommendation-grid>button>div>span{font-size:58px}
+.product-recommendation-grid>a>div>span{font-size:58px}
 .product-recommendation-grid small{
   display:block;
   margin-top:9px;
@@ -3391,8 +3394,8 @@ select:focus-visible{
   .product-recommendations{margin-top:42px}
   .product-recommendations h2{font-size:24px}
   .product-recommendation-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .product-recommendation-grid>button{border-radius:14px;padding:7px}
-  .product-recommendation-grid>button>div{height:126px;border-radius:10px}
+  .product-recommendation-grid>a{border-radius:14px;padding:7px}
+  .product-recommendation-grid>a>div{height:126px;border-radius:10px}
   .product-recommendation-grid strong{font-size:9px}
   .product-recommendation-grid b{font-size:9px}
   .product-mobile-buybar{
@@ -6208,3 +6211,8 @@ select:focus-visible{
 .room-collection-copy>strong{display:inline-flex;align-items:center;gap:12px;margin-top:12px;color:#234b3b;border-bottom:1px solid #c3a477;padding-bottom:6px}
 @media(max-width:700px){.department-carousel .category-photo-card>.category-card-copy{padding:18px}.category-card-copy>strong{font-size:16px}.room-collection-copy{padding:20px}}
 @media(prefers-reduced-motion:reduce){.department-carousel .category-photo-card{transition:none}.department-carousel .category-photo-card:hover{transform:none}}
+
+/* Product names are real crawlable links above the quick-view overlay. */
+.product-title-link{position:relative;z-index:4;color:inherit;text-decoration:none}
+.product-title-link:hover{text-decoration:underline;text-underline-offset:2px}
+.product-title-link:focus-visible{outline:2px solid currentColor;outline-offset:3px}

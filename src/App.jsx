@@ -2464,7 +2464,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                     </div>
                     <div className="product-recommendation-grid">
                       {relatedProducts.map((product) => (
-                        <button key={product.id} onClick={() => openProductPage(product)}>
+                        <a key={product.id} href={`/products/${encodeURIComponent(productSlug(product))}`}>
                           <div className={productMainImage(product) ? 'has-photo' : ''}>
                             {productMainImage(product)
                               ? <img src={productMainImage(product)} alt={product.name} loading="lazy" />
@@ -2473,7 +2473,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                           <small>{product.category}</small>
                           <strong>{product.name}</strong>
                           <b>{formatPrice(product)}</b>
-                        </button>
+                        </a>
                       ))}
                     </div>
                   </div>
@@ -2487,7 +2487,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                     </div>
                     <div className="product-recommendation-grid">
                       {recentlyViewedProducts.map((product) => (
-                        <button key={product.id} onClick={() => openProductPage(product)}>
+                        <a key={product.id} href={`/products/${encodeURIComponent(productSlug(product))}`}>
                           <div className={productMainImage(product) ? 'has-photo' : ''}>
                             {productMainImage(product)
                               ? <img src={productMainImage(product)} alt={product.name} loading="lazy" />
@@ -2496,7 +2496,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                           <small>{product.category}</small>
                           <strong>{product.name}</strong>
                           <b>{formatPrice(product)}</b>
-                        </button>
+                        </a>
                       ))}
                     </div>
                   </div>
@@ -2835,7 +2835,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
 
                 <div className="emoji-product-copy">
                   <small>{product.category}</small>
-                  <h3>{product.name}</h3>
+                  <h3><a className="product-title-link" href={`/products/${encodeURIComponent(productSlug(product))}`}>{product.name}</a></h3>
                   <p>{product.description}</p>
 
                   <div className="product-meta">
