@@ -935,7 +935,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
       label: 'Pricing',
       value: formatPrice(detailProduct, selectedVariant),
     },
-    { label: 'Size', value: selectedVariant?.size || detailProduct.dimensions },
+    { label: selectedVariant?.size ? 'Size' : 'Size / capacity / configuration', value: selectedVariant?.size || detailProduct.dimensions },
     { label: 'Material', value: detailProduct.material },
     { label: 'Colour', value: selectedVariant?.colour || detailProduct.colour },
   ].filter((item) => item.value) : []
