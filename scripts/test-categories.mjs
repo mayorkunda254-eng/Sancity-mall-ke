@@ -35,7 +35,7 @@ for (const group of groups) {
     assert.equal(products.filter(product => normalizeCategory(product.category) === group.name && matchesSubcategory(product, child.slug)).length, child.count)
     const html = await readFile(`dist${route}/index.html`, 'utf8')
     assert.ok(html.includes(`<h1>${child.name.replace(/&/g, '&amp;')}</h1>`), `${route} has a server-rendered heading`)
-    assert.ok(html.includes(`href="https://sancity-mall-ke-v3.vercel.app${route}"`), `${route} has its own canonical`)
+    assert.ok(html.includes(`href="https://www.sancitymall.co.ke${route}"`), `${route} has its own canonical`)
     assert.ok(!html.includes('in this view.'), `${route} omits the public product total`)
     assert.ok(sitemap.includes(`${route}</loc>`), `${route} appears in the sitemap`)
     assert.ok(!html.includes('content="noindex,follow"'), `${route} is indexable`)
