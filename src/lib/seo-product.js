@@ -37,6 +37,6 @@ export function productSeo(product) {
     size ? `Listed size or configuration: ${size}.` : '',
     material ? `Material: ${material}.` : '',
     clean(product.description),
-  ].filter(Boolean).join(' '))
+  ])
   return { title, description, targeted: true }
 }
