@@ -6,11 +6,15 @@ const targets = [
   ['Mosquito Nets', /\bmosquito\s?nets?\b/i],
 ]
 const clean = value => String(value || '').replace(/\s+/g, ' ').trim()
-const clipWords = (text, max = 158) => {
-  if (text.length <= max) return text
-  const cut = text.slice(0, max)
-  const space = cut.lastIndexOf(' ')
-  return (space >= max - 24 ? cut.slice(0, space) : cut).replace(/[\s,;:.]+$/, '')
+// Keep each source-backed fact or product sentence whole. A clipped fragment
+// makes search snippets harder for shoppers to interpret.
+const joinCompleteSentences = (sentences, max = 158) => {
+  let result = ''
+  for (const sentence of sentences.filter(Boolean)) {
+    const next = result ? `${result} ${sentence}` : sentence
+    if (next.length <= max) result = next
+  }
+  return result
 }
 export function isPriorityProduct(product) {
   const name = clean(product?.name)
@@ -28,7 +32,7 @@ export function productSeo(product) {
   const title = titleWithCity.length <= 80 ? titleWithCity : standardTitle
   const size = clean(product.dimensions)
   const material = clean(product.material)
-  const description = clipWords([
+  const description = joinCompleteSentences([
     `Shop ${name} in Nairobi at Sancity Mall KE.`,
     size ? `Listed size or configuration: ${size}.` : '',
     material ? `Material: ${material}.` : '',
