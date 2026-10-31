@@ -1,4 +1,5 @@
 import { categoryGroups, populatedCategories, categoryPath, categoryFor } from '../src/lib/categories.js'
+import { categoryLanding } from '../src/lib/seo-landing.js'
 import { availabilityStatus } from '../src/lib/availability.js'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -252,10 +253,11 @@ for (const { group, child, count } of categoryPages) {
   const route = categoryPath(group, child)
   const canonical = `${SITE_URL}${route}`
   const heading = child?.name || group.name
+  const seo = categoryLanding(group, child)
   let document = injectApp(shell, render({ products, path: route }), products)
   document = applyCommonSocialMeta(document, {
-    title: `${heading} in Kenya | Sancity Mall KE`,
-    description: `Shop ${heading.toLowerCase()} at Sancity Mall KE in Nairobi. ${group.description}`.slice(0, 160),
+    title: seo.title,
+    description: seo.description.slice(0, 160),
     canonical,
     image: group.image,
   })
