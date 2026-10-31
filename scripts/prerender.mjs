@@ -1,5 +1,6 @@
 import { categoryGroups, populatedCategories, categoryPath, categoryFor } from '../src/lib/categories.js'
 import { availabilityStatus } from '../src/lib/availability.js'
+import { homepageSeo, getCategorySeo } from '../src/lib/seo-content.js'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -197,8 +198,8 @@ if (!storefrontHtml.includes('SANCITY') || !storefrontHtml.includes('Delivered a
 
 let storefrontDocument = injectApp(shell, storefrontHtml, products)
 storefrontDocument = applyCommonSocialMeta(storefrontDocument, {
-  title: 'Sancity Mall KE | Home Essentials in Nairobi',
-  description: 'Shop bedding, kitchenware, storage and everyday home essentials from Sancity Mall KE in Nairobi, with pickup and delivery options across Kenya.',
+  title: homepageSeo.title,
+  description: homepageSeo.description,
   canonical: `${SITE_URL}/`,
   image: `${SITE_URL}/hero-products-desktop.webp`,
 })
@@ -251,11 +252,11 @@ const categoryPages = categoryGroups.flatMap(group => {
 for (const { group, child, count } of categoryPages) {
   const route = categoryPath(group, child)
   const canonical = `${SITE_URL}${route}`
-  const heading = child?.name || group.name
+  const seo = getCategorySeo({ group, child }, products)
   let document = injectApp(shell, render({ products, path: route }), products)
   document = applyCommonSocialMeta(document, {
-    title: `${heading} in Kenya | Sancity Mall KE`,
-    description: `Shop ${heading.toLowerCase()} at Sancity Mall KE in Nairobi. ${group.description}`.slice(0, 160),
+    title: seo.title,
+    description: seo.description,
     canonical,
     image: group.image,
   })
