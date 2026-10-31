@@ -6,6 +6,7 @@ import { availabilityStatus, availabilityLabel } from './lib/availability.js'
 import DepartmentMenu, { DepartmentLinks } from './DepartmentMenu.jsx'
 import { productCategories, normalizeCategory, populatedCategories, categoryFor, categoryPath, resolveCategoryRoute, matchesSubcategory } from './lib/categories.js'
 import { homepageSeo, getCategorySeo } from './lib/seo-content.js'
+import { productSeo } from './lib/seo-product.js'
 
 const departments = [
   { name: 'Kitchen & Dining', short: 'Kitchen', emoji: '🍲', icon: CookingPot, className: 'dept-kitchen' },
@@ -951,8 +952,9 @@ export default function App({ initialProducts = null, initialPath = null }) {
 
     const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://www.sancitymall.co.ke').replace(/\/$/, '')
     const isMissingProduct = Boolean(detailSlug && !detailProduct)
-    const title = detailProduct
-      ? `${detailProduct.name} | Sancity Mall KE`
+    const searchProduct = detailProduct ? productSeo(detailProduct) : null
+    const title = searchProduct
+      ? searchProduct.title
       : legalPage
         ? `${legalPage.title} | Sancity Mall KE`
         : categorySeo
@@ -960,8 +962,8 @@ export default function App({ initialProducts = null, initialPath = null }) {
           : isNotFoundRoute || isMissingProduct
             ? 'Page not found | Sancity Mall KE'
             : homepageSeo.title
-    const description = detailProduct?.description
-      ? detailProduct.description.slice(0, 160)
+    const description = searchProduct
+      ? searchProduct.description
       : legalPage?.description
         || categorySeo?.description
         || (isNotFoundRoute || isMissingProduct
