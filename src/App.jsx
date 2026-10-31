@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, ArrowUpDown, Baby, Banknote, BedDouble, Bell, Boxes, Check, ChevronRight, CircleHelp, CookingPot, Dumbbell, Eye, Heart, HousePlug, LogIn, MapPin, Menu, MessageCircle, Minus, PackageCheck, Plus, RotateCcw, Search, ShieldCheck, ShoppingCart, SlidersHorizontal, Sparkles, Tag, Truck, UserRound, X } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './lib/supabase.js'
 import ScrollRail from './ScrollRail.jsx'
+import { availabilityStatus, availabilityLabel } from './lib/availability.js'
 import DepartmentMenu, { DepartmentLinks } from './DepartmentMenu.jsx'
 import { productCategories, normalizeCategory, populatedCategories, categoryFor, categoryPath, resolveCategoryRoute, matchesSubcategory } from './lib/categories.js'
 
@@ -741,8 +742,8 @@ export default function App({ initialProducts = null, initialPath = null }) {
       const haystack = `${item.name || ''} ${item.category || ''} ${item.description || ''}`.toLowerCase()
       const searchMatch = !q || haystack.includes(q)
       const stockMatch = stockFilter === 'all'
-        || (stockFilter === 'in-stock' && Number(item.stock_quantity) > 0)
-        || (stockFilter === 'confirm' && !(Number(item.stock_quantity) > 0))
+        || (stockFilter === 'in-stock' && availabilityStatus(item) === 'in_stock')
+        || (stockFilter === 'confirm' && availabilityStatus(item) !== 'in_stock')
       const priceMatch = priceFilter === 'all'
         || (priceFilter === 'priced' && item.price !== null && item.price !== undefined)
         || (priceFilter === 'request' && (item.price === null || item.price === undefined))
@@ -917,7 +918,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
 
   const canRequestStockAlert = Boolean(
     detailProduct
-    && !(Number(detailStock) > 0)
+    && availabilityStatus(detailProduct, selectedVariant) !== 'in_stock'
     && (detailVariants.length === 0 || selectedVariant),
   )
 
@@ -929,7 +930,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
     { label: 'Category', value: detailProduct.category },
     {
       label: 'Availability',
-      value: detailStock > 0 ? `${detailStock} in stock` : 'Confirm current stock',
+      value: availabilityLabel(detailProduct, selectedVariant),
     },
     {
       label: 'Pricing',
@@ -2084,9 +2085,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                   {formatPrice(quickViewProduct)}
                 </strong>
                 <span>
-                  {quickViewProduct.stock_quantity > 0
-                    ? `${quickViewProduct.stock_quantity} in stock`
-                    : 'Confirm current stock'}
+                  {availabilityLabel(quickViewProduct)}
                 </span>
               </div>
 
@@ -2238,7 +2237,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                               )}
                               <b>{formatPrice(detailProduct, variant)}</b>
                               {variant.stock_quantity !== null && variant.stock_quantity !== undefined && (
-                                <small>{variant.stock_quantity > 0 ? `${variant.stock_quantity} available` : 'Confirm stock'}</small>
+                                <small>{availabilityLabel(detailProduct, variant)}</small>
                               )}
                             </button>
                           ))}
@@ -2258,10 +2257,8 @@ export default function App({ initialProducts = null, initialPath = null }) {
                             <del>KSh {Number(detailProduct.compare_at_price).toLocaleString('en-KE')}</del>
                           )}
                       </div>
-                      <span className={detailStock > 0 ? 'in-stock' : ''}>
-                        {detailStock > 0
-                          ? `${detailStock} in stock`
-                          : 'Confirm current stock'}
+                      <span className={availabilityStatus(detailProduct, selectedVariant) === 'in_stock' ? 'in-stock' : ''}>
+                        {availabilityLabel(detailProduct, selectedVariant)}
                       </span>
                     </div>
 
@@ -2843,11 +2840,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
                       {formatPrice(product)}
                     </strong>
                     <span>
-                      {product.stock_quantity === null || product.stock_quantity === undefined
-                        ? 'Confirm current stock'
-                        : product.stock_quantity > 0
-                          ? `${product.stock_quantity} in stock`
-                          : 'Confirm current stock'}
+                      {availabilityLabel(product)}
                     </span>
                   </div>
 
