@@ -23,6 +23,7 @@ for (const product of sample) {
   assert.ok(seo.description.includes(product.name))
   assert.ok(seo.description.includes('Nairobi'))
   assert.ok(seo.description.length <= 160)
+  assert.ok(seo.description.endsWith('.'),product.name+' sentence-complete snippet')
   const html = await readFile('dist/products/'+productSlug(product)+'/index.html','utf8')
   assert.ok(html.includes('<title>'+escapeHtml(seo.title)+'</title>'), product.name+' title')
   assert.ok(html.includes('name="description" content="'+escapeHtml(seo.description)+'"'),product.name+' description')
