@@ -1,6 +1,7 @@
 import { categoryGroups, populatedCategories, categoryPath, categoryFor } from '../src/lib/categories.js'
 import { availabilityStatus } from '../src/lib/availability.js'
 import { homepageSeo, getCategorySeo } from '../src/lib/seo-content.js'
+import { productSeo } from '../src/lib/seo-product.js'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -218,15 +219,12 @@ for (const product of products) {
   const canonical = `${SITE_URL}${route}`
   const html = render({ products, path: route })
   const mainImage = productImages(product)[0]?.public_url || null
-  const description = String(
-    product.description ||
-    `${product.name} from Sancity Mall KE. Shop household and lifestyle products in Nairobi with delivery options across Kenya.`,
-  ).trim().slice(0, 160)
+  const search = productSeo(product)
 
   let document = injectApp(shell, html, products)
   document = applyCommonSocialMeta(document, {
-    title: `${product.name} | Sancity Mall KE`,
-    description,
+    title: search.title,
+    description: search.description,
     canonical,
     image: mainImage,
     type: 'product',
