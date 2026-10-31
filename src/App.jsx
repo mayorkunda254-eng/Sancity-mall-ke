@@ -5,6 +5,7 @@ import ScrollRail from './ScrollRail.jsx'
 import { availabilityStatus, availabilityLabel } from './lib/availability.js'
 import DepartmentMenu, { DepartmentLinks } from './DepartmentMenu.jsx'
 import { productCategories, normalizeCategory, populatedCategories, categoryFor, categoryPath, resolveCategoryRoute, matchesSubcategory } from './lib/categories.js'
+import { homepageSeo, getCategorySeo } from './lib/seo-content.js'
 
 const departments = [
   { name: 'Kitchen & Dining', short: 'Kitchen', emoji: '🍲', icon: CookingPot, className: 'dept-kitchen' },
@@ -442,6 +443,8 @@ export default function App({ initialProducts = null, initialPath = null }) {
     Array.isArray(initialProducts) && initialProducts.length > 0 ? initialProducts : fallbackProducts,
   )
   const categoryDirectory = useMemo(() => populatedCategories(products), [products])
+  const categorySeo = categoryRoute ? getCategorySeo(categoryRoute, products) : null
+  const isEmptyCategory = Boolean(categorySeo && categorySeo.count === 0)
   const activeGroup = categoryDirectory.find(group => group.name === activeCategory)
   const [quickViewProduct, setQuickViewProduct] = useState(null)
   const [detailSlug, setDetailSlug] = useState(initialDetailSlug)
@@ -952,18 +955,21 @@ export default function App({ initialProducts = null, initialPath = null }) {
       ? `${detailProduct.name} | Sancity Mall KE`
       : legalPage
         ? `${legalPage.title} | Sancity Mall KE`
-        : isNotFoundRoute || isMissingProduct
-          ? 'Page not found | Sancity Mall KE'
-          : 'Sancity Mall KE | Home Essentials in Nairobi'
+        : categorySeo
+          ? categorySeo.title
+          : isNotFoundRoute || isMissingProduct
+            ? 'Page not found | Sancity Mall KE'
+            : homepageSeo.title
     const description = detailProduct?.description
       ? detailProduct.description.slice(0, 160)
       : legalPage?.description
+        || categorySeo?.description
         || (isNotFoundRoute || isMissingProduct
           ? 'The page you requested could not be found on Sancity Mall KE.'
-          : 'Shop home essentials in Nairobi from Sancity Mall KE, with pickup in Nairobi and delivery options across Kenya.')
+          : homepageSeo.description)
     const canonical = detailProduct
       ? `${siteUrl}/products/${productSlug(detailProduct)}`
-      : legalPage
+      : (legalPage || categoryRoute)
         ? `${siteUrl}${normalizedRoute}`
         : `${siteUrl}/`
     const image = detailProduct
@@ -983,7 +989,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
     }
 
     upsertMeta('meta[name="description"]', 'name', 'description', description)
-    upsertMeta('meta[name="robots"]', 'name', 'robots', isNotFoundRoute || isMissingProduct ? 'noindex,nofollow' : 'index,follow,max-image-preview:large')
+    upsertMeta('meta[name="robots"]', 'name', 'robots', isNotFoundRoute || isMissingProduct ? 'noindex,nofollow' : isEmptyCategory ? 'noindex,follow' : 'index,follow,max-image-preview:large')
     upsertMeta('meta[property="og:title"]', 'property', 'og:title', title)
     upsertMeta('meta[property="og:description"]', 'property', 'og:description', description)
     upsertMeta('meta[property="og:type"]', 'property', 'og:type', detailProduct ? 'product' : 'website')
@@ -1001,7 +1007,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
       document.head.appendChild(canonicalLink)
     }
     canonicalLink.setAttribute('href', canonical)
-  }, [detailProduct?.id, detailSlug, legalPage, normalizedRoute, isNotFoundRoute])
+  }, [detailProduct?.id, detailSlug, legalPage, normalizedRoute, isNotFoundRoute, categorySeo?.title, categorySeo?.description, isEmptyCategory])
 
   const relatedProducts = useMemo(() => {
     if (!detailProduct) return []
@@ -2677,7 +2683,15 @@ export default function App({ initialProducts = null, initialPath = null }) {
           <nav aria-label="Breadcrumb"><a href="/">Home</a><ChevronRight size={14}/><a href={categoryPath(categoryRoute.group)}>{categoryRoute.group.name}</a>{categoryRoute.child && <><ChevronRight size={14}/><span>{categoryRoute.child.name}</span></>}</nav>
           <span>Shop by category</span>
           <h1>{categoryRoute.child?.name || categoryRoute.group.name}</h1>
-          <p>{categoryRoute.group.description}</p>
+          <p>{categorySeo?.intro || categoryRoute.group.description}</p>
+          {categorySeo?.featuredProducts?.length > 0 && (
+            <div className="category-featured-links" aria-label="Explore category products">
+              <strong>Explore products:</strong>
+              {categorySeo.featuredProducts.map(product => (
+                <a key={product.id} href={`/products/${encodeURIComponent(productSlug(product))}`}>{product.name}</a>
+              ))}
+            </div>
+          )}
         </section>}
         <section className="catalogue-section" id="products">
           <div className="catalogue-heading">
@@ -2876,6 +2890,19 @@ export default function App({ initialProducts = null, initialPath = null }) {
               )
             })}
           </div>
+
+          {categoryRoute && visibleProducts.length > renderedProducts.length && (
+            <details className="category-product-index">
+              <summary>Browse all {visibleProducts.length} {categoryRoute.child?.name || categoryRoute.group.short} products by name</summary>
+              <ul>
+                {visibleProducts.map(product => (
+                  <li key={product.id}>
+                    <a href={`/products/${encodeURIComponent(productSlug(product))}`}>{product.name}</a>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
 
           {renderedProducts.length < visibleProducts.length && (
             <div className="catalogue-load-more">
