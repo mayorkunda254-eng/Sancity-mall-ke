@@ -2922,6 +2922,27 @@ export default function App({ initialProducts = null, initialPath = null }) {
           )}
         </section>
 
+        {categoryRoute && categorySeo?.tips?.length > 0 && (
+          <section className="category-buyers-guide" aria-label="Category buying advice">
+            <div className="category-guide-copy">
+              <span>Choosing the right product</span>
+              <h2>{categorySeo.heading}</h2>
+              <ul>{categorySeo.tips.map(tip => <li key={tip}>{tip}</li>)}</ul>
+              <p>Questions about an item? Check its product description or ask Sancity to confirm details before ordering.</p>
+            </div>
+            {activeGroup && categorySeo.related?.length > 0 && (
+              <nav className="category-guide-related" aria-label="Related categories">
+                <h3>Explore related products</h3>
+                {activeGroup.children.filter(child => categorySeo.related.includes(child.slug)).map(child => (
+                  <a key={child.slug} href={categoryPath(categoryRoute.group, child)}>
+                    {child.name}<ChevronRight size={16} />
+                  </a>
+                ))}
+              </nav>
+            )}
+          </section>
+        )}
+
         <section className="wholesale-section" id="wholesale">
           <div>
             <span>📦 Wholesale buyers</span>
