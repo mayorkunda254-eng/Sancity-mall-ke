@@ -17,7 +17,7 @@ for (const group of groups) {
     const route = categoryPath(group, child)
     const html = await readFile('dist' + route + '/index.html', 'utf8')
     const seo = categoryLanding(group, child)
-    assert.ok(html.includes('<title>' + seo.title + '</title>'), route + ': correct intent-focused title')
+    assert.ok(html.includes('<title>' + seo.title.replaceAll('&', '&amp;') + '</title>'), route + ': correct intent-focused title')
     assert.ok(html.includes('name="description" content="'), route + ': metadata present')
     assert.match(html, /rel="canonical" href="https:\/\/www\.sancitymall\.co\.ke\/categories\//)
     assert.ok(!html.includes('content="noindex,follow"'), route + ': live category not blocked')
