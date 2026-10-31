@@ -1,3 +1,4 @@
+import { availabilityStatus } from '../src/lib/availability.js'
 import { populatedCategories, categoryPath } from '../src/lib/categories.js'
 const defaultSiteUrl = 'https://www.sancitymall.co.ke'
 const defaultSupabaseUrl = 'https://aetxzqugccixmxygzmtn.supabase.co'
@@ -102,9 +103,8 @@ function productDescription(product) {
   return `${product.name} from Sancity Mall KE. Shop household and lifestyle products in Nairobi with delivery options across Kenya.`
 }
 
-function availabilityFor(stock) {
-  if (stock === null || stock === undefined || stock === '') return 'out_of_stock'
-  return Number(stock) > 0 ? 'in_stock' : 'out_of_stock'
+function availabilityFor(product, variant = null) {
+  return availabilityStatus(product, variant) === 'in_stock' ? 'in_stock' : 'out_of_stock'
 }
 
 function merchantItem({
@@ -163,7 +163,7 @@ export function merchantFeedItems(products, siteUrl = SITE_URL) {
           link: `${siteUrl}/products/${slug}?variant=${encodeURIComponent(variant.id)}`,
           image,
           price,
-          availability: availabilityFor(variant.stock_quantity ?? product.stock_quantity),
+          availability: availabilityFor(product, variant),
           category: product.category,
           size: variant.size,
           colour: variant.colour,
@@ -182,7 +182,7 @@ export function merchantFeedItems(products, siteUrl = SITE_URL) {
       link: `${siteUrl}/products/${slug}`,
       image,
       price,
-      availability: availabilityFor(product.stock_quantity),
+      availability: availabilityFor(product),
       category: product.category,
     }))
   }
