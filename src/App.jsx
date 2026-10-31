@@ -2891,6 +2891,19 @@ export default function App({ initialProducts = null, initialPath = null }) {
             })}
           </div>
 
+          {categoryRoute && visibleProducts.length > renderedProducts.length && (
+            <details className="category-product-index">
+              <summary>Browse all {visibleProducts.length} {categoryRoute.child?.name || categoryRoute.group.short} products by name</summary>
+              <ul>
+                {visibleProducts.map(product => (
+                  <li key={product.id}>
+                    <a href={`/products/${encodeURIComponent(productSlug(product))}`}>{product.name}</a>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+
           {renderedProducts.length < visibleProducts.length && (
             <div className="catalogue-load-more">
               <button onClick={() => setCatalogueLimit((current) => current + 16)}>
