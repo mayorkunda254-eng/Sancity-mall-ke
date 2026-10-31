@@ -1,4 +1,5 @@
 import { matchesSubcategory, normalizeCategory } from './categories.js'
+import { categoryLanding } from './seo-landing.js'
 
 // Commercial category content based on actual stocked departments, without
 // implying fixed delivery timeframes, shipping prices or unsupported guarantees.
@@ -63,13 +64,21 @@ export function getCategorySeo(route, products = []) {
     && (!child || matchesSubcategory(product, child.slug))
   )
   const featuredProducts = matches.filter(product => product.slug || product.name).slice(0, 3)
-  if (!child) return { ...defaultCopy, featuredProducts, count: matches.length }
+  // Preserve PR #30's crawlable product directory and homepage metadata while
+  // enriching only the buying-intent categories backed by live inventory.
+  const landing = categoryLanding(group, child)
+  const guide = landing?.heading
+    ? { title: landing.title, description: landing.description, intro: landing.intro,
+        heading: landing.heading, tips: landing.tips, related: landing.related }
+    : {}
+  if (!child) return { ...defaultCopy, ...guide, featuredProducts, count: matches.length }
 
   const name = child.name
   return {
     title: `${name} in Nairobi | Sancity Mall KE`,
     description: `Shop ${name.toLowerCase()} in Nairobi at Sancity Mall KE. Compare product details and prices where listed, with pickup and delivery options across Kenya.`.slice(0, 160),
     intro: `Explore ${name.toLowerCase()} for your home at Sancity Mall KE in Nairobi. Compare the listed products, check their individual features and choose a suitable option before arranging pickup or delivery.`,
+    ...guide,
     featuredProducts,
     count: matches.length,
   }
