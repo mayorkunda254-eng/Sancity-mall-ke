@@ -30,6 +30,12 @@ for (const group of groups) {
       const slug = product.slug || product.name.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
       assert.ok(html.includes(`href="/products/${encodeURIComponent(slug)}"`), `${route}: crawlable featured product`)
     }
+    if (seo.count > 16) {
+      const directory = html.match(/<details class="category-product-index">([\s\S]*?)<\/details>/)
+      assert.ok(directory, `${route}: long categories have a complete browsable directory`)
+      const links = [...directory[1].matchAll(/href="\/products\/[^"]+"/g)]
+      assert.equal(links.length, seo.count, `${route}: every product is discoverable by a real anchor`)
+    }
     checked++
   }
 }
