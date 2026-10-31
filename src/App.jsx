@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, ArrowUpDown, Baby, Banknote, BedDouble, Bell, Boxes, Check, ChevronRight, CircleHelp, CookingPot, Dumbbell, Eye, Heart, HousePlug, LogIn, MapPin, Menu, MessageCircle, Minus, PackageCheck, Plus, RotateCcw, Search, ShieldCheck, ShoppingCart, SlidersHorizontal, Sparkles, Tag, Truck, UserRound, X } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './lib/supabase.js'
 import ScrollRail from './ScrollRail.jsx'
+import { categoryLanding } from './lib/seo-landing.js'
 import { availabilityStatus, availabilityLabel } from './lib/availability.js'
 import DepartmentMenu, { DepartmentLinks } from './DepartmentMenu.jsx'
 import { productCategories, normalizeCategory, populatedCategories, categoryFor, categoryPath, resolveCategoryRoute, matchesSubcategory } from './lib/categories.js'
@@ -408,6 +409,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
   const routeMatch = normalizedRoute.match(/^\/products\/([^/]+)$/)
   const initialDetailSlug = routeMatch ? decodeURIComponent(routeMatch[1]) : ''
   const categoryRoute = resolveCategoryRoute(normalizedRoute)
+  const categorySeo = categoryRoute ? categoryLanding(categoryRoute.group, categoryRoute.child) : null
   const legalPage = legalPages[normalizedRoute] || null
   const isNotFoundRoute = !legalPage && normalizedRoute !== '/' && !routeMatch && !categoryRoute
 
@@ -2677,7 +2679,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
           <nav aria-label="Breadcrumb"><a href="/">Home</a><ChevronRight size={14}/><a href={categoryPath(categoryRoute.group)}>{categoryRoute.group.name}</a>{categoryRoute.child && <><ChevronRight size={14}/><span>{categoryRoute.child.name}</span></>}</nav>
           <span>Shop by category</span>
           <h1>{categoryRoute.child?.name || categoryRoute.group.name}</h1>
-          <p>{categoryRoute.group.description}</p>
+          <p>{categorySeo?.intro || categoryRoute.group.description}</p>
         </section>}
         <section className="catalogue-section" id="products">
           <div className="catalogue-heading">
@@ -2894,6 +2896,29 @@ export default function App({ initialProducts = null, initialPath = null }) {
             </div>
           )}
         </section>
+
+        {categoryRoute && categorySeo?.tips?.length > 0 && (
+          <section className="category-buyers-guide" aria-label="Category buying advice">
+            <div className="category-guide-copy">
+              <span>Choosing the right product</span>
+              <h2>{categorySeo.heading}</h2>
+              <ul>
+                {categorySeo.tips.map(tip => <li key={tip}>{tip}</li>)}
+              </ul>
+              <p>Questions about a particular item? Check the product description or ask Sancity to confirm its details before ordering.</p>
+            </div>
+            {activeGroup && categorySeo.related?.length > 0 && (
+              <nav className="category-guide-related" aria-label="Related categories">
+                <h3>Explore related products</h3>
+                {activeGroup.children.filter(child => categorySeo.related.includes(child.slug)).map(child => (
+                  <a key={child.slug} href={categoryPath(categoryRoute.group, child)}>
+                    {child.name}<ChevronRight size={16} />
+                  </a>
+                ))}
+              </nav>
+            )}
+          </section>
+        )}
 
         <section className="wholesale-section" id="wholesale">
           <div>
