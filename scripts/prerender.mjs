@@ -1,4 +1,5 @@
 import { categoryGroups, populatedCategories, categoryPath, categoryFor } from '../src/lib/categories.js'
+import { availabilityStatus } from '../src/lib/availability.js'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -76,42 +77,40 @@ function injectApp(document, html, liveProducts) {
 
 function productOffer(product, canonical) {
   const variants = activeVariants(product)
-  const variantPrices = variants
-    .map((variant) => effectivePrice(product, variant))
-    .filter((price) => price !== null && Number.isFinite(price))
-
   const seller = {
     '@type': 'Organization',
     name: 'Sancity Mall KE',
     url: SITE_URL,
   }
 
-  if (variantPrices.length > 0) {
-    return {
-      '@type': 'AggregateOffer',
-      url: canonical,
-      priceCurrency: 'KES',
-      lowPrice: Math.min(...variantPrices),
-      highPrice: Math.max(...variantPrices),
-      offerCount: variantPrices.length,
-      seller,
-    }
+  const makeOffer = (price, availability, url) => ({
+    '@type': 'Offer',
+    url,
+    priceCurrency: 'KES',
+    price,
+    itemCondition: 'https://schema.org/NewCondition',
+    availability: availability === 'in_stock'
+      ? 'https://schema.org/InStock'
+      : 'https://schema.org/OutOfStock',
+    seller,
+  })
+
+  if (variants.length > 0) {
+    const offers = variants.map(variant => {
+      const price = effectivePrice(product, variant)
+      if (price === null || !Number.isFinite(price)) return null
+      return makeOffer(
+        price,
+        availabilityStatus(product, variant),
+        `${canonical}?variant=${encodeURIComponent(variant.id)}`,
+      )
+    }).filter(Boolean)
+    return offers.length > 0 ? offers : null
   }
 
   const price = effectivePrice(product)
   if (price === null || !Number.isFinite(price) || product.price_from) return null
-
-  return {
-    '@type': 'Offer',
-    url: canonical,
-    priceCurrency: 'KES',
-    price,
-    itemCondition: 'https://schema.org/NewCondition',
-    ...(Number(product.stock_quantity) > 0
-      ? { availability: 'https://schema.org/InStock' }
-      : {}),
-    seller,
-  }
+  return makeOffer(price, availabilityStatus(product), canonical)
 }
 
 function productSchema(product, canonical) {
