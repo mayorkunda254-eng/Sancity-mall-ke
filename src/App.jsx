@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, ArrowUpDown, Baby, Banknote, BedDouble, Bell, Boxes, Check, ChevronRight, CircleHelp, CookingPot, Dumbbell, Eye, Heart, HousePlug, LogIn, MapPin, Menu, MessageCircle, Minus, PackageCheck, Plus, RotateCcw, Search, ShieldCheck, ShoppingCart, SlidersHorizontal, Sparkles, Tag, Truck, UserRound, X } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './lib/supabase.js'
+import { fetchFirebaseProducts } from './lib/firebase-catalogue.js'
 import ScrollRail from './ScrollRail.jsx'
 import { availabilityStatus, availabilityLabel } from './lib/availability.js'
 import DepartmentMenu, { DepartmentLinks } from './DepartmentMenu.jsx'
@@ -603,14 +604,8 @@ export default function App({ initialProducts = null, initialPath = null }) {
     let active = true
 
     async function loadPublishedProducts() {
-      const { data, error } = await supabase
-        .from('products')
-        .select('id,name,slug,category,subcategory,badge,description,dimensions,material,colour,key_features,care_instructions,delivery_note,price,compare_at_price,price_from,stock_quantity,created_at,product_images(public_url,sort_order),product_variants(id,label,size,colour,price,stock_quantity,is_active,sort_order)')
-        .eq('status', 'published')
-        .order('created_at', { ascending: false })
-
-      if (!active || error || !data) return
-
+      const data = await fetchFirebaseProducts()
+      if (!active) return
       setProducts(data.length > 0 ? data : fallbackProducts)
     }
 
@@ -626,7 +621,7 @@ export default function App({ initialProducts = null, initialPath = null }) {
       setDeliveryZones(data)
     }
 
-    loadPublishedProducts()
+    loadPublishedProducts().catch((error) => console.error('Sancity catalogue unavailable:', error))
     loadDeliveryZones()
 
     return () => {

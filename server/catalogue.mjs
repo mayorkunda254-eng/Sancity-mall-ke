@@ -1,5 +1,6 @@
 import { availabilityStatus } from '../src/lib/availability.js'
 import { populatedCategories, categoryPath } from '../src/lib/categories.js'
+import { fetchFirebaseProductsForBuild } from './firebase-products.mjs'
 const defaultSiteUrl = 'https://www.sancitymall.co.ke'
 const defaultSupabaseUrl = 'https://aetxzqugccixmxygzmtn.supabase.co'
 const defaultPublishableKey = 'sb_publishable_1vl9pWJnjXiseJJdHTPReQ_hXr6H0ta'
@@ -67,25 +68,8 @@ const normalise = (product) => ({
 })
 
 export async function fetchPublishedProducts() {
-  const url = new URL(`${SUPABASE_URL}/rest/v1/products`)
-  url.searchParams.set('select', productSelect)
-  url.searchParams.set('status', 'eq.published')
-  url.searchParams.set('order', 'created_at.desc')
-
-  const response = await fetch(url, {
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-    },
-  })
-
-  if (!response.ok) {
-    const detail = await response.text()
-    throw new Error(`Could not load published Sancity products (${response.status}): ${detail.slice(0, 300)}`)
-  }
-
-  const products = await response.json()
-  return Array.isArray(products) ? products.map(normalise) : []
+  const products = await fetchFirebaseProductsForBuild()
+  return products.map(normalise)
 }
 
 export const xmlEscape = (value = '') => String(value)
